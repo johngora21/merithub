@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { 
   Bookmark, 
   MapPin, 
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react'
 
 const Opportunities = () => {
+  const screenSize = useResponsive()
   const [savedOpportunities, setSavedOpportunities] = useState(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
@@ -445,9 +447,14 @@ const Opportunities = () => {
         </div>
 
                 {/* Opportunities List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: `repeat(${getGridColumns(screenSize)}, 1fr)`,
+          gap: getGridGap(screenSize)
+        }}>
           {filteredOpportunities.length === 0 ? (
             <div style={{
+              gridColumn: '1 / -1',
               backgroundColor: 'white',
               borderRadius: '12px',
               padding: '40px 20px',
@@ -766,20 +773,22 @@ const Opportunities = () => {
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             zIndex: 1000,
             display: 'flex',
-            alignItems: 'flex-end',
+            alignItems: screenSize.isMobile ? 'flex-end' : 'center',
+            justifyContent: screenSize.isMobile ? 'stretch' : 'center',
             transition: 'all 0.3s ease-in-out'
           }}
           onClick={() => setShowFilters(false)}>
             <div style={{
               backgroundColor: 'white',
-              width: '100%',
-              maxHeight: '80vh',
-              borderTopLeftRadius: '20px',
-              borderTopRightRadius: '20px',
-              padding: '20px',
+              width: screenSize.isMobile ? '100%' : 'min(800px, 90vw)',
+              maxHeight: screenSize.isMobile ? '80vh' : '85vh',
+              borderRadius: screenSize.isMobile ? '20px 20px 0 0' : '16px',
+              padding: screenSize.isDesktop ? '32px' : '20px',
               overflowY: 'auto',
-              transform: showFilters ? 'translateY(0)' : 'translateY(100%)',
-              transition: 'transform 0.3s ease-in-out'
+              transform: showFilters ? 'translateY(0)' : (screenSize.isMobile ? 'translateY(100%)' : 'scale(0.9)'),
+              opacity: showFilters ? 1 : 0,
+              transition: 'all 0.3s ease-in-out',
+              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
             }}
             onClick={(e) => e.stopPropagation()}>
               
@@ -831,7 +840,12 @@ const Opportunities = () => {
               </div>
 
               {/* Filter Categories */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ 
+                display: screenSize.isDesktop ? 'grid' : 'flex',
+                gridTemplateColumns: screenSize.isDesktop ? 'repeat(2, 1fr)' : 'none',
+                flexDirection: screenSize.isDesktop ? 'initial' : 'column',
+                gap: screenSize.isDesktop ? '32px' : '24px'
+              }}>
                 
                 {/* Opportunity Type */}
                 <div>
@@ -1244,16 +1258,18 @@ const Opportunities = () => {
                 <button
                   onClick={() => setShowFilters(false)}
                   style={{
-                    width: '100%',
+                    width: screenSize.isMobile ? '100%' : 'auto',
+                    minWidth: screenSize.isMobile ? 'auto' : '200px',
                     backgroundColor: '#16a34a',
                     color: 'white',
                     border: 'none',
-                    padding: '16px',
+                    padding: screenSize.isMobile ? '16px' : '12px 24px',
                     borderRadius: '8px',
-                    fontSize: '16px',
+                    fontSize: '14px',
                     fontWeight: '600',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out'
+                    transition: 'all 0.2s ease-in-out',
+                    alignSelf: screenSize.isMobile ? 'stretch' : 'flex-start'
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.backgroundColor = '#15803d'

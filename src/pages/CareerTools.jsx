@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import { FileText, Download, Upload, Edit3, Eye, Plus } from 'lucide-react'
+import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 
 const CareerTools = () => {
+  const screenSize = useResponsive()
   const [activeTab, setActiveTab] = useState('cv-builder')
 
   const tabs = [
@@ -25,7 +27,13 @@ const CareerTools = () => {
 
   return (
     <div style={{ backgroundColor: '#f8f9fa' }}>
-      <div style={{ padding: '16px 12px 90px 12px' }}>
+      <div style={{ 
+        padding: screenSize.isDesktop 
+          ? '24px 32px 24px 32px' 
+          : screenSize.isTablet
+            ? '20px 20px 20px 20px'
+            : '16px 12px 90px 12px'
+      }}>
         
         {/* Tabs */}
         <div style={{
@@ -63,7 +71,11 @@ const CareerTools = () => {
 
         {/* CV Builder Tab */}
         {activeTab === 'cv-builder' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: getGridGap(screenSize) 
+          }}>
             {/* Quick Actions */}
             <div style={{
               backgroundColor: 'white',
@@ -117,6 +129,11 @@ const CareerTools = () => {
             </div>
 
             {/* Tools Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: `repeat(${getGridColumns(screenSize)}, 1fr)`,
+              gap: getGridGap(screenSize)
+            }}>
             {[
               { title: 'CV Tips', desc: 'Writing guidance', icon: FileText },
               { title: 'Cover Letters', desc: 'Letter templates', icon: Edit3 },
@@ -166,12 +183,17 @@ const CareerTools = () => {
                 </div>
               )
             })}
+            </div>
           </div>
         )}
 
         {/* Templates Tab */}
         {activeTab === 'templates' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ 
+            display: 'grid',
+            gridTemplateColumns: `repeat(${getGridColumns(screenSize)}, 1fr)`,
+            gap: getGridGap(screenSize)
+          }}>
             {cvTemplates.map((template) => (
               <div key={template.id} style={{
                 backgroundColor: 'white',
@@ -255,7 +277,11 @@ const CareerTools = () => {
 
         {/* My Documents Tab */}
         {activeTab === 'my-documents' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ 
+            display: 'grid',
+            gridTemplateColumns: `repeat(${getGridColumns(screenSize)}, 1fr)`,
+            gap: getGridGap(screenSize)
+          }}>
             {myDocuments.map((doc) => (
               <div key={doc.id} style={{
                 backgroundColor: 'white',

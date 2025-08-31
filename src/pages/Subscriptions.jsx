@@ -1,7 +1,9 @@
 import React from 'react'
+import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { Check, Star } from 'lucide-react'
 
 const Subscriptions = () => {
+  const screenSize = useResponsive()
 
   const plans = [
     {
@@ -59,12 +61,26 @@ const Subscriptions = () => {
 
   return (
     <div style={{ backgroundColor: '#f8f9fa' }}>
-      <div style={{ padding: '16px 12px 90px 12px' }}>
+      <div style={{ 
+        padding: screenSize.isDesktop 
+          ? '24px 32px 24px 32px' 
+          : screenSize.isTablet
+            ? '20px 20px 20px 20px'
+            : '16px 12px 90px 12px'
+      }}>
         
 
 
         {/* Plans List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: screenSize.isMobile 
+            ? '1fr' 
+            : screenSize.isTablet 
+              ? 'repeat(2, 1fr)' 
+              : 'repeat(3, 1fr)',
+          gap: getGridGap(screenSize)
+        }}>
           {plans.map((plan) => (
             <div key={plan.id} style={{
               backgroundColor: 'white',

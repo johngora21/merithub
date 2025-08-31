@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { 
   Bookmark, 
   MapPin, 
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react'
 
 const Jobs = () => {
+  const screenSize = useResponsive()
   const [savedJobs, setSavedJobs] = useState(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
@@ -424,9 +426,14 @@ const Jobs = () => {
         </div>
 
         {/* Jobs List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: `repeat(${getGridColumns(screenSize)}, 1fr)`,
+          gap: getGridGap(screenSize)
+        }}>
           {filteredJobs.length === 0 ? (
             <div style={{
+              gridColumn: '1 / -1',
               backgroundColor: 'white',
               borderRadius: '12px',
               padding: '40px 20px',
@@ -461,7 +468,7 @@ const Jobs = () => {
             <div key={job.id} style={{
               backgroundColor: 'white',
               borderRadius: '12px',
-              padding: '20px',
+              padding: '16px 12px',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
               border: '1px solid #f0f0f0',
               position: 'relative',
@@ -481,9 +488,9 @@ const Jobs = () => {
                 display: 'flex',
                 alignItems: 'flex-start',
                 justifyContent: 'space-between',
-                marginBottom: '16px'
+                marginBottom: '10px'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                   <img 
                     src={job.logo} 
                     alt={job.company}
@@ -497,10 +504,10 @@ const Jobs = () => {
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h3 style={{
-                      fontSize: '16px',
+                      fontSize: '14px',
                       fontWeight: '600',
                       color: '#1a1a1a',
-                      margin: '0 0 2px 0',
+                      margin: '0 0 1px 0',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
@@ -510,11 +517,10 @@ const Jobs = () => {
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      marginBottom: '2px'
+                      gap: '6px'
                     }}>
                       <span style={{
-                        fontSize: '14px',
+                        fontSize: '12px',
                         fontWeight: '500',
                         color: '#64748b'
                       }}>
@@ -522,11 +528,11 @@ const Jobs = () => {
                       </span>
                       {job.postedBy === 'platform' && (
                         <span style={{
-                          fontSize: '11px',
+                          fontSize: '10px',
                           color: 'white',
                           backgroundColor: '#3b82f6',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
+                          padding: '1px 4px',
+                          borderRadius: '3px',
                           fontWeight: '600'
                         }}>
                           PRO
@@ -568,17 +574,17 @@ const Jobs = () => {
 
               {/* Job Title */}
               <h2 style={{
-                fontSize: '18px',
+                fontSize: '16px',
                 fontWeight: '600',
                 color: '#1a1a1a',
-                margin: '0 0 12px 0',
+                margin: '0 0 8px 0',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '4px'
               }}>
                 {job.title}
                 {job.urgentHiring && (
-                  <Star size={16} color="#16a34a" fill="#16a34a" />
+                  <Star size={14} color="#16a34a" fill="#16a34a" />
                 )}
               </h2>
 
@@ -586,14 +592,14 @@ const Jobs = () => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                marginBottom: '12px',
-                fontSize: '13px',
+                gap: '6px',
+                marginBottom: '8px',
+                fontSize: '12px',
                 color: '#666',
                 flexWrap: 'wrap'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                  <MapPin size={12} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                  <MapPin size={11} />
                   {job.location}
                 </div>
                 <span>•</span>
@@ -603,7 +609,7 @@ const Jobs = () => {
                     <span>•</span>
                     <span style={{
                       color: '#16a34a',
-                      fontSize: '12px',
+                      fontSize: '11px',
                       fontWeight: '500'
                     }}>
                       Remote
@@ -617,53 +623,53 @@ const Jobs = () => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
-                marginBottom: '12px',
+                gap: '8px',
+                marginBottom: '8px',
                 flexWrap: 'wrap'
               }}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '13px',
+                  gap: '3px',
+                  fontSize: '12px',
                   color: '#16a34a',
                   fontWeight: '600'
                 }}>
-                  <DollarSign size={14} />
+                  <DollarSign size={12} />
                   {job.salary}
                 </div>
                 <span style={{ color: '#e2e8f0' }}>•</span>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '13px',
+                  gap: '3px',
+                  fontSize: '12px',
                   color: '#64748b'
                 }}>
-                  <Briefcase size={14} />
+                  <Briefcase size={12} />
                   {job.type}
                 </div>
                 <span style={{ color: '#e2e8f0' }}>•</span>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '13px',
+                  gap: '3px',
+                  fontSize: '12px',
                   color: '#64748b'
                 }}>
-                  <Clock size={14} />
+                  <Clock size={12} />
                   {job.experience}
                 </div>
               </div>
 
               {/* Description */}
               <p style={{
-                fontSize: '14px',
+                fontSize: '13px',
                 color: '#475569',
-                lineHeight: '1.5',
-                margin: '0 0 12px 0',
+                lineHeight: '1.4',
+                margin: '0 0 8px 0',
                 display: '-webkit-box',
-                WebkitLineClamp: 2,
+                WebkitLineClamp: 1,
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden'
               }}>
@@ -671,19 +677,19 @@ const Jobs = () => {
               </p>
 
               {/* Skills */}
-              <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '10px' }}>
                 <div style={{
                   display: 'flex',
                   flexWrap: 'wrap',
-                  gap: '6px'
+                  gap: '4px'
                 }}>
                   {job.skills.slice(0, 4).map((skill, index) => (
                     <span key={index} style={{
                       backgroundColor: '#f1f5f9',
                       color: '#475569',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
                       fontWeight: '500'
                     }}>
                       {skill}
@@ -692,8 +698,8 @@ const Jobs = () => {
                   {job.skills.length > 4 && (
                     <span style={{
                       color: '#64748b',
-                      fontSize: '12px',
-                      padding: '4px 8px',
+                      fontSize: '11px',
+                      padding: '2px 6px',
                       fontWeight: '500'
                     }}>
                       +{job.skills.length - 4} more
@@ -707,17 +713,17 @@ const Jobs = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                paddingTop: '12px',
+                paddingTop: '8px',
                 borderTop: '1px solid #f1f5f9'
               }}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '12px',
+                  gap: '3px',
+                  fontSize: '11px',
                   color: '#64748b'
                 }}>
-                  <Users size={12} />
+                  <Users size={11} />
                   {job.applicants || 0} applicants
                 </div>
 
@@ -727,9 +733,9 @@ const Jobs = () => {
                     backgroundColor: '#16a34a',
                     color: 'white',
                     border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    fontSize: '13px',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
                     fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease-in-out'
@@ -762,20 +768,22 @@ const Jobs = () => {
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             zIndex: 1000,
             display: 'flex',
-            alignItems: 'flex-end',
+            alignItems: screenSize.isMobile ? 'flex-end' : 'center',
+            justifyContent: screenSize.isMobile ? 'stretch' : 'center',
             transition: 'all 0.3s ease-in-out'
           }}
           onClick={() => setShowFilters(false)}>
             <div style={{
               backgroundColor: 'white',
-              width: '100%',
-              maxHeight: '80vh',
-              borderTopLeftRadius: '20px',
-              borderTopRightRadius: '20px',
-              padding: '20px',
+              width: screenSize.isMobile ? '100%' : 'min(800px, 90vw)',
+              maxHeight: screenSize.isMobile ? '80vh' : '85vh',
+              borderRadius: screenSize.isMobile ? '20px 20px 0 0' : '16px',
+              padding: screenSize.isDesktop ? '32px' : '20px',
               overflowY: 'auto',
-              transform: showFilters ? 'translateY(0)' : 'translateY(100%)',
-              transition: 'transform 0.3s ease-in-out'
+              transform: showFilters ? 'translateY(0)' : (screenSize.isMobile ? 'translateY(100%)' : 'scale(0.9)'),
+              opacity: showFilters ? 1 : 0,
+              transition: 'all 0.3s ease-in-out',
+              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
             }}
             onClick={(e) => e.stopPropagation()}>
               
@@ -827,7 +835,12 @@ const Jobs = () => {
               </div>
 
               {/* Filter Categories */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ 
+                display: screenSize.isDesktop ? 'grid' : 'flex',
+                gridTemplateColumns: screenSize.isDesktop ? 'repeat(2, 1fr)' : 'none',
+                flexDirection: screenSize.isDesktop ? 'initial' : 'column',
+                gap: screenSize.isDesktop ? '32px' : '24px'
+              }}>
                 
                 {/* Job Type */}
                 <div>
@@ -937,7 +950,7 @@ const Jobs = () => {
                   </h3>
                   <div style={{ 
                     display: 'grid', 
-                    gridTemplateColumns: 'repeat(2, 1fr)', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(2, 1fr)', 
                     gap: '8px' 
                   }}>
                     {filterOptions.industry.map((industry) => (
@@ -1187,16 +1200,18 @@ const Jobs = () => {
                 <button
                   onClick={() => setShowFilters(false)}
                   style={{
-                    width: '100%',
+                    width: screenSize.isMobile ? '100%' : 'auto',
+                    minWidth: screenSize.isMobile ? 'auto' : '200px',
                     backgroundColor: '#16a34a',
                     color: 'white',
                     border: 'none',
-                    padding: '16px',
+                    padding: screenSize.isMobile ? '16px' : '12px 24px',
                     borderRadius: '8px',
-                    fontSize: '16px',
+                    fontSize: '14px',
                     fontWeight: '600',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out'
+                    transition: 'all 0.2s ease-in-out',
+                    alignSelf: screenSize.isMobile ? 'stretch' : 'flex-start'
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.backgroundColor = '#15803d'

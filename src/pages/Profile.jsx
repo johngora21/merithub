@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
+import { useResponsive } from '../hooks/useResponsive'
 import { User, Edit3, Upload, Download, Eye, MapPin, Calendar, Mail, Phone, Globe, Briefcase, GraduationCap, Award, FileText, Save, X } from 'lucide-react'
 
 const Profile = () => {
+  const screenSize = useResponsive()
   const [activeTab, setActiveTab] = useState('personal')
   const [showEditModal, setShowEditModal] = useState(false)
 
@@ -171,13 +173,15 @@ const Profile = () => {
 
   return (
     <div style={{ backgroundColor: '#f8f9fa' }}>
-      <div style={{ padding: '16px 12px 90px 12px' }}>
+      <div style={{ 
+        padding: '16px 12px 90px 12px'
+      }}>
         
         {/* Profile Header */}
         <div style={{
           backgroundColor: 'white',
           borderRadius: '12px',
-          padding: '20px',
+          padding: '16px 12px',
           marginBottom: '16px',
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
           border: '1px solid #f0f0f0',
@@ -188,18 +192,18 @@ const Profile = () => {
             onClick={openEditModal}
             style={{
               position: 'absolute',
-              top: '16px',
-              right: '16px',
+              top: '12px',
+              right: '12px',
               backgroundColor: 'white',
               color: '#64748b',
               border: '1px solid #e2e8f0',
-              borderRadius: '6px',
-              padding: '8px 12px',
+              borderRadius: '4px',
+              padding: '4px 8px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              fontSize: '12px',
+              gap: '3px',
+              fontSize: '11px',
               fontWeight: '500',
               transition: 'all 0.2s ease-in-out'
             }}
@@ -216,17 +220,22 @@ const Profile = () => {
             Edit Profile
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            gap: '10px', 
+            marginBottom: '10px' 
+          }}>
             <div style={{ position: 'relative' }}>
               <div style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '40px',
+                width: '44px',
+                height: '44px',
+                borderRadius: '22px',
                 backgroundColor: '#16a34a',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '32px',
+                fontSize: '18px',
                 fontWeight: '600',
                 color: 'white'
               }}>
@@ -236,26 +245,26 @@ const Profile = () => {
                 position: 'absolute',
                 bottom: '0',
                 right: '0',
-                width: '28px',
-                height: '28px',
-                borderRadius: '14px',
+                width: '16px',
+                height: '16px',
+                borderRadius: '8px',
                 backgroundColor: 'white',
-                border: '2px solid #f0f0f0',
+                border: '1px solid #f0f0f0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer'
               }}>
-                <Upload size={12} color="#64748b" />
+                <Upload size={8} color="#64748b" />
               </button>
             </div>
             
             <div style={{ flex: 1 }}>
               <h1 style={{
-                fontSize: '20px',
+                fontSize: '16px',
                 fontWeight: '600',
                 color: '#1a1a1a',
-                margin: '0 0 4px 0'
+                margin: '0 0 1px 0'
               }}>
                 {profileData.name}
               </h1>
@@ -263,7 +272,7 @@ const Profile = () => {
               <p style={{
                 fontSize: '14px',
                 color: '#64748b',
-                margin: '0 0 8px 0'
+                margin: '0 0 2px 0'
               }}>
                 @{profileData.username}
               </p>
@@ -271,17 +280,18 @@ const Profile = () => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
+                gap: '6px',
                 fontSize: '12px',
                 color: '#64748b',
                 flexWrap: 'wrap'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <MapPin size={12} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                  <MapPin size={10} />
                   {profileData.location}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Calendar size={12} />
+                <span>•</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                  <Calendar size={10} />
                   Joined {profileData.joinDate}
                 </div>
               </div>
@@ -291,29 +301,31 @@ const Profile = () => {
           <p style={{
             fontSize: '14px',
             color: '#374151',
-            margin: '0 0 16px 0',
-            lineHeight: '1.5'
+            margin: '0 0 6px 0',
+            lineHeight: '1.4'
           }}>
             {profileData.bio}
           </p>
           
           <div style={{
             display: 'flex',
-            gap: '12px',
+            gap: '4px',
             flexWrap: 'wrap',
-            fontSize: '12px',
+            fontSize: '14px',
             color: '#64748b'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Mail size={12} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <Mail size={10} />
               {profileData.email}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Phone size={12} />
+            <span>•</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <Phone size={10} />
               {profileData.phone}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Globe size={12} />
+            <span>•</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <Globe size={10} />
               {profileData.website}
             </div>
           </div>
@@ -367,19 +379,23 @@ const Profile = () => {
               fontSize: '16px',
               fontWeight: '600',
               color: '#1a1a1a',
-              margin: '0 0 16px 0'
+              margin: '0 0 8px 0'
             }}>
               Personal Information
             </h3>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '6px' 
+              }}>
                 <div>
                   <label style={{
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: '500',
                     color: '#64748b',
-                    marginBottom: '4px',
+                    marginBottom: '2px',
                     display: 'block'
                   }}>
                     Full Name
@@ -388,7 +404,7 @@ const Profile = () => {
                     fontSize: '14px',
                     color: '#1a1a1a',
                     margin: 0,
-                    padding: '8px 0'
+                    padding: '3px 0'
                   }}>
                     {profileData.name}
                   </p>
@@ -396,10 +412,10 @@ const Profile = () => {
                 
                 <div>
                   <label style={{
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: '500',
                     color: '#64748b',
-                    marginBottom: '4px',
+                    marginBottom: '2px',
                     display: 'block'
                   }}>
                     Username
@@ -408,7 +424,7 @@ const Profile = () => {
                     fontSize: '14px',
                     color: '#1a1a1a',
                     margin: 0,
-                    padding: '8px 0'
+                    padding: '3px 0'
                   }}>
                     @{profileData.username}
                   </p>
@@ -417,10 +433,10 @@ const Profile = () => {
               
               <div>
                 <label style={{
-                  fontSize: '12px',
+                  fontSize: '14px',
                   fontWeight: '500',
                   color: '#64748b',
-                  marginBottom: '4px',
+                  marginBottom: '2px',
                   display: 'block'
                 }}>
                   Bio
@@ -429,20 +445,24 @@ const Profile = () => {
                   fontSize: '14px',
                   color: '#1a1a1a',
                   margin: 0,
-                  padding: '8px 0',
-                  lineHeight: '1.5'
+                  padding: '3px 0',
+                  lineHeight: '1.3'
                 }}>
                   {profileData.bio}
                 </p>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '6px' 
+              }}>
                 <div>
                   <label style={{
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: '500',
                     color: '#64748b',
-                    marginBottom: '4px',
+                    marginBottom: '2px',
                     display: 'block'
                   }}>
                     Email
@@ -451,7 +471,7 @@ const Profile = () => {
                     fontSize: '14px',
                     color: '#1a1a1a',
                     margin: 0,
-                    padding: '8px 0'
+                    padding: '3px 0'
                   }}>
                     {profileData.email}
                   </p>
@@ -459,10 +479,10 @@ const Profile = () => {
                 
                 <div>
                   <label style={{
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: '500',
                     color: '#64748b',
-                    marginBottom: '4px',
+                    marginBottom: '2px',
                     display: 'block'
                   }}>
                     Phone
@@ -471,7 +491,7 @@ const Profile = () => {
                     fontSize: '14px',
                     color: '#1a1a1a',
                     margin: 0,
-                    padding: '8px 0'
+                    padding: '3px 0'
                   }}>
                     {profileData.phone}
                   </p>
@@ -480,10 +500,10 @@ const Profile = () => {
               
               <div>
                 <label style={{
-                  fontSize: '12px',
+                  fontSize: '14px',
                   fontWeight: '500',
                   color: '#64748b',
-                  marginBottom: '4px',
+                  marginBottom: '2px',
                   display: 'block'
                 }}>
                   Current Position
@@ -492,19 +512,23 @@ const Profile = () => {
                   fontSize: '14px',
                   color: '#1a1a1a',
                   margin: 0,
-                  padding: '8px 0'
+                  padding: '3px 0'
                 }}>
                   {profileData.jobTitle}
                 </p>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr 1fr', 
+                gap: '6px' 
+              }}>
                 <div>
                   <label style={{
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: '500',
                     color: '#64748b',
-                    marginBottom: '4px',
+                    marginBottom: '2px',
                     display: 'block'
                   }}>
                     Industry
@@ -513,7 +537,7 @@ const Profile = () => {
                     fontSize: '14px',
                     color: '#1a1a1a',
                     margin: 0,
-                    padding: '8px 0'
+                    padding: '3px 0'
                   }}>
                     {profileData.industry}
                   </p>
@@ -521,61 +545,65 @@ const Profile = () => {
                 
                 <div>
                   <label style={{
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: '500',
                     color: '#64748b',
-                    marginBottom: '4px',
+                    marginBottom: '2px',
                     display: 'block'
                   }}>
-                    Years of Experience
+                    Experience
                   </label>
                   <p style={{
                     fontSize: '14px',
                     color: '#1a1a1a',
                     margin: 0,
-                    padding: '8px 0'
+                    padding: '3px 0'
                   }}>
                     {profileData.yearsExperience}
                   </p>
                 </div>
-              </div>
-              
-              <div>
-                <label style={{
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  color: '#64748b',
-                  marginBottom: '4px',
-                  display: 'block'
-                }}>
-                  Employment Status
-                </label>
-                <p style={{
-                  fontSize: '14px',
-                  color: '#1a1a1a',
-                  margin: 0,
-                  padding: '8px 0'
-                }}>
-                  {profileData.employmentStatus}
-                </p>
-              </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+
                 <div>
                   <label style={{
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: '500',
                     color: '#64748b',
-                    marginBottom: '4px',
+                    marginBottom: '2px',
                     display: 'block'
                   }}>
-                    LinkedIn Profile
+                    Status
                   </label>
                   <p style={{
                     fontSize: '14px',
                     color: '#1a1a1a',
                     margin: 0,
-                    padding: '8px 0'
+                    padding: '3px 0'
+                  }}>
+                    {profileData.employmentStatus}
+                  </p>
+                </div>
+              </div>
+              
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '6px' 
+              }}>
+                <div>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#64748b',
+                    marginBottom: '2px',
+                    display: 'block'
+                  }}>
+                    LinkedIn
+                  </label>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#1a1a1a',
+                    margin: 0,
+                    padding: '3px 0'
                   }}>
                     {profileData.linkedinProfile}
                   </p>
@@ -583,19 +611,19 @@ const Profile = () => {
                 
                 <div>
                   <label style={{
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: '500',
                     color: '#64748b',
-                    marginBottom: '4px',
+                    marginBottom: '2px',
                     display: 'block'
                   }}>
-                    GitHub Profile
+                    GitHub
                   </label>
                   <p style={{
                     fontSize: '14px',
                     color: '#1a1a1a',
                     margin: 0,
-                    padding: '8px 0'
+                    padding: '3px 0'
                   }}>
                     {profileData.githubProfile}
                   </p>
@@ -604,19 +632,19 @@ const Profile = () => {
               
               <div>
                 <label style={{
-                  fontSize: '12px',
+                  fontSize: '14px',
                   fontWeight: '500',
                   color: '#64748b',
-                  marginBottom: '4px',
+                  marginBottom: '2px',
                   display: 'block'
                 }}>
-                  Other Professional Profiles
+                  Other Profiles
                 </label>
                 <p style={{
                   fontSize: '14px',
                   color: '#1a1a1a',
                   margin: 0,
-                  padding: '8px 0'
+                  padding: '3px 0'
                 }}>
                   {profileData.otherProfiles}
                 </p>
@@ -627,7 +655,11 @@ const Profile = () => {
 
         {/* Education Tab */}
         {activeTab === 'education' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: screenSize.isMobile ? '1fr' : screenSize.isTablet ? '1fr 1fr' : '1fr 1fr 1fr',
+            gap: screenSize.isMobile ? '10px' : screenSize.isTablet ? '12px' : '16px'
+          }}>
             {education.map((edu) => (
               <div key={edu.id} style={{
                 backgroundColor: 'white',
@@ -636,11 +668,11 @@ const Profile = () => {
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                 border: '1px solid #f0f0f0'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
                   <GraduationCap size={20} color="#16a34a" />
                   <div style={{ flex: 1 }}>
                     <h3 style={{
-                      fontSize: '16px',
+                      fontSize: '14px',
                       fontWeight: '600',
                       color: '#1a1a1a',
                       margin: '0 0 2px 0'
@@ -648,7 +680,7 @@ const Profile = () => {
                       {edu.program}
                     </h3>
                     <p style={{
-                      fontSize: '12px',
+                      fontSize: '11px',
                       color: '#16a34a',
                       margin: '0 0 2px 0',
                       fontWeight: '500'
@@ -682,28 +714,32 @@ const Profile = () => {
 
         {/* Certificates Tab */}
         {activeTab === 'certificates' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: screenSize.isMobile ? '1fr' : screenSize.isTablet ? '1fr 1fr' : '1fr 1fr 1fr',
+            gap: screenSize.isMobile ? '10px' : screenSize.isTablet ? '12px' : '16px'
+          }}>
             {certificates.map((cert) => (
               <div key={cert.id} style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: '16px',
+                padding: '12px',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                 border: '1px solid #f0f0f0'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                  <Award size={20} color="#16a34a" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                  <Award size={16} color="#16a34a" />
                   <div style={{ flex: 1 }}>
                     <h3 style={{
-                      fontSize: '16px',
+                      fontSize: '14px',
                       fontWeight: '600',
                       color: '#1a1a1a',
-                      margin: '0 0 2px 0'
+                      margin: '0 0 1px 0'
                     }}>
                       {cert.name}
                     </h3>
                     <p style={{
-                      fontSize: '14px',
+                      fontSize: '11px',
                       color: '#64748b',
                       margin: 0
                     }}>
@@ -711,7 +747,7 @@ const Profile = () => {
                     </p>
                   </div>
                   <span style={{
-                    fontSize: '11px',
+                    fontSize: '10px',
                     backgroundColor: (() => {
                       if (!cert.expiryDate) return '#f0fdf4' // No expiry = active
                       const today = new Date()
@@ -724,8 +760,8 @@ const Profile = () => {
                       const expiry = new Date(cert.expiryDate)
                       return expiry > today ? '#16a34a' : '#ef4444' // Active or expired
                     })(),
-                    padding: '4px 8px',
-                    borderRadius: '6px',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
                     fontWeight: '500'
                   }}>
                     {(() => {
@@ -739,10 +775,10 @@ const Profile = () => {
                 
                 <div style={{
                   display: 'flex',
-                  gap: '16px',
+                  gap: '6px',
                   fontSize: '12px',
                   color: '#64748b',
-                  marginBottom: '8px'
+                  marginBottom: '6px'
                 }}>
                   <span>Issued: {cert.issueDate}</span>
                   {cert.expiryDate && <span>Expires: {cert.expiryDate}</span>}
@@ -755,14 +791,14 @@ const Profile = () => {
                   alignItems: 'center',
                   fontSize: '12px',
                   color: '#64748b',
-                  marginBottom: '12px'
+                  marginBottom: '8px'
                 }}>
                   <span style={{
-                    fontSize: '11px',
+                    fontSize: '10px',
                     backgroundColor: '#f8fafc',
                     color: '#64748b',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
+                    padding: '1px 4px',
+                    borderRadius: '3px',
                     fontWeight: '500'
                   }}>
                     {cert.type}
@@ -771,21 +807,21 @@ const Profile = () => {
                 </div>
                 
                 {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
                   <button style={{
                     backgroundColor: '#16a34a',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '6px',
-                    padding: '6px 12px',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
                     fontSize: '12px',
                     fontWeight: '500',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px'
+                    gap: '3px'
                   }}>
-                    <Eye size={12} />
+                    <Eye size={10} />
                     View Certificate
                   </button>
                   
@@ -793,16 +829,16 @@ const Profile = () => {
                     backgroundColor: 'white',
                     color: '#64748b',
                     border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    padding: '6px 12px',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
                     fontSize: '12px',
                     fontWeight: '500',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px'
+                    gap: '3px'
                   }}>
-                    <Download size={12} />
+                    <Download size={10} />
                     Download
                   </button>
                 </div>
@@ -813,7 +849,11 @@ const Profile = () => {
 
         {/* Experience Tab */}
         {activeTab === 'experience' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: screenSize.isMobile ? '1fr' : screenSize.isTablet ? '1fr 1fr' : '1fr 1fr 1fr',
+            gap: screenSize.isMobile ? '10px' : screenSize.isTablet ? '12px' : '16px'
+          }}>
             {experience.map((exp) => (
               <div key={exp.id} style={{
                 backgroundColor: 'white',
@@ -822,11 +862,11 @@ const Profile = () => {
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                 border: '1px solid #f0f0f0'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
                   <Briefcase size={20} color="#16a34a" />
                   <div style={{ flex: 1 }}>
                     <h3 style={{
-                      fontSize: '16px',
+                      fontSize: '14px',
                       fontWeight: '600',
                       color: '#1a1a1a',
                       margin: '0 0 2px 0'
@@ -834,7 +874,7 @@ const Profile = () => {
                       {exp.title}
                     </h3>
                     <p style={{
-                      fontSize: '14px',
+                      fontSize: '12px',
                       color: '#64748b',
                       margin: 0
                     }}>
@@ -876,36 +916,40 @@ const Profile = () => {
 
         {/* Documents Tab */}
         {activeTab === 'documents' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: screenSize.isMobile ? '1fr' : screenSize.isTablet ? '1fr 1fr' : '1fr 1fr 1fr',
+            gap: screenSize.isMobile ? '10px' : screenSize.isTablet ? '12px' : '16px'
+          }}>
             {documents.map((doc) => (
               <div key={doc.id} style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: '16px',
+                padding: '12px',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                 border: '1px solid #f0f0f0'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                  <FileText size={20} color="#16a34a" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                  <FileText size={16} color="#16a34a" />
                   <div style={{ flex: 1 }}>
                     <h3 style={{
-                      fontSize: '16px',
+                      fontSize: '14px',
                       fontWeight: '600',
                       color: '#1a1a1a',
-                      margin: '0 0 2px 0'
+                      margin: '0 0 1px 0'
                     }}>
                       {doc.name}
                     </h3>
                     <p style={{
-                      fontSize: '12px',
+                      fontSize: '11px',
                       color: '#16a34a',
-                      margin: '0 0 2px 0',
+                      margin: '0 0 1px 0',
                       fontWeight: '500'
                     }}>
                       {doc.category}
                     </p>
                     <p style={{
-                      fontSize: '14px',
+                      fontSize: '11px',
                       color: '#64748b',
                       margin: 0
                     }}>
@@ -916,39 +960,39 @@ const Profile = () => {
                 
                 {doc.description && (
                   <p style={{
-                    fontSize: '14px',
+                    fontSize: '13px',
                     color: '#374151',
-                    margin: '0 0 12px 0',
-                    lineHeight: '1.4'
+                    margin: '0 0 6px 0',
+                    lineHeight: '1.3'
                   }}>
                     {doc.description}
                   </p>
                 )}
                 
                 <div style={{
-                  fontSize: '12px',
+                  fontSize: '11px',
                   color: '#64748b',
-                  marginBottom: '12px'
+                  marginBottom: '8px'
                 }}>
                   <span>Updated {doc.updated}</span>
                 </div>
                 
                 {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
                   <button style={{
                     backgroundColor: '#16a34a',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '6px',
-                    padding: '6px 12px',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
                     fontSize: '12px',
                     fontWeight: '500',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px'
+                    gap: '3px'
                   }}>
-                    <Eye size={12} />
+                    <Eye size={10} />
                     View Document
                   </button>
                   
@@ -956,16 +1000,16 @@ const Profile = () => {
                     backgroundColor: 'white',
                     color: '#64748b',
                     border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    padding: '6px 12px',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
                     fontSize: '12px',
                     fontWeight: '500',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px'
+                    gap: '3px'
                   }}>
-                    <Download size={12} />
+                    <Download size={10} />
                     Download
                   </button>
                 </div>
@@ -999,9 +1043,9 @@ const Profile = () => {
               transform: 'translate(-50%, -50%)',
               backgroundColor: 'white',
               borderRadius: '12px',
-              padding: '24px',
-              width: '95%',
-              maxWidth: '700px',
+              padding: screenSize.isDesktop ? '32px' : '24px',
+              width: screenSize.isMobile ? '95%' : '90%',
+              maxWidth: screenSize.isDesktop ? '900px' : '700px',
               maxHeight: '90vh',
               overflowY: 'auto',
               zIndex: 1001,
@@ -1048,7 +1092,11 @@ const Profile = () => {
                 </h3>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                gap: '16px' 
+              }}>
                     <div>
                       <label style={{
                         fontSize: '12px',
@@ -1141,7 +1189,11 @@ const Profile = () => {
                     />
                   </div>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                gap: '16px' 
+              }}>
                     <div>
                       <label style={{
                         fontSize: '12px',
@@ -1203,7 +1255,11 @@ const Profile = () => {
                     </div>
                   </div>
                   
-                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                     <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                gap: '16px' 
+              }}>
                      <div>
                        <label style={{
                          fontSize: '12px',
@@ -1296,7 +1352,11 @@ const Profile = () => {
                      />
                    </div>
                    
-                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                   <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                gap: '16px' 
+              }}>
                      <div>
                        <label style={{
                          fontSize: '12px',
@@ -1409,7 +1469,11 @@ const Profile = () => {
                      </select>
                    </div>
                    
-                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                   <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                gap: '16px' 
+              }}>
                      <div>
                        <label style={{
                          fontSize: '12px',
@@ -1557,7 +1621,12 @@ const Profile = () => {
                     padding: '16px',
                     marginBottom: '12px'
                   }}>
-                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                         <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                    gap: '6px', 
+                    marginBottom: '10px' 
+                  }}>
                        <div>
                          <label style={{
                            fontSize: '12px',
@@ -1626,7 +1695,12 @@ const Profile = () => {
                        </div>
                      </div>
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                    gap: '6px', 
+                    marginBottom: '10px' 
+                  }}>
                       <div>
                         <label style={{
                           fontSize: '12px',
@@ -1691,7 +1765,12 @@ const Profile = () => {
                       </div>
                     </div>
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                    gap: '6px', 
+                    marginBottom: '10px' 
+                  }}>
                       <div>
                         <label style={{
                           fontSize: '12px',
@@ -1865,7 +1944,12 @@ const Profile = () => {
                        />
                      </div>
                      
-                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                     <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                    gap: '6px', 
+                    marginBottom: '10px' 
+                  }}>
                        <div>
                          <label style={{
                            fontSize: '12px',
@@ -1931,7 +2015,12 @@ const Profile = () => {
                        </div>
                      </div>
                      
-                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                     <div style={{ 
+                       display: 'grid', 
+                       gridTemplateColumns: screenSize.isMobile ? '1fr' : screenSize.isTablet ? '1fr 1fr' : '1fr 1fr 1fr', 
+                       gap: '12px', 
+                       marginBottom: '12px' 
+                     }}>
                        <div>
                          <label style={{
                            fontSize: '12px',
@@ -2140,7 +2229,12 @@ const Profile = () => {
                      padding: '16px',
                      marginBottom: '12px'
                    }}>
-                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                     <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                    gap: '6px', 
+                    marginBottom: '10px' 
+                  }}>
                        <div>
                          <label style={{
                            fontSize: '12px',
@@ -2204,7 +2298,12 @@ const Profile = () => {
                        </div>
                      </div>
                      
-                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                     <div style={{ 
+                       display: 'grid', 
+                       gridTemplateColumns: screenSize.isMobile ? '1fr' : screenSize.isTablet ? '1fr 1fr' : '1fr 1fr 1fr', 
+                       gap: '12px', 
+                       marginBottom: '12px' 
+                     }}>
                        <div>
                          <label style={{
                            fontSize: '12px',
@@ -2442,7 +2541,12 @@ const Profile = () => {
                        />
                      </div>
                      
-                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                     <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                    gap: '6px', 
+                    marginBottom: '10px' 
+                  }}>
                        <div>
                          <label style={{
                            fontSize: '12px',
@@ -2650,7 +2754,7 @@ const Profile = () => {
                {/* Action Buttons */}
               <div style={{
                 display: 'flex',
-                gap: '12px',
+                gap: '6px',
                 justifyContent: 'flex-end',
                 borderTop: '1px solid #e2e8f0',
                 paddingTop: '20px'

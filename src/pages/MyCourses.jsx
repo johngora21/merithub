@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
+import { useResponsive } from '../hooks/useResponsive'
 import { Play, Book, FileText, Calendar, Clock, Star, Download, Award, Search, Eye } from 'lucide-react'
 
 const MyCourses = () => {
+  const screenSize = useResponsive()
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -89,7 +91,13 @@ const MyCourses = () => {
 
   return (
     <div style={{ backgroundColor: '#f8f9fa' }}>
-      <div style={{ padding: '16px 12px 90px 12px' }}>
+      <div style={{ 
+        padding: screenSize.isDesktop 
+          ? '24px 32px 24px 32px' 
+          : screenSize.isTablet
+            ? '20px 20px 20px 20px'
+            : '16px 12px 90px 12px'
+      }}>
         
         {/* Search Bar */}
         <div style={{

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { 
   BookOpen, 
   Play, 
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react'
 
 const Courses = () => {
+  const screenSize = useResponsive()
   const [activeTab, setActiveTab] = useState('videos')
   const [savedItems, setSavedItems] = useState(new Set())
   const [searchQuery, setSearchQuery] = useState('')
@@ -790,8 +792,12 @@ const Courses = () => {
     return (
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-        gap: '16px'
+        gridTemplateColumns: screenSize.isMobile 
+          ? '1fr' 
+          : screenSize.isTablet 
+            ? 'repeat(2, 1fr)' 
+            : 'repeat(auto-fill, minmax(300px, 1fr))',
+        gap: getGridGap(screenSize)
       }}>
         {data.map((item) => {
           switch (activeTab) {
@@ -976,20 +982,22 @@ const Courses = () => {
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             zIndex: 1000,
             display: 'flex',
-            alignItems: 'flex-end',
+            alignItems: screenSize.isMobile ? 'flex-end' : 'center',
+            justifyContent: screenSize.isMobile ? 'stretch' : 'center',
             transition: 'all 0.3s ease-in-out'
           }}
           onClick={() => setShowFilters(false)}>
             <div style={{
               backgroundColor: 'white',
-              width: '100%',
-              maxHeight: '80vh',
-              borderTopLeftRadius: '20px',
-              borderTopRightRadius: '20px',
-              padding: '20px',
+              width: screenSize.isMobile ? '100%' : 'min(800px, 90vw)',
+              maxHeight: screenSize.isMobile ? '80vh' : '85vh',
+              borderRadius: screenSize.isMobile ? '20px 20px 0 0' : '16px',
+              padding: screenSize.isDesktop ? '32px' : '20px',
               overflowY: 'auto',
-              transform: showFilters ? 'translateY(0)' : 'translateY(100%)',
-              transition: 'transform 0.3s ease-in-out'
+              transform: showFilters ? 'translateY(0)' : (screenSize.isMobile ? 'translateY(100%)' : 'scale(0.9)'),
+              opacity: showFilters ? 1 : 0,
+              transition: 'all 0.3s ease-in-out',
+              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
             }}
             onClick={(e) => e.stopPropagation()}>
               
@@ -1041,7 +1049,12 @@ const Courses = () => {
               </div>
 
               {/* Dynamic Filter Categories based on active tab */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ 
+                display: screenSize.isDesktop ? 'grid' : 'flex',
+                gridTemplateColumns: screenSize.isDesktop ? 'repeat(2, 1fr)' : 'none',
+                flexDirection: screenSize.isDesktop ? 'initial' : 'column',
+                gap: screenSize.isDesktop ? '32px' : '24px'
+              }}>
                 {Object.entries(filterOptions[activeTab === 'business-plans' ? 'businessPlans' : activeTab]).map(([categoryKey, options]) => {
                   const tabKey = activeTab === 'business-plans' ? 'businessPlans' : activeTab
                   return (
@@ -1059,7 +1072,7 @@ const Courses = () => {
                     </h3>
                     <div style={{ 
                       display: 'grid', 
-                      gridTemplateColumns: 'repeat(2, 1fr)', 
+                      gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(2, 1fr)', 
                       gap: '8px' 
                     }}>
                       {options.map((option) => (
@@ -1111,16 +1124,18 @@ const Courses = () => {
                 <button
                   onClick={() => setShowFilters(false)}
                   style={{
-                    width: '100%',
+                    width: screenSize.isMobile ? '100%' : 'auto',
+                    minWidth: screenSize.isMobile ? 'auto' : '200px',
                     backgroundColor: '#16a34a',
                     color: 'white',
                     border: 'none',
-                    padding: '16px',
+                    padding: screenSize.isMobile ? '16px' : '12px 24px',
                     borderRadius: '8px',
-                    fontSize: '16px',
+                    fontSize: '14px',
                     fontWeight: '600',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out'
+                    transition: 'all 0.2s ease-in-out',
+                    alignSelf: screenSize.isMobile ? 'stretch' : 'flex-start'
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.backgroundColor = '#15803d'

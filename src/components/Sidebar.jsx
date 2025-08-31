@@ -3,14 +3,27 @@ import {
   Wrench,
   FileText,
   GraduationCap,
-  CreditCard
+  CreditCard,
+  Briefcase,
+  BookOpen,
+  Hammer
 } from 'lucide-react'
 
-const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
+const Sidebar = ({ sidebarOpen, setSidebarOpen, isDesktop }) => {
   const location = useLocation()
 
-  const navigation = [
+  // Main navigation items for desktop
+  const mainNavigation = [
+    { name: 'Jobs', href: '/jobs', icon: Briefcase },
+    { name: 'Opportunities', href: '/opportunities', icon: GraduationCap },
+    { name: 'Tenders', href: '/tenders', icon: FileText },
+    { name: 'Courses', href: '/courses', icon: BookOpen },
+  ]
+
+  // User-specific navigation items
+  const userNavigation = [
     { name: 'Career Tools', href: '/career-tools', icon: Wrench },
+    { name: 'Tender Tools', href: '/tender-tools', icon: Hammer },
     { name: 'My Applications', href: '/my-applications', icon: FileText },
     { name: 'My Courses', href: '/my-courses', icon: GraduationCap },
     { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
@@ -23,26 +36,28 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
   return (
     <>
       {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
+      {sidebarOpen && !isDesktop && (
         <div 
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <div style={{
-        position: 'fixed',
+        position: isDesktop ? 'static' : 'fixed',
         top: 0,
         left: 0,
-        width: '85%',
-        maxWidth: '300px',
+        width: isDesktop ? '280px' : '85%',
+        maxWidth: isDesktop ? '280px' : '300px',
         height: '100%',
         backgroundColor: 'white',
-        transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+        transform: sidebarOpen ? 'translateX(0)' : (isDesktop ? 'translateX(0)' : 'translateX(-100%)'),
         transition: 'transform 0.3s ease-in-out',
-        zIndex: 60
-      }} className="lg:translate-x-0 lg:static lg:inset-0 lg:w-64">
+        zIndex: isDesktop ? 10 : 60,
+        borderRight: isDesktop ? '1px solid #e5e7eb' : 'none',
+        boxShadow: isDesktop ? 'none' : (sidebarOpen ? '0 10px 25px rgba(0, 0, 0, 0.1)' : 'none')
+      }}>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           
           {/* Profile Section */}
@@ -52,7 +67,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
           }}>
             <Link
               to="/profile"
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => !isDesktop && setSidebarOpen(false)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -69,18 +84,34 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                 width: '50px',
                 height: '50px',
                 borderRadius: '25px',
-                backgroundColor: '#16a34a',
+                backgroundColor: '#f3f4f6',
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                marginRight: '12px'
+                marginRight: '12px',
+                overflow: 'hidden',
+                border: '2px solid #e5e7eb'
               }}>
+                <img 
+                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face&auto=format&q=80"
+                  alt="Profile"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none'
+                    e.target.nextSibling.style.display = 'flex'
+                  }}
+                />
                 <span style={{
                   fontSize: '20px',
                   fontWeight: '600',
-                  color: 'white'
+                  color: '#6b7280',
+                  display: 'none'
                 }}>
-                  U
+                  AM
                 </span>
               </div>
               <div style={{ flex: 1 }}>
@@ -90,13 +121,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                   color: '#1a1a1a',
                   marginBottom: '2px'
                 }}>
-                  User Name
+                  Alex Morgan
                 </div>
                 <div style={{
                   fontSize: '14px',
                   color: '#6b7280'
                 }}>
-                  @username
+                  @alexmorgan
                 </div>
               </div>
             </Link>
@@ -104,43 +135,108 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
 
           {/* Navigation */}
           <div style={{ flex: 1, paddingTop: '8px' }}>
-            {navigation.map((item) => {
-              const Icon = item.icon
-              const active = isActive(item.href)
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '16px 20px',
-                    textDecoration: 'none',
-                    color: active ? '#16a34a' : '#1a1a1a',
-                    fontSize: '18px',
-                    fontWeight: active ? '600' : '400',
-                    transition: 'background-color 0.2s ease-in-out',
-                    backgroundColor: active ? 'rgba(22, 163, 74, 0.1)' : 'transparent'
-                  }}
-                  onClick={() => setSidebarOpen(false)}
-                  onMouseEnter={(e) => {
-                    if (!active) {
-                      e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!active) {
-                      e.target.style.backgroundColor = 'transparent'
-                    } else {
-                      e.target.style.backgroundColor = 'rgba(22, 163, 74, 0.1)'
-                    }
-                  }}
-                >
-                  <Icon size={24} color={active ? '#16a34a' : '#6b7280'} style={{ marginRight: '16px' }} />
-                  {item.name}
-                </Link>
-              )
-            })}
+            {/* Main Navigation - Desktop only */}
+            {isDesktop && (
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{
+                  padding: '8px 20px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#6b7280',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Explore
+                </div>
+                {mainNavigation.map((item) => {
+                  const Icon = item.icon
+                  const active = isActive(item.href) || (location.pathname === '/' && item.href === '/jobs')
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '12px 20px',
+                        textDecoration: 'none',
+                        color: active ? '#16a34a' : '#1a1a1a',
+                        fontSize: '16px',
+                        fontWeight: active ? '600' : '400',
+                        transition: 'background-color 0.2s ease-in-out',
+                        backgroundColor: active ? 'rgba(22, 163, 74, 0.1)' : 'transparent'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!active) {
+                          e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!active) {
+                          e.target.style.backgroundColor = 'transparent'
+                        } else {
+                          e.target.style.backgroundColor = 'rgba(22, 163, 74, 0.1)'
+                        }
+                      }}
+                    >
+                      <Icon size={20} color={active ? '#16a34a' : '#6b7280'} style={{ marginRight: '12px' }} />
+                      {item.name}
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* User Navigation */}
+            <div>
+              <div style={{
+                padding: '8px 20px',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#6b7280',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                {isDesktop ? 'Personal' : 'Menu'}
+              </div>
+              {userNavigation.map((item) => {
+                const Icon = item.icon
+                const active = isActive(item.href)
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: isDesktop ? '12px 20px' : '16px 20px',
+                      textDecoration: 'none',
+                      color: active ? '#16a34a' : '#1a1a1a',
+                      fontSize: isDesktop ? '16px' : '18px',
+                      fontWeight: active ? '600' : '400',
+                      transition: 'background-color 0.2s ease-in-out',
+                      backgroundColor: active ? 'rgba(22, 163, 74, 0.1)' : 'transparent'
+                    }}
+                    onClick={() => !isDesktop && setSidebarOpen(false)}
+                    onMouseEnter={(e) => {
+                      if (!active) {
+                        e.target.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active) {
+                        e.target.style.backgroundColor = 'transparent'
+                      } else {
+                        e.target.style.backgroundColor = 'rgba(22, 163, 74, 0.1)'
+                      }
+                    }}
+                  >
+                    <Icon size={isDesktop ? 20 : 24} color={active ? '#16a34a' : '#6b7280'} style={{ marginRight: isDesktop ? '12px' : '16px' }} />
+                    {item.name}
+                  </Link>
+                )
+              })}
+            </div>
           </div>
 
 

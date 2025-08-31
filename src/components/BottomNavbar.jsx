@@ -5,8 +5,10 @@ import {
   FileText, 
   BookOpen
 } from 'lucide-react'
+import { useResponsive } from '../hooks/useResponsive'
 
 const BottomNavbar = () => {
+  const screenSize = useResponsive()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -25,6 +27,11 @@ const BottomNavbar = () => {
 
 
 
+  // Only show on mobile devices
+  if (!screenSize.isMobile) {
+    return null
+  }
+
   return (
     <nav style={{
       position: 'fixed',
@@ -41,7 +48,7 @@ const BottomNavbar = () => {
       display: 'flex',
       justifyContent: 'space-around',
       alignItems: 'center'
-    }} className="lg:hidden">
+    }}>
       {navigation.map((item) => {
         const Icon = item.icon
         const active = isActive(item.href)

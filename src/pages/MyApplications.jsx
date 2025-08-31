@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
+import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { Calendar, MapPin, DollarSign, Clock, Search, Eye, FileText, ExternalLink } from 'lucide-react'
 
 const MyApplications = () => {
+  const screenSize = useResponsive()
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -68,7 +70,13 @@ const MyApplications = () => {
 
   return (
     <div style={{ backgroundColor: '#f8f9fa' }}>
-      <div style={{ padding: '16px 12px 90px 12px' }}>
+      <div style={{ 
+        padding: screenSize.isDesktop 
+          ? '24px 32px 24px 32px' 
+          : screenSize.isTablet
+            ? '20px 20px 20px 20px'
+            : '16px 12px 90px 12px'
+      }}>
         
         {/* Search Bar */}
         <div style={{
@@ -155,7 +163,11 @@ const MyApplications = () => {
         </div>
 
         {/* Applications List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: `repeat(${getGridColumns(screenSize)}, 1fr)`,
+          gap: getGridGap(screenSize)
+        }}>
           {filteredApplications.length > 0 ? (
             filteredApplications.map((application) => {
               const statusColors = getStatusColor(application.status)
