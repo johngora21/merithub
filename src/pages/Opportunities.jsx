@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
+import { countries } from '../utils/countries'
 import { 
   Bookmark, 
   MapPin, 
@@ -32,6 +33,7 @@ const Opportunities = () => {
     type: [],
     category: [],
     location: [],
+    country: [],
     duration: [],
     targetAudience: [],
     amountMin: '',
@@ -49,6 +51,7 @@ const Opportunities = () => {
       amount: '$60,000',
       duration: '12 months',
       location: 'Global',
+      country: 'Global',
       deadline: '2024-04-15',
       description: 'Support exceptional early-career professors doing research in fields relevant to computer science. Recipients receive unrestricted gifts to support their research.',
       requirements: ['PhD in Computer Science or related field', 'Faculty position at a university', 'Research focus in ML, AI, or Systems'],
@@ -173,8 +176,9 @@ const Opportunities = () => {
 
   const filterOptions = {
     type: ['Fellowship', 'Scholarship', 'Grant', 'Program', 'Internship'],
-    category: ['Technology', 'Education', 'Entrepreneurship', 'Space & Science', 'Research', 'International/Cultural Exchange'],
+    category: ['Scholarships', 'Fellowships', 'Funds', 'Grants', 'Internships', 'Programs', 'Competitions', 'Research', 'Professional Development'],
     location: ['Global', 'Online', 'Remote', 'On-site'],
+    country: countries.map(country => country.name), // All 195 countries
     duration: ['Short-term (under 6 months)', 'Medium-term (6-12 months)', 'Long-term (1-2 years)', 'Multi-year (2+ years)'],
     targetAudience: ['Undergraduate students', 'Graduate students', 'Early-career professionals', 'Researchers/Faculty', 'Entrepreneurs', 'High school students']
   }
@@ -229,6 +233,7 @@ const Opportunities = () => {
       type: [],
       category: [],
       location: [],
+      country: [],
       duration: [],
       targetAudience: [],
       amountMin: '',
@@ -242,6 +247,7 @@ const Opportunities = () => {
     count += filters.type.length
     count += filters.category.length
     count += filters.location.length
+    count += filters.country.length
     count += filters.duration.length
     count += filters.targetAudience.length
     if (filters.amountMin || filters.amountMax) count += 1
@@ -1023,6 +1029,62 @@ const Opportunities = () => {
                           fontWeight: '500'
                         }}>
                           {location}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Country */}
+                <div>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    Country
+                  </h3>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(2, 1fr)', 
+                    gap: '8px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    paddingRight: '8px'
+                  }}>
+                    {filterOptions.country.map((country) => (
+                      <label key={country} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        padding: '8px 0'
+                      }}>
+                        <div style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '4px',
+                          border: '2px solid #e2e8f0',
+                          backgroundColor: filters.country.includes(country) ? '#16a34a' : 'transparent',
+                          borderColor: filters.country.includes(country) ? '#16a34a' : '#e2e8f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s ease-in-out',
+                          flexShrink: 0
+                        }}
+                        onClick={() => toggleFilter('country', country)}>
+                          {filters.country.includes(country) && (
+                            <Check size={12} color="white" />
+                          )}
+                        </div>
+                        <span style={{
+                          fontSize: '14px',
+                          color: '#1a1a1a',
+                          fontWeight: '500'
+                        }}>
+                          {country}
                         </span>
                       </label>
                     ))}

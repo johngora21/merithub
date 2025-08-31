@@ -6,7 +6,8 @@ import {
   CreditCard,
   Briefcase,
   BookOpen,
-  Hammer
+  Hammer,
+  Gavel
 } from 'lucide-react'
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, isDesktop }) => {
@@ -16,7 +17,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, isDesktop }) => {
   const mainNavigation = [
     { name: 'Jobs', href: '/jobs', icon: Briefcase },
     { name: 'Opportunities', href: '/opportunities', icon: GraduationCap },
-    { name: 'Tenders', href: '/tenders', icon: FileText },
+    { name: 'Tenders', href: '/tenders', icon: Gavel },
     { name: 'Courses', href: '/courses', icon: BookOpen },
   ]
 

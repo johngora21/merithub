@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
+import { countries } from '../utils/countries'
 import { 
   Bookmark, 
   MapPin, 
@@ -27,6 +28,7 @@ const Tenders = () => {
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState({
     sector: [],
+    country: [],
     contractValueMin: '',
     contractValueMax: '',
     currency: 'USD'
@@ -44,6 +46,7 @@ const Tenders = () => {
       contractValue: '$2.5M - $5.2M',
       duration: '18 months',
       location: 'San Francisco, CA',
+      country: 'United States',
       deadline: '2024-04-30',
       description: 'Comprehensive infrastructure development including road construction, utility upgrades, and public facility improvements across downtown district.',
       requirements: ['Valid contractor license', 'Minimum $1M bonding capacity', '5+ years infrastructure experience', 'Local workforce compliance'],
@@ -250,7 +253,8 @@ const Tenders = () => {
       'Agriculture', 'Mining', 'Real Estate', 'Retail', 'Media', 'Consulting', 
       'Security', 'Environment', 'Tourism', 'Food & Beverage', 'Infrastructure', 
       'Oil & Gas', 'Aviation', 'Maritime/Shipping', 'Water & Sanitation', 'Waste Management'
-    ]
+    ],
+    country: countries.map(country => country.name) // All 195 countries
   }
 
   const currencies = [
@@ -309,6 +313,7 @@ const Tenders = () => {
   const clearAllFilters = () => {
     setFilters({
       sector: [],
+      country: [],
       contractValueMin: '',
       contractValueMax: '',
       currency: 'USD'
@@ -318,6 +323,7 @@ const Tenders = () => {
   const getActiveFilterCount = () => {
     let count = 0
     count += filters.sector.length
+    count += filters.country.length
     if (filters.contractValueMin || filters.contractValueMax) count += 1
     return count
   }
@@ -378,6 +384,11 @@ const Tenders = () => {
 
     // Sector filter
     if (filters.sector.length > 0 && !filters.sector.includes(tender.sector)) {
+      return false
+    }
+
+    // Country filter
+    if (filters.country.length > 0 && tender.country && !filters.country.includes(tender.country)) {
       return false
     }
 
@@ -1016,6 +1027,62 @@ const Tenders = () => {
                           fontWeight: '500'
                         }}>
                           {sector}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Country */}
+                <div>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    Country
+                  </h3>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(2, 1fr)', 
+                    gap: '8px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    paddingRight: '8px'
+                  }}>
+                    {filterOptions.country.map((country) => (
+                      <label key={country} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        padding: '8px 0'
+                      }}>
+                        <div style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '4px',
+                          border: '2px solid #e2e8f0',
+                          backgroundColor: filters.country.includes(country) ? '#16a34a' : 'transparent',
+                          borderColor: filters.country.includes(country) ? '#16a34a' : '#e2e8f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s ease-in-out',
+                          flexShrink: 0
+                        }}
+                        onClick={() => toggleFilter('country', country)}>
+                          {filters.country.includes(country) && (
+                            <Check size={12} color="white" />
+                          )}
+                        </div>
+                        <span style={{
+                          fontSize: '14px',
+                          color: '#1a1a1a',
+                          fontWeight: '500'
+                        }}>
+                          {country}
                         </span>
                       </label>
                     ))}

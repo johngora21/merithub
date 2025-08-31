@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
+import { countries } from '../utils/countries'
 import { 
   Bookmark, 
   MapPin, 
@@ -29,6 +30,7 @@ const Jobs = () => {
     experienceLevel: [],
     industry: [],
     location: [],
+    country: [],
     salaryMin: '',
     salaryMax: '',
     currency: 'USD'
@@ -40,6 +42,7 @@ const Jobs = () => {
       company: 'TechCorp Solutions',
       industry: 'Technology',
       companyLocation: 'San Francisco, CA',
+      country: 'United States',
       logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
       title: 'Senior Frontend Developer',
       location: 'San Francisco, CA',
@@ -87,6 +90,7 @@ const Jobs = () => {
       company: 'Merit Platform',
       industry: 'CloudTech Solutions',
       companyLocation: 'Global',
+      country: 'Global',
       logo: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=80&h=80&fit=crop',
       title: 'Full Stack Developer',
       location: 'Remote',
@@ -217,7 +221,8 @@ const Jobs = () => {
       'Real Estate', 'Marketing', 'Consulting', 'Media', 'Government', 'Non-profit',
       'Automotive', 'Energy', 'Food & Beverage', 'Travel', 'Sports', 'Gaming'
     ],
-    location: ['Remote', 'Hybrid', 'On-site']
+    location: ['Remote', 'Hybrid', 'On-site'],
+    country: countries.map(country => country.name) // All 195 countries
   }
 
   const currencies = [
@@ -336,6 +341,11 @@ const Jobs = () => {
         }
       })
       if (!matchesLocation) return false
+    }
+
+    // Country filter
+    if (filters.country.length > 0 && job.country && !filters.country.includes(job.country)) {
+      return false
     }
 
     // Salary range filter (manual input)
@@ -1074,6 +1084,62 @@ const Jobs = () => {
                           fontWeight: '500'
                         }}>
                           {location}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Country */}
+                <div>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    Country
+                  </h3>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(2, 1fr)', 
+                    gap: '8px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    paddingRight: '8px'
+                  }}>
+                    {filterOptions.country.map((country) => (
+                      <label key={country} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        padding: '8px 0'
+                      }}>
+                        <div style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '4px',
+                          border: '2px solid #e2e8f0',
+                          backgroundColor: filters.country.includes(country) ? '#16a34a' : 'transparent',
+                          borderColor: filters.country.includes(country) ? '#16a34a' : '#e2e8f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s ease-in-out',
+                          flexShrink: 0
+                        }}
+                        onClick={() => toggleFilter('country', country)}>
+                          {filters.country.includes(country) && (
+                            <Check size={12} color="white" />
+                          )}
+                        </div>
+                        <span style={{
+                          fontSize: '14px',
+                          color: '#1a1a1a',
+                          fontWeight: '500'
+                        }}>
+                          {country}
                         </span>
                       </label>
                     ))}

@@ -1,6 +1,7 @@
 import { Bell, User, Bookmark, ArrowLeft, Plus, X, ChevronDown, Briefcase, FileText, GraduationCap, Upload, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { countries } from '../utils/countries'
 
 const Header = ({ setSidebarOpen, isDesktop, isSidebarRoute }) => {
   const navigate = useNavigate()
@@ -11,6 +12,7 @@ const Header = ({ setSidebarOpen, isDesktop, isSidebarRoute }) => {
     description: '',
     company: '',
     location: '',
+    country: '',
     workType: '',
     salary: '',
     jobType: '',
@@ -895,6 +897,8 @@ const Header = ({ setSidebarOpen, isDesktop, isSidebarRoute }) => {
                     />
                   </div>
 
+
+
                   <div style={{ 
                     display: 'grid', 
                     gridTemplateColumns: '1fr 1fr', 
@@ -927,12 +931,15 @@ const Header = ({ setSidebarOpen, isDesktop, isSidebarRoute }) => {
                         }}
                       >
                         <option value="">Select type</option>
-                        <option value="Scholarship">Scholarship</option>
-                        <option value="Fellowship">Fellowship</option>
-                        <option value="Internship">Internship</option>
-                        <option value="Grant">Grant</option>
-                        <option value="Competition">Competition</option>
-                        <option value="Program">Program</option>
+                        <option value="Scholarships">Scholarships</option>
+                        <option value="Fellowships">Fellowships</option>
+                        <option value="Funds">Funds</option>
+                        <option value="Grants">Grants</option>
+                        <option value="Internships">Internships</option>
+                        <option value="Programs">Programs</option>
+                        <option value="Competitions">Competitions</option>
+                        <option value="Research">Research</option>
+                        <option value="Professional Development">Professional Development</option>
                       </select>
                     </div>
                     
@@ -961,6 +968,53 @@ const Header = ({ setSidebarOpen, isDesktop, isSidebarRoute }) => {
                         }}
                       />
                     </div>
+                  </div>
+
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '6px',
+                      display: 'block'
+                    }}>
+                      Duration
+                    </label>
+                    <select
+                      value={formData.experience}
+                      onChange={(e) => handleInputChange('experience', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        backgroundColor: 'white',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <option value="">Select duration</option>
+                      <option value="1 month">1 month</option>
+                      <option value="2 months">2 months</option>
+                      <option value="3 months">3 months</option>
+                      <option value="4 months">4 months</option>
+                      <option value="5 months">5 months</option>
+                      <option value="6 months">6 months</option>
+                      <option value="7 months">7 months</option>
+                      <option value="8 months">8 months</option>
+                      <option value="9 months">9 months</option>
+                      <option value="10 months">10 months</option>
+                      <option value="11 months">11 months</option>
+                      <option value="1 year">1 year</option>
+                      <option value="1.5 years">1.5 years</option>
+                      <option value="2 years">2 years</option>
+                      <option value="2.5 years">2.5 years</option>
+                      <option value="3 years">3 years</option>
+                      <option value="4 years">4 years</option>
+                      <option value="5 years">5 years</option>
+                      <option value="Ongoing">Ongoing</option>
+                    </select>
                   </div>
 
                   <div style={{ marginBottom: '16px' }}>
@@ -1073,13 +1127,45 @@ const Header = ({ setSidebarOpen, isDesktop, isSidebarRoute }) => {
                       }}
                     />
                   </div>
+
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '6px',
+                      display: 'block'
+                    }}>
+                      Location
+                    </label>
+                    <select
+                      value={formData.location}
+                      onChange={(e) => handleInputChange('location', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        backgroundColor: 'white',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <option value="">Select location</option>
+                      <option value="Global">Global</option>
+                      <option value="Online">Online</option>
+                      <option value="Remote">Remote</option>
+                      <option value="On-site">On-site</option>
+                    </select>
+                  </div>
                 </>
               )}
 
               {/* Common Fields */}
-              {/* Location field - conditional for jobs based on work type */}
+              {/* Location field - conditional for jobs based on work type, excluded for opportunities (they have their own dropdown) */}
               {((formData.type === 'job' && formData.workType && formData.workType !== 'Remote') || 
-                (formData.type !== 'job')) && (
+                (formData.type === 'tender')) && (
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
                     fontSize: '14px',
@@ -1112,6 +1198,41 @@ const Header = ({ setSidebarOpen, isDesktop, isSidebarRoute }) => {
                   />
                 </div>
               )}
+
+              {/* Country field */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '6px',
+                  display: 'block'
+                }}>
+                  Country *
+                </label>
+                <select
+                  required
+                  value={formData.country}
+                  onChange={(e) => handleInputChange('country', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    backgroundColor: 'white',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="">Select country</option>
+                  {countries.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {country.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <div style={{ marginBottom: '20px' }}>
                 <label style={{
