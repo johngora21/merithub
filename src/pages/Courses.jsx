@@ -1101,7 +1101,7 @@ const Courses = () => {
                 >
                   <Icon size={screenSize.isMobile ? 12 : 14} />
                   {screenSize.isMobile ? (
-                    tab.id === 'business-plans' ? 'Plans' : tab.label
+                    tab.id === 'business-plans' ? 'Business Plans' : tab.label
                   ) : (
                     tab.label
                   )}
@@ -1446,7 +1446,7 @@ const Courses = () => {
               </div>
 
               {/* Content */}
-              <div style={{ padding: '24px' }}>
+              <div style={{ padding: screenSize.isMobile ? '16px 12px' : '24px' }}>
                 {/* Type and Status */}
                 <div style={{
                   display: 'flex',

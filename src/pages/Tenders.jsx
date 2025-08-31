@@ -1289,65 +1289,40 @@ const Tenders = () => {
             bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             zIndex: 1000,
-            padding: screenSize.isMobile ? '20px' : '40px',
-            overflow: 'auto'
-          }} onClick={() => setShowDetails(false)}>
+            display: 'flex',
+            alignItems: screenSize.isMobile ? 'flex-end' : 'center',
+            justifyContent: screenSize.isMobile ? 'stretch' : 'center',
+            transition: 'all 0.3s ease-in-out'
+          }}
+          onClick={() => setShowDetails(false)}>
             <div style={{
               backgroundColor: 'white',
-              borderRadius: '16px',
-              maxWidth: '800px',
-              margin: '0 auto',
-              maxHeight: '90vh',
-              overflow: 'auto',
-              position: 'relative'
-            }} onClick={(e) => e.stopPropagation()}>
+              width: screenSize.isMobile ? '100%' : 'min(700px, 90vw)',
+              maxHeight: screenSize.isMobile ? '80vh' : '85vh',
+              borderRadius: screenSize.isMobile ? '20px 20px 0 0' : '16px',
+              overflowY: 'auto',
+              transform: showDetails ? 'translateY(0)' : (screenSize.isMobile ? 'translateY(100%)' : 'scale(0.9)'),
+              opacity: showDetails ? 1 : 0,
+              transition: 'all 0.3s ease-in-out',
+              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            }}
+            onClick={(e) => e.stopPropagation()}>
               
               {/* Header */}
-              <div style={{
-                padding: screenSize.isMobile ? '16px 12px' : '24px',
-                borderBottom: '1px solid #f0f0f0',
-                position: 'sticky',
-                top: 0,
-                backgroundColor: 'white',
-                borderRadius: '16px 16px 0 0',
-                zIndex: 10
+              <div style={{ 
+                padding: screenSize.isMobile ? '16px 12px 0 12px' : '24px 24px 0 24px',
+                borderBottom: '1px solid #f0f0f0'
               }}>
                 <div style={{
                   display: 'flex',
-                  flexDirection: screenSize.isMobile ? 'column' : 'row',
-                  alignItems: screenSize.isMobile ? 'stretch' : 'flex-start',
-                  gap: screenSize.isMobile ? '12px' : '16px'
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  marginBottom: '20px'
                 }}>
-                  {/* Close button for mobile at top */}
-                  {screenSize.isMobile && (
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button
-                        onClick={() => setShowDetails(false)}
-                        style={{
-                          backgroundColor: '#f8f9fa',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          padding: '8px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        <X size={20} color="#64748b" />
-                      </button>
-                    </div>
-                  )}
-
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'flex-start', 
-                    gap: screenSize.isMobile ? '12px' : '16px', 
-                    flex: 1 
-                  }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: screenSize.isMobile ? '12px' : '16px', flex: 1 }}>
                     <div style={{
-                      width: screenSize.isMobile ? '48px' : '64px',
-                      height: screenSize.isMobile ? '48px' : '64px',
+                      width: screenSize.isMobile ? '48px' : '60px',
+                      height: screenSize.isMobile ? '48px' : '60px',
                       backgroundColor: getSectorColor(selectedTender.sector) + '15',
                       borderRadius: '12px',
                       display: 'flex',
@@ -1356,7 +1331,7 @@ const Tenders = () => {
                       flexShrink: 0
                     }}>
                       {React.createElement(getSectorIcon(selectedTender.sector), {
-                        size: screenSize.isMobile ? 24 : 32,
+                        size: screenSize.isMobile ? 24 : 30,
                         color: getSectorColor(selectedTender.sector)
                       })}
                     </div>
@@ -1374,9 +1349,9 @@ const Tenders = () => {
                       
                       <div style={{
                         display: 'flex',
-                        flexDirection: screenSize.isMobile ? 'column' : 'row',
-                        alignItems: screenSize.isMobile ? 'flex-start' : 'center',
-                        gap: screenSize.isMobile ? '6px' : '16px',
+                        alignItems: 'center',
+                        gap: '16px',
+                        flexWrap: 'wrap',
                         margin: '0 0 12px 0'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1395,9 +1370,8 @@ const Tenders = () => {
                       
                       <div style={{
                         display: 'flex',
-                        flexDirection: screenSize.isMobile ? 'column' : 'row',
-                        alignItems: screenSize.isMobile ? 'flex-start' : 'center',
-                        gap: screenSize.isMobile ? '8px' : '16px',
+                        alignItems: 'center',
+                        gap: '16px',
                         flexWrap: 'wrap'
                       }}>
                         <div style={{
@@ -1406,8 +1380,7 @@ const Tenders = () => {
                           padding: '4px 12px',
                           borderRadius: '12px',
                           fontSize: '12px',
-                          fontWeight: '600',
-                          alignSelf: screenSize.isMobile ? 'flex-start' : 'auto'
+                          fontWeight: '600'
                         }}>
                           {selectedTender.contractValue}
                         </div>
@@ -1427,30 +1400,24 @@ const Tenders = () => {
                     </div>
                   </div>
                   
-                  {/* Close button for desktop */}
-                  {!screenSize.isMobile && (
-                    <button
-                      onClick={() => setShowDetails(false)}
-                      style={{
-                        backgroundColor: '#f8f9fa',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        padding: '8px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0
-                      }}
-                    >
-                      <X size={20} color="#64748b" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setShowDetails(false)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      border: '1px solid #e2e8f0',
+                      padding: '8px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      marginLeft: '12px'
+                    }}
+                  >
+                    <X size={20} color="#64748b" />
+                  </button>
                 </div>
               </div>
 
               {/* Content */}
-              <div style={{ padding: '24px' }}>
+              <div style={{ padding: screenSize.isMobile ? '16px 12px' : '24px' }}>
                 
                 {/* Tender Overview */}
                 <div style={{ marginBottom: '32px' }}>

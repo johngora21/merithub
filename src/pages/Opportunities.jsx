@@ -1441,7 +1441,7 @@ const Opportunities = () => {
               </div>
 
               {/* Content */}
-              <div style={{ padding: '24px' }}>
+              <div style={{ padding: screenSize.isMobile ? '16px 12px' : '24px' }}>
                 {/* Title and Basic Info */}
                 <div style={{ marginBottom: '24px' }}>
                   <div style={{

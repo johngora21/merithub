@@ -1443,7 +1443,7 @@ const Jobs = () => {
               </div>
 
               {/* Content */}
-              <div style={{ padding: '24px' }}>
+              <div style={{ padding: screenSize.isMobile ? '16px 12px' : '24px' }}>
                 {/* Job Overview */}
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{
