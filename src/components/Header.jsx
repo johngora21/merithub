@@ -537,6 +537,28 @@ const Header = ({ setSidebarOpen, isDesktop, isSidebarRoute }) => {
                       <option value="Media">Media</option>
                       <option value="Government">Government</option>
                       <option value="Non-profit">Non-profit</option>
+                      <option value="Construction">Construction</option>
+                      <option value="Transportation">Transportation</option>
+                      <option value="Energy">Energy</option>
+                      <option value="Defense">Defense</option>
+                      <option value="Telecommunications">Telecommunications</option>
+                      <option value="Agriculture">Agriculture</option>
+                      <option value="Mining">Mining</option>
+                      <option value="Security">Security</option>
+                      <option value="Environment">Environment</option>
+                      <option value="Tourism">Tourism</option>
+                      <option value="Food & Beverage">Food & Beverage</option>
+                      <option value="Infrastructure">Infrastructure</option>
+                      <option value="Oil & Gas">Oil & Gas</option>
+                      <option value="Aviation">Aviation</option>
+                      <option value="Maritime/Shipping">Maritime/Shipping</option>
+                      <option value="Water & Sanitation">Water & Sanitation</option>
+                      <option value="Waste Management">Waste Management</option>
+                      <option value="Automotive">Automotive</option>
+                      <option value="Travel">Travel</option>
+                      <option value="Sports">Sports</option>
+                      <option value="Gaming">Gaming</option>
+                      <option value="Entertainment">Entertainment</option>
                       <option value="Other">Other</option>
                     </select>
                   </div>
