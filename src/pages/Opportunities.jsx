@@ -35,7 +35,6 @@ const Opportunities = () => {
     location: [],
     country: [],
     duration: [],
-    targetAudience: [],
     amountMin: '',
     amountMax: '',
     currency: 'USD'
@@ -179,8 +178,7 @@ const Opportunities = () => {
     category: ['Scholarships', 'Fellowships', 'Funds', 'Grants', 'Internships', 'Programs', 'Competitions', 'Research', 'Professional Development'],
     location: ['Global', 'Online', 'Remote', 'On-site'],
     country: countries.map(country => country.name), // All 195 countries
-    duration: ['Short-term (under 6 months)', 'Medium-term (6-12 months)', 'Long-term (1-2 years)', 'Multi-year (2+ years)'],
-    targetAudience: ['Undergraduate students', 'Graduate students', 'Early-career professionals', 'Researchers/Faculty', 'Entrepreneurs', 'High school students']
+    duration: ['Short-term (under 6 months)', 'Medium-term (6-12 months)', 'Long-term (1-2 years)', 'Multi-year (2+ years)']
   }
 
   const currencies = [
@@ -235,7 +233,6 @@ const Opportunities = () => {
       location: [],
       country: [],
       duration: [],
-      targetAudience: [],
       amountMin: '',
       amountMax: '',
       currency: 'USD'
@@ -249,7 +246,6 @@ const Opportunities = () => {
     count += filters.location.length
     count += filters.country.length
     count += filters.duration.length
-    count += filters.targetAudience.length
     if (filters.amountMin || filters.amountMax) count += 1
     return count
   }
@@ -343,12 +339,7 @@ const Opportunities = () => {
       if (!matchesDuration) return false
     }
 
-    // Target Audience filter - This is conceptual since we don't have this data in opportunities
-    // In a real application, you'd add targetAudience field to opportunity data
-    if (filters.targetAudience.length > 0) {
-      // For now, we'll skip this filter since the data doesn't have target audience info
-      // In production, you'd match against opportunity.targetAudience
-    }
+
 
     // Amount range filter
     if (filters.amountMin || filters.amountMax) {
@@ -1139,58 +1130,7 @@ const Opportunities = () => {
                   </div>
                 </div>
 
-                {/* Target Audience */}
-                <div>
-                  <h3 style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#1a1a1a',
-                    margin: '0 0 12px 0'
-                  }}>
-                    Target Audience
-                  </h3>
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(2, 1fr)', 
-                    gap: '8px' 
-                  }}>
-                    {filterOptions.targetAudience.map((audience) => (
-                      <label key={audience} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        cursor: 'pointer',
-                        padding: '8px 0'
-                      }}>
-                        <div style={{
-                          width: '20px',
-                          height: '20px',
-                          borderRadius: '4px',
-                          border: '2px solid #e2e8f0',
-                          backgroundColor: filters.targetAudience.includes(audience) ? '#16a34a' : 'transparent',
-                          borderColor: filters.targetAudience.includes(audience) ? '#16a34a' : '#e2e8f0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'all 0.2s ease-in-out',
-                          flexShrink: 0
-                        }}
-                        onClick={() => toggleFilter('targetAudience', audience)}>
-                          {filters.targetAudience.includes(audience) && (
-                            <Check size={12} color="white" />
-                          )}
-                        </div>
-                        <span style={{
-                          fontSize: '14px',
-                          color: '#1a1a1a',
-                          fontWeight: '500'
-                        }}>
-                          {audience}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+
 
                 {/* Amount Range */}
                 <div>

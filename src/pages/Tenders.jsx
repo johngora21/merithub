@@ -428,7 +428,7 @@ const Tenders = () => {
 
   return (
     <div style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
-      <div style={{ paddingTop: '16px', paddingBottom: '90px', padding: '16px 12px 90px 12px' }}>
+      <div style={{ padding: '16px 12px 90px 12px' }}>
         
         {/* Search Bar */}
         <div style={{
@@ -811,7 +811,9 @@ const Tenders = () => {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   paddingTop: '12px',
-                  borderTop: '1px solid #f1f5f9'
+                  borderTop: '1px solid #f1f5f9',
+                  flexWrap: 'wrap',
+                  gap: '8px'
                 }}>
                   <div style={{
                     display: 'flex',
@@ -827,7 +829,8 @@ const Tenders = () => {
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: screenSize.isMobile ? '6px' : '8px',
+                    flexShrink: 0
                   }}>
                     <button
                       onClick={(e) => {
@@ -838,7 +841,7 @@ const Tenders = () => {
                         backgroundColor: 'white',
                         color: '#64748b',
                         border: '1px solid #e2e8f0',
-                        padding: '6px 12px',
+                        padding: screenSize.isMobile ? '6px 8px' : '6px 12px',
                         borderRadius: '6px',
                         fontSize: '12px',
                         fontWeight: '600',
@@ -872,9 +875,9 @@ const Tenders = () => {
                         backgroundColor: '#16a34a',
                         color: 'white',
                         border: 'none',
-                        padding: '8px 16px',
+                        padding: screenSize.isMobile ? '6px 12px' : '8px 16px',
                         borderRadius: '8px',
-                        fontSize: '13px',
+                        fontSize: screenSize.isMobile ? '12px' : '13px',
                         fontWeight: '600',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease-in-out'
