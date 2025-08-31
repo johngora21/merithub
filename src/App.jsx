@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
-import Dashboard from './pages/Dashboard'
+
 import Jobs from './pages/Jobs'
 import Opportunities from './pages/Opportunities'
 import Tenders from './pages/Tenders'
@@ -13,6 +13,7 @@ import Subscriptions from './pages/Subscriptions'
 import Profile from './pages/Profile'
 import Notifications from './pages/Notifications'
 import Bookmarks from './pages/Bookmarks'
+import Post from './pages/Post'
 
 function App() {
   return (
@@ -20,7 +21,7 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Jobs />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/opportunities" element={<Opportunities />} />
           <Route path="/tenders" element={<Tenders />} />
@@ -33,6 +34,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/bookmarks" element={<Bookmarks />} />
+          <Route path="/post" element={<Post />} />
         </Routes>
       </Layout>
     </Router>

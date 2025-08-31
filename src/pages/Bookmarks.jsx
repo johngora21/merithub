@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useResponsive } from '../hooks/useResponsive'
+
 import { 
   Bookmark, 
   Briefcase, 
@@ -134,6 +135,7 @@ const Bookmarks = () => {
       margin: '0 auto',
       padding: screenSize.isMobile ? '16px 12px 90px 12px' : '20px'
     }}>
+
       {/* Header */}
       <div style={{
         display: 'flex',

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { countries } from '../utils/countries'
+
 import { 
   Bookmark, 
   MapPin, 
@@ -380,6 +381,7 @@ const Opportunities = () => {
     <div style={{ backgroundColor: '#f8f9fa' }}>
       <div style={{ padding: '16px 12px 90px 12px' }}>
         
+
         {/* Search Bar */}
         <div style={{
           display: 'flex',
