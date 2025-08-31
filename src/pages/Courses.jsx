@@ -1051,7 +1051,7 @@ const Courses = () => {
         <div style={{
           backgroundColor: 'white',
           borderRadius: '8px',
-          padding: '4px',
+          padding: screenSize.isMobile ? '2px' : '4px',
           marginBottom: '16px',
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
           border: '1px solid #f0f0f0'
@@ -1073,16 +1073,18 @@ const Courses = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '6px',
-                    padding: '8px 12px',
+                    gap: screenSize.isMobile ? '4px' : '6px',
+                    padding: screenSize.isMobile ? '6px 8px' : '8px 12px',
                     backgroundColor: isActive ? '#16a34a' : 'transparent',
                     color: isActive ? 'white' : '#64748b',
                     border: 'none',
                     borderRadius: '6px',
-                    fontSize: '13px',
+                    fontSize: screenSize.isMobile ? '12px' : '13px',
                     fontWeight: '600',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out'
+                    transition: 'all 0.2s ease-in-out',
+                    minHeight: 'auto',
+                    whiteSpace: 'nowrap'
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
@@ -1097,8 +1099,12 @@ const Courses = () => {
                     }
                   }}
                 >
-                  <Icon size={14} />
-                  {tab.label}
+                  <Icon size={screenSize.isMobile ? 12 : 14} />
+                  {screenSize.isMobile ? (
+                    tab.id === 'business-plans' ? 'Plans' : tab.label
+                  ) : (
+                    tab.label
+                  )}
                 </button>
               )
             })}

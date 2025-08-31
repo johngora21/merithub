@@ -40,7 +40,7 @@ const CareerTools = () => {
           display: 'flex',
           backgroundColor: 'white',
           borderRadius: '8px',
-          padding: '4px',
+          padding: screenSize.isMobile ? '2px' : '4px',
           marginBottom: '16px',
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
           border: '1px solid #f0f0f0'
@@ -51,18 +51,24 @@ const CareerTools = () => {
               onClick={() => setActiveTab(tab.id)}
               style={{
                 flex: 1,
-                padding: '8px 12px',
+                padding: screenSize.isMobile ? '6px 8px' : '8px 12px',
                 background: activeTab === tab.id ? '#16a34a' : 'transparent',
                 color: activeTab === tab.id ? 'white' : '#64748b',
                 border: 'none',
                 borderRadius: '6px',
-                fontSize: '14px',
+                fontSize: screenSize.isMobile ? '12px' : '14px',
                 fontWeight: '500',
                 cursor: 'pointer',
-                transition: 'all 0.2s ease-in-out'
+                transition: 'all 0.2s ease-in-out',
+                minHeight: 'auto',
+                whiteSpace: 'nowrap'
               }}
             >
-              {tab.name}
+              {screenSize.isMobile ? (
+                tab.id === 'my-documents' ? 'Documents' : tab.name
+              ) : (
+                tab.name
+              )}
             </button>
           ))}
         </div>

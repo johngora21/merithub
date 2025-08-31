@@ -570,12 +570,14 @@ const Tenders = () => {
               <div key={tender.id} style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: '20px',
+                padding: screenSize.isMobile ? '16px 12px' : '20px',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                 border: '1px solid #f0f0f0',
                 position: 'relative',
                 transition: 'all 0.2s ease-in-out',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                width: '100%',
+                boxSizing: 'border-box'
               }}
               onClick={() => handleTenderClick(tender)}
               onMouseEnter={(e) => {
@@ -1302,7 +1304,7 @@ const Tenders = () => {
               
               {/* Header */}
               <div style={{
-                padding: '24px',
+                padding: screenSize.isMobile ? '16px 12px' : '24px',
                 borderBottom: '1px solid #f0f0f0',
                 position: 'sticky',
                 top: 0,
@@ -1312,14 +1314,40 @@ const Tenders = () => {
               }}>
                 <div style={{
                   display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  gap: '16px'
+                  flexDirection: screenSize.isMobile ? 'column' : 'row',
+                  alignItems: screenSize.isMobile ? 'stretch' : 'flex-start',
+                  gap: screenSize.isMobile ? '12px' : '16px'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', flex: 1 }}>
+                  {/* Close button for mobile at top */}
+                  {screenSize.isMobile && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        onClick={() => setShowDetails(false)}
+                        style={{
+                          backgroundColor: '#f8f9fa',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          padding: '8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <X size={20} color="#64748b" />
+                      </button>
+                    </div>
+                  )}
+
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'flex-start', 
+                    gap: screenSize.isMobile ? '12px' : '16px', 
+                    flex: 1 
+                  }}>
                     <div style={{
-                      width: '64px',
-                      height: '64px',
+                      width: screenSize.isMobile ? '48px' : '64px',
+                      height: screenSize.isMobile ? '48px' : '64px',
                       backgroundColor: getSectorColor(selectedTender.sector) + '15',
                       borderRadius: '12px',
                       display: 'flex',
@@ -1328,14 +1356,14 @@ const Tenders = () => {
                       flexShrink: 0
                     }}>
                       {React.createElement(getSectorIcon(selectedTender.sector), {
-                        size: 32,
+                        size: screenSize.isMobile ? 24 : 32,
                         color: getSectorColor(selectedTender.sector)
                       })}
                     </div>
                     
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <h2 style={{
-                        fontSize: '20px',
+                        fontSize: screenSize.isMobile ? '18px' : '20px',
                         fontWeight: '700',
                         color: '#1a1a1a',
                         margin: '0 0 8px 0',
@@ -1346,9 +1374,9 @@ const Tenders = () => {
                       
                       <div style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        gap: '16px',
-                        flexWrap: 'wrap',
+                        flexDirection: screenSize.isMobile ? 'column' : 'row',
+                        alignItems: screenSize.isMobile ? 'flex-start' : 'center',
+                        gap: screenSize.isMobile ? '6px' : '16px',
                         margin: '0 0 12px 0'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1367,8 +1395,9 @@ const Tenders = () => {
                       
                       <div style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        gap: '16px',
+                        flexDirection: screenSize.isMobile ? 'column' : 'row',
+                        alignItems: screenSize.isMobile ? 'flex-start' : 'center',
+                        gap: screenSize.isMobile ? '8px' : '16px',
                         flexWrap: 'wrap'
                       }}>
                         <div style={{
@@ -1377,7 +1406,8 @@ const Tenders = () => {
                           padding: '4px 12px',
                           borderRadius: '12px',
                           fontSize: '12px',
-                          fontWeight: '600'
+                          fontWeight: '600',
+                          alignSelf: screenSize.isMobile ? 'flex-start' : 'auto'
                         }}>
                           {selectedTender.contractValue}
                         </div>
@@ -1397,22 +1427,25 @@ const Tenders = () => {
                     </div>
                   </div>
                   
-                  <button
-                    onClick={() => setShowDetails(false)}
-                    style={{
-                      backgroundColor: '#f8f9fa',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      padding: '8px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}
-                  >
-                    <X size={20} color="#64748b" />
-                  </button>
+                  {/* Close button for desktop */}
+                  {!screenSize.isMobile && (
+                    <button
+                      onClick={() => setShowDetails(false)}
+                      style={{
+                        backgroundColor: '#f8f9fa',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        padding: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}
+                    >
+                      <X size={20} color="#64748b" />
+                    </button>
+                  )}
                 </div>
               </div>
 
