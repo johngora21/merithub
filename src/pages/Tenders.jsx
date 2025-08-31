@@ -31,6 +31,8 @@ const Tenders = () => {
     contractValueMax: '',
     currency: 'USD'
   })
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedTender, setSelectedTender] = useState(null)
 
   const tenders = [
     {
@@ -52,7 +54,46 @@ const Tenders = () => {
       prequalificationRequired: true,
       tags: ['Construction', 'Public Works', 'Infrastructure'],
       postedTime: '3 days ago',
-      submissions: 12
+      submissions: 12,
+      detailedDescription: 'This comprehensive infrastructure development project encompasses multiple phases of urban renewal and modernization. The project will focus on upgrading critical city infrastructure including roadways, utilities, public facilities, and digital infrastructure to support the growing population and economic development in the downtown district.',
+      projectScope: [
+        'Road construction and resurfacing (15 miles)',
+        'Utility upgrades (water, sewer, electrical)',
+        'Public facility improvements (3 buildings)',
+        'Digital infrastructure installation',
+        'Traffic management systems',
+        'Public safety enhancements'
+      ],
+      technicalRequirements: [
+        'LEED Gold certification compliance',
+        'ADA accessibility standards',
+        'Environmental impact mitigation',
+        'Local labor requirements (30% minimum)',
+        'Safety protocols and certifications',
+        'Quality assurance programs'
+      ],
+      organizationInfo: {
+        name: 'City of San Francisco',
+        type: 'Municipal Government',
+        established: '1850',
+        employees: '25,000+',
+        budget: '$12.3B annually',
+        focus: 'Public services, infrastructure, community development'
+      },
+      submissionProcess: [
+        'Pre-qualification application review',
+        'Technical proposal submission',
+        'Financial proposal submission',
+        'Presentation to evaluation committee',
+        'Reference verification',
+        'Contract negotiation'
+      ],
+      evaluationCriteria: [
+        'Technical capability (40%)',
+        'Financial proposal (30%)',
+        'Past experience (20%)',
+        'Local participation (10%)'
+      ]
     },
     {
       id: '2',
@@ -73,7 +114,48 @@ const Tenders = () => {
       prequalificationRequired: true,
       tags: ['Technology', 'Cloud', 'Education', 'Data Analytics'],
       postedTime: '1 week ago',
-      submissions: 8
+      submissions: 8,
+      detailedDescription: 'The State Department of Education seeks a comprehensive digital transformation partner to modernize educational management systems across 500+ schools statewide. This initiative will enhance student information systems, implement advanced analytics for educational outcomes, and provide mobile-first solutions for students, teachers, and administrators.',
+      projectScope: [
+        'Cloud migration of legacy systems',
+        'Student information system upgrade',
+        'Data analytics and reporting platform',
+        'Mobile application development',
+        'Teacher portal and gradebook system',
+        'Parent engagement platform',
+        'Integration with third-party tools'
+      ],
+      technicalRequirements: [
+        'Microsoft Azure cloud platform',
+        'WCAG 2.1 AA accessibility compliance',
+        'FERPA and state privacy regulations',
+        'Single sign-on (SSO) integration',
+        'API-first architecture',
+        'Multi-factor authentication',
+        'Real-time data synchronization'
+      ],
+      organizationInfo: {
+        name: 'State Department of Education',
+        type: 'State Government Agency',
+        established: '1849',
+        employees: '2,500+',
+        budget: '$85B annually',
+        focus: 'K-12 education, curriculum standards, teacher certification'
+      },
+      submissionProcess: [
+        'Pre-qualification questionnaire',
+        'Technical demonstration',
+        'Security assessment',
+        'Reference evaluation',
+        'Cost proposal review',
+        'Final presentation'
+      ],
+      evaluationCriteria: [
+        'Technical solution (35%)',
+        'Implementation approach (25%)',
+        'Security and compliance (20%)',
+        'Cost effectiveness (20%)'
+      ]
     },
     {
       id: '3',
@@ -198,8 +280,16 @@ const Tenders = () => {
   }
 
   const handleViewDetails = (tenderId) => {
-    console.log('View details clicked for tender:', tenderId)
-    // Handle view details logic here
+    const tender = tenders.find(t => t.id === tenderId)
+    if (tender) {
+      setSelectedTender(tender)
+      setShowDetails(true)
+    }
+  }
+
+  const handleTenderClick = (tender) => {
+    setSelectedTender(tender)
+    setShowDetails(true)
   }
 
   const handleDownloadDocs = (tenderId) => {
@@ -473,8 +563,10 @@ const Tenders = () => {
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                 border: '1px solid #f0f0f0',
                 position: 'relative',
-                transition: 'all 0.2s ease-in-out'
+                transition: 'all 0.2s ease-in-out',
+                cursor: 'pointer'
               }}
+              onClick={() => handleTenderClick(tender)}
               onMouseEnter={(e) => {
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
                 e.currentTarget.style.transform = 'translateY(-2px)'
@@ -534,7 +626,10 @@ const Tenders = () => {
       </div>
 
                   <button
-                    onClick={() => toggleSave(tender.id)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleSave(tender.id)
+                    }}
                     style={{
                       background: savedTenders.has(tender.id) ? '#f0fdf4' : '#f8f9fa',
                       border: savedTenders.has(tender.id) ? '1px solid #16a34a' : '1px solid #e2e8f0',
@@ -722,7 +817,10 @@ const Tenders = () => {
                     gap: '8px'
                   }}>
                     <button
-                      onClick={() => handleDownloadDocs(tender.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDownloadDocs(tender.id)
+                      }}
                       style={{
                         backgroundColor: 'white',
                         color: '#64748b',
@@ -753,7 +851,10 @@ const Tenders = () => {
                   </button>
 
                     <button
-                      onClick={() => handleViewDetails(tender.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleViewDetails(tender.id)
+                      }}
                       style={{
                         backgroundColor: '#16a34a',
                         color: 'white',
@@ -1104,6 +1205,427 @@ const Tenders = () => {
                 >
                   Apply Filters ({getActiveFilterCount()})
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tender Details Modal */}
+        {showDetails && selectedTender && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1000,
+            padding: screenSize.isMobile ? '20px' : '40px',
+            overflow: 'auto'
+          }} onClick={() => setShowDetails(false)}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              maxWidth: '800px',
+              margin: '0 auto',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              position: 'relative'
+            }} onClick={(e) => e.stopPropagation()}>
+              
+              {/* Header */}
+              <div style={{
+                padding: '24px',
+                borderBottom: '1px solid #f0f0f0',
+                position: 'sticky',
+                top: 0,
+                backgroundColor: 'white',
+                borderRadius: '16px 16px 0 0',
+                zIndex: 10
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: '16px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', flex: 1 }}>
+                    <div style={{
+                      width: '64px',
+                      height: '64px',
+                      backgroundColor: getSectorColor(selectedTender.sector) + '15',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      {React.createElement(getSectorIcon(selectedTender.sector), {
+                        size: 32,
+                        color: getSectorColor(selectedTender.sector)
+                      })}
+                    </div>
+                    
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h2 style={{
+                        fontSize: '20px',
+                        fontWeight: '700',
+                        color: '#1a1a1a',
+                        margin: '0 0 8px 0',
+                        lineHeight: '1.2'
+                      }}>
+                        {selectedTender.title}
+                      </h2>
+                      
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        flexWrap: 'wrap',
+                        margin: '0 0 12px 0'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Building2 size={16} color="#64748b" />
+                          <span style={{ fontSize: '14px', color: '#64748b' }}>
+                            {selectedTender.organization}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <MapPin size={16} color="#64748b" />
+                          <span style={{ fontSize: '14px', color: '#64748b' }}>
+                            {selectedTender.location}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        flexWrap: 'wrap'
+                      }}>
+                        <div style={{
+                          backgroundColor: '#16a34a',
+                          color: 'white',
+                          padding: '4px 12px',
+                          borderRadius: '12px',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>
+                          {selectedTender.contractValue}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Clock size={14} color="#64748b" />
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>
+                            {selectedTender.duration}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Calendar size={14} color="#dc2626" />
+                          <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: '600' }}>
+                            Due: {new Date(selectedTender.deadline).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => setShowDetails(false)}
+                    style={{
+                      backgroundColor: '#f8f9fa',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      padding: '8px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <X size={20} color="#64748b" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div style={{ padding: '24px' }}>
+                
+                {/* Tender Overview */}
+                <div style={{ marginBottom: '32px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    Tender Overview
+                  </h3>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#4a5568',
+                    lineHeight: '1.6',
+                    margin: 0
+                  }}>
+                    {selectedTender.detailedDescription || selectedTender.description}
+                  </p>
+                </div>
+
+                {/* Project Scope */}
+                {selectedTender.projectScope && (
+                  <div style={{ marginBottom: '32px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 16px 0'
+                    }}>
+                      Project Scope
+                    </h3>
+                    <ul style={{
+                      listStyle: 'none',
+                      padding: 0,
+                      margin: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      {selectedTender.projectScope.map((item, index) => (
+                        <li key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '8px',
+                          fontSize: '14px',
+                          color: '#4a5568',
+                          lineHeight: '1.5'
+                        }}>
+                          <span style={{
+                            width: '6px',
+                            height: '6px',
+                            backgroundColor: '#16a34a',
+                            borderRadius: '50%',
+                            flexShrink: 0,
+                            marginTop: '6px'
+                          }}></span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Technical Requirements */}
+                {selectedTender.technicalRequirements && (
+                  <div style={{ marginBottom: '32px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 16px 0'
+                    }}>
+                      Technical Requirements
+                    </h3>
+                    <ul style={{
+                      listStyle: 'none',
+                      padding: 0,
+                      margin: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      {selectedTender.technicalRequirements.map((requirement, index) => (
+                        <li key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '8px',
+                          fontSize: '14px',
+                          color: '#4a5568',
+                          lineHeight: '1.5'
+                        }}>
+                          <Check size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: '1px' }} />
+                          {requirement}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* About the Organization */}
+                {selectedTender.organizationInfo && (
+                  <div style={{ marginBottom: '32px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 16px 0'
+                    }}>
+                      About {selectedTender.organizationInfo.name}
+                    </h3>
+                    <div style={{
+                      backgroundColor: '#f8f9fa',
+                      borderRadius: '12px',
+                      padding: '16px'
+                    }}>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#4a5568',
+                        lineHeight: '1.6',
+                        margin: '0 0 12px 0'
+                      }}>
+                        {selectedTender.organizationInfo.focus}
+                      </p>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '12px',
+                        marginTop: '12px'
+                      }}>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Type</span>
+                          <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0' }}>
+                            {selectedTender.organizationInfo.type}
+                          </p>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Established</span>
+                          <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0' }}>
+                            {selectedTender.organizationInfo.established}
+                          </p>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Employees</span>
+                          <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0' }}>
+                            {selectedTender.organizationInfo.employees}
+                          </p>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Budget</span>
+                          <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0' }}>
+                            {selectedTender.organizationInfo.budget}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Submission Process */}
+                {selectedTender.submissionProcess && (
+                  <div style={{ marginBottom: '32px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 16px 0'
+                    }}>
+                      Submission Process
+                    </h3>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px'
+                    }}>
+                      {selectedTender.submissionProcess.map((step, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '12px 16px',
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: '8px',
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          <div style={{
+                            width: '24px',
+                            height: '24px',
+                            backgroundColor: '#16a34a',
+                            color: 'white',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            flexShrink: 0
+                          }}>
+                            {index + 1}
+                          </div>
+                          <span style={{
+                            fontSize: '14px',
+                            color: '#1a1a1a',
+                            fontWeight: '500'
+                          }}>
+                            {step}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Evaluation Criteria */}
+                {selectedTender.evaluationCriteria && (
+                  <div style={{ marginBottom: '32px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 16px 0'
+                    }}>
+                      Evaluation Criteria
+                    </h3>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      {selectedTender.evaluationCriteria.map((criteria, index) => (
+                        <div key={index} style={{
+                          backgroundColor: '#e0f2fe',
+                          color: '#0369a1',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          textAlign: 'center'
+                        }}>
+                          {criteria}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Required Documents */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 16px 0'
+                  }}>
+                    Required Documents
+                  </h3>
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px'
+                  }}>
+                    {selectedTender.documents.map((doc, index) => (
+                      <span key={index} style={{
+                        backgroundColor: '#16a34a',
+                        color: 'white',
+                        padding: '6px 12px',
+                        borderRadius: '16px',
+                        fontSize: '12px',
+                        fontWeight: '600'
+                      }}>
+                        {doc}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

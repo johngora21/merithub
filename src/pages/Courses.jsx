@@ -23,6 +23,8 @@ const Courses = () => {
   const [savedItems, setSavedItems] = useState(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
   const [filters, setFilters] = useState({
     videos: {
       category: [],
@@ -63,7 +65,25 @@ const Courses = () => {
       isPro: false,
       level: 'Beginner',
       description: 'Learn React from scratch with hands-on projects and real-world applications.',
-      tags: ['React', 'JavaScript', 'Frontend']
+      tags: ['React', 'JavaScript', 'Frontend'],
+      curriculum: [
+        'React Fundamentals and JSX syntax',
+        'Component creation and props management',
+        'State management with hooks (useState, useEffect)',
+        'Event handling and form validation',
+        'API integration and data fetching',
+        'Routing with React Router',
+        'Context API for global state',
+        'Testing components with Jest',
+        'Building and deploying production apps'
+      ],
+      whatYouLearn: [
+        'Build modern React applications from scratch',
+        'Master component-based architecture',
+        'Handle complex state management',
+        'Create responsive and interactive UIs',
+        'Integrate with REST APIs and databases'
+      ]
     },
     {
       id: '2',
@@ -77,7 +97,24 @@ const Courses = () => {
       isPro: true,
       level: 'Intermediate',
       description: 'Master digital marketing strategies, SEO, social media, and analytics.',
-      tags: ['Marketing', 'SEO', 'Social Media']
+      tags: ['Marketing', 'SEO', 'Social Media'],
+      curriculum: [
+        'Digital marketing strategy fundamentals',
+        'Search Engine Optimization (SEO) techniques',
+        'Google Ads and PPC campaign management',
+        'Social media marketing across platforms',
+        'Content marketing and copywriting',
+        'Email marketing automation',
+        'Analytics and performance tracking',
+        'Conversion rate optimization'
+      ],
+      whatYouLearn: [
+        'Create comprehensive digital marketing campaigns',
+        'Optimize websites for search engines',
+        'Build engaged social media communities',
+        'Track and analyze marketing performance',
+        'Generate qualified leads and conversions'
+      ]
     },
     {
       id: '3',
@@ -91,7 +128,24 @@ const Courses = () => {
       isPro: true,
       level: 'Advanced',
       description: 'Comprehensive Python course focused on data analysis and machine learning.',
-      tags: ['Python', 'Data Science', 'Machine Learning']
+      tags: ['Python', 'Data Science', 'Machine Learning'],
+      curriculum: [
+        'Python programming fundamentals review',
+        'NumPy for numerical computing',
+        'Pandas for data manipulation and analysis',
+        'Data visualization with Matplotlib and Seaborn',
+        'Statistical analysis and hypothesis testing',
+        'Machine learning with Scikit-learn',
+        'Deep learning introduction with TensorFlow',
+        'Real-world data science projects'
+      ],
+      whatYouLearn: [
+        'Analyze complex datasets using Python',
+        'Build predictive machine learning models',
+        'Create compelling data visualizations',
+        'Perform statistical analysis and testing',
+        'Deploy data science solutions'
+      ]
     }
   ]
 
@@ -107,7 +161,24 @@ const Courses = () => {
       isPro: false,
       format: 'PDF',
       description: 'Learn how to build a sustainable business through continuous innovation.',
-      tags: ['Startup', 'Business', 'Innovation']
+      tags: ['Startup', 'Business', 'Innovation'],
+      tableOfContents: [
+        'Chapter 1: The Lean Startup Methodology',
+        'Chapter 2: Build-Measure-Learn Feedback Loop',
+        'Chapter 3: Minimum Viable Product (MVP)',
+        'Chapter 4: Validated Learning and Testing',
+        'Chapter 5: Innovation Accounting',
+        'Chapter 6: Pivot or Persevere Decisions',
+        'Chapter 7: Scaling and Growth Strategies',
+        'Chapter 8: Organizational Learning'
+      ],
+      keyTopics: [
+        'Customer development process',
+        'Rapid prototyping and testing',
+        'Lean analytics and metrics',
+        'Product-market fit validation',
+        'Sustainable business model design'
+      ]
     },
     {
       id: '2',
@@ -120,7 +191,23 @@ const Courses = () => {
       isPro: true,
       format: 'EPUB',
       description: 'Master the design thinking process to drive innovation in your organization.',
-      tags: ['Design', 'Innovation', 'Strategy']
+      tags: ['Design', 'Innovation', 'Strategy'],
+      tableOfContents: [
+        'Part I: The Design Thinking Mindset',
+        'Part II: Empathy and Human-Centered Design',
+        'Part III: Define and Problem Framing',
+        'Part IV: Ideation and Creative Thinking',
+        'Part V: Prototyping and Testing',
+        'Part VI: Implementation and Scaling',
+        'Part VII: Building Design Culture'
+      ],
+      keyTopics: [
+        'Human-centered design principles',
+        'Empathy mapping and user research',
+        'Creative problem-solving techniques',
+        'Rapid prototyping methods',
+        'Innovation culture development'
+      ]
     },
     {
       id: '3',
@@ -133,7 +220,24 @@ const Courses = () => {
       isPro: true,
       format: 'PDF',
       description: 'Complete guide to financial planning, budgeting, and investment strategies.',
-      tags: ['Finance', 'Budgeting', 'Investment']
+      tags: ['Finance', 'Budgeting', 'Investment'],
+      tableOfContents: [
+        'Chapter 1: Financial Planning Fundamentals',
+        'Chapter 2: Budgeting and Cash Flow Management',
+        'Chapter 3: Investment Principles and Strategies',
+        'Chapter 4: Risk Management and Insurance',
+        'Chapter 5: Retirement Planning',
+        'Chapter 6: Tax Planning and Optimization',
+        'Chapter 7: Estate Planning Basics',
+        'Chapter 8: Financial Analysis and Ratios'
+      ],
+      keyTopics: [
+        'Personal and business budgeting',
+        'Investment portfolio diversification',
+        'Financial risk assessment',
+        'Tax-efficient strategies',
+        'Long-term wealth building'
+      ]
     }
   ]
 
@@ -149,7 +253,28 @@ const Courses = () => {
       isPro: false,
       format: 'DOCX',
       description: 'Comprehensive business plan template specifically designed for tech startups.',
-      tags: ['Startup', 'Technology', 'Template']
+      tags: ['Startup', 'Technology', 'Template'],
+      planSections: [
+        'Executive Summary',
+        'Company Description and Vision',
+        'Market Analysis and Target Audience',
+        'Competitive Analysis',
+        'Technology Architecture and Development',
+        'Product Roadmap and Features',
+        'Marketing and Sales Strategy',
+        'Management Team and Organization',
+        'Financial Projections and Funding',
+        'Risk Analysis and Mitigation',
+        'Implementation Timeline',
+        'Appendices and Supporting Documents'
+      ],
+      includes: [
+        'Pre-filled technology startup examples',
+        'Financial projection templates',
+        'Market research frameworks',
+        'Investor presentation slides',
+        'Legal checklist and requirements'
+      ]
     },
     {
       id: '2',
@@ -162,7 +287,26 @@ const Courses = () => {
       isPro: true,
       format: 'PDF + DOCX',
       description: 'Complete business plan template for restaurant and food service businesses.',
-      tags: ['Restaurant', 'Food Service', 'Business Plan']
+      tags: ['Restaurant', 'Food Service', 'Business Plan'],
+      planSections: [
+        'Executive Summary',
+        'Restaurant Concept and Cuisine',
+        'Market Analysis and Location Study',
+        'Menu Development and Pricing',
+        'Kitchen Layout and Equipment',
+        'Staffing and Operations Plan',
+        'Marketing and Customer Acquisition',
+        'Financial Projections and Costs',
+        'Permits and Legal Requirements',
+        'Growth and Expansion Strategy'
+      ],
+      includes: [
+        'Sample restaurant financial models',
+        'Menu costing spreadsheets',
+        'Location analysis templates',
+        'Staff training checklists',
+        'Marketing campaign examples'
+      ]
     },
     {
       id: '3',
@@ -175,7 +319,28 @@ const Courses = () => {
       isPro: true,
       format: 'DOCX + Excel',
       description: 'Professional business plan template for online retail and e-commerce ventures.',
-      tags: ['E-commerce', 'Online Business', 'Retail']
+      tags: ['E-commerce', 'Online Business', 'Retail'],
+      planSections: [
+        'Executive Summary',
+        'E-commerce Business Model',
+        'Product Catalog and Sourcing',
+        'Target Market and Customer Personas',
+        'Platform and Technology Stack',
+        'Digital Marketing Strategy',
+        'Supply Chain and Logistics',
+        'Customer Service and Support',
+        'Financial Projections and Metrics',
+        'Legal and Compliance Requirements',
+        'Growth and Scaling Strategy',
+        'Exit Strategy and Valuation'
+      ],
+      includes: [
+        'E-commerce financial model with KPIs',
+        'Product sourcing and vendor templates',
+        'Digital marketing budget calculator',
+        'Customer acquisition cost analysis',
+        'Inventory management templates'
+      ]
     }
   ]
 
@@ -183,14 +348,14 @@ const Courses = () => {
     videos: {
       category: ['Business', 'Technology', 'Marketing', 'Finance', 'Design', 'Health', 'Education', 'Personal Development', 'Leadership', 'Entrepreneurship', 'Data Science', 'Programming', 'Photography', 'Music', 'Art'],
       level: ['Beginner', 'Intermediate', 'Advanced', 'Expert'],
-      language: ['English', 'Spanish', 'French', 'German', 'Mandarin', 'Arabic', 'Hindi', 'Portuguese'],
+      language: ['English', 'Swahili', 'Arabic', 'French', 'Spanish', 'Portuguese', 'Italian', 'Dutch'],
       price: ['Free', 'Paid'],
       format: ['Course', 'Tutorial', 'Webinar', 'Documentary', 'Interview', 'Workshop']
     },
     books: {
       category: ['Business', 'Technology', 'Self-Help', 'Biography', 'Finance', 'Marketing', 'Leadership', 'Health', 'Education', 'Fiction', 'Non-Fiction', 'History', 'Science', 'Philosophy'],
       format: ['PDF', 'EPUB', 'MOBI', 'Audiobook', 'Physical'],
-      language: ['English', 'Spanish', 'French', 'German', 'Mandarin', 'Arabic', 'Hindi', 'Portuguese'],
+      language: ['English', 'Swahili', 'Arabic', 'French', 'Spanish', 'Portuguese', 'Italian', 'Dutch'],
       authorType: ['Bestselling Author', 'Industry Expert', 'Academic', 'Entrepreneur']
     },
     businessPlans: {
@@ -208,6 +373,11 @@ const Courses = () => {
       newSaved.add(itemId)
     }
     setSavedItems(newSaved)
+  }
+
+  const handleCardClick = (item, type) => {
+    setSelectedItem({ ...item, type })
+    setShowDetails(true)
   }
 
   const toggleFilter = (category, value) => {
@@ -288,8 +458,10 @@ const Courses = () => {
       overflow: 'hidden',
       boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
       border: '1px solid #f0f0f0',
-      transition: 'all 0.2s ease-in-out'
+      transition: 'all 0.2s ease-in-out',
+      cursor: 'pointer'
     }}
+    onClick={() => handleCardClick(video, 'video')}
     onMouseEnter={(e) => {
       e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
       e.currentTarget.style.transform = 'translateY(-2px)'
@@ -315,7 +487,10 @@ const Courses = () => {
           right: '12px'
         }}>
           <button
-            onClick={() => toggleSave(video.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleSave(video.id)
+            }}
             style={{
               background: savedItems.has(video.id) ? 'rgba(22, 163, 74, 0.9)' : 'rgba(255, 255, 255, 0.9)',
               border: 'none',
@@ -415,13 +590,48 @@ const Courses = () => {
 
         {renderStars(video.rating)}
 
-                <div style={{ marginTop: '12px' }}>
-          <button style={{
-            width: '100%',
+                <div style={{ 
+          display: 'flex', 
+          gap: '8px', 
+          marginTop: '12px' 
+        }}>
+          <button 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+            flex: 1,
+            backgroundColor: 'white',
+            color: '#16a34a',
+            border: '1px solid #16a34a',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            fontSize: '13px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease-in-out',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = '#16a34a'
+            e.target.style.color = 'white'
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'white'
+            e.target.style.color = '#16a34a'
+          }}>
+            <Play size={14} />
+            Watch
+          </button>
+          <button 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+            flex: 1,
             backgroundColor: '#16a34a',
             color: 'white',
             border: 'none',
-            padding: '8px 16px',
+            padding: '8px 12px',
             borderRadius: '6px',
             fontSize: '13px',
             fontWeight: '600',
@@ -440,8 +650,8 @@ const Courses = () => {
           }}>
             <Download size={14} />
             Download
-            </button>
-          </div>
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -453,8 +663,10 @@ const Courses = () => {
       overflow: 'hidden',
       boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
       border: '1px solid #f0f0f0',
-      transition: 'all 0.2s ease-in-out'
+      transition: 'all 0.2s ease-in-out',
+      cursor: 'pointer'
     }}
+    onClick={() => handleCardClick(book, 'book')}
     onMouseEnter={(e) => {
       e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
       e.currentTarget.style.transform = 'translateY(-2px)'
@@ -480,7 +692,10 @@ const Courses = () => {
           right: '12px'
         }}>
           <button
-            onClick={() => toggleSave(book.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleSave(book.id)
+            }}
             style={{
               background: savedItems.has(book.id) ? 'rgba(22, 163, 74, 0.9)' : 'rgba(255, 255, 255, 0.9)',
               border: 'none',
@@ -568,7 +783,9 @@ const Courses = () => {
           gap: '8px', 
           marginTop: '12px' 
         }}>
-          <button style={{
+          <button 
+            onClick={(e) => e.stopPropagation()}
+            style={{
             flex: 1,
             backgroundColor: 'white',
             color: '#64748b',
@@ -586,7 +803,9 @@ const Courses = () => {
             <Eye size={12} />
             Preview
           </button>
-          <button style={{
+          <button 
+            onClick={(e) => e.stopPropagation()}
+            style={{
             flex: 1,
             backgroundColor: '#16a34a',
             color: 'white',
@@ -616,8 +835,10 @@ const Courses = () => {
       overflow: 'hidden',
       boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
       border: '1px solid #f0f0f0',
-      transition: 'all 0.2s ease-in-out'
+      transition: 'all 0.2s ease-in-out',
+      cursor: 'pointer'
     }}
+    onClick={() => handleCardClick(plan, 'business-plan')}
     onMouseEnter={(e) => {
       e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
       e.currentTarget.style.transform = 'translateY(-2px)'
@@ -643,7 +864,10 @@ const Courses = () => {
           right: '12px'
         }}>
           <button
-            onClick={() => toggleSave(plan.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleSave(plan.id)
+            }}
             style={{
               background: savedItems.has(plan.id) ? 'rgba(22, 163, 74, 0.9)' : 'rgba(255, 255, 255, 0.9)',
               border: 'none',
@@ -732,7 +956,9 @@ const Courses = () => {
           gap: '8px', 
           marginTop: '12px' 
         }}>
-          <button style={{
+          <button 
+            onClick={(e) => e.stopPropagation()}
+            style={{
             flex: 1,
             backgroundColor: 'white',
             color: '#64748b',
@@ -748,9 +974,11 @@ const Courses = () => {
             gap: '4px'
           }}>
             <Eye size={12} />
-                    Preview
-                  </button>
-          <button style={{
+            Preview
+          </button>
+          <button 
+            onClick={(e) => e.stopPropagation()}
+            style={{
             flex: 1,
             backgroundColor: '#16a34a',
             color: 'white',
@@ -1146,6 +1374,433 @@ const Courses = () => {
                 >
                   Apply Filters ({getActiveFilterCount()})
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Details Modal */}
+        {showDetails && selectedItem && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: screenSize.isMobile ? 'flex-end' : 'center',
+            justifyContent: screenSize.isMobile ? 'stretch' : 'center',
+            transition: 'all 0.3s ease-in-out'
+          }}
+          onClick={() => setShowDetails(false)}>
+            <div style={{
+              backgroundColor: 'white',
+              width: screenSize.isMobile ? '100%' : 'min(600px, 90vw)',
+              maxHeight: screenSize.isMobile ? '80vh' : '85vh',
+              borderRadius: screenSize.isMobile ? '20px 20px 0 0' : '16px',
+              overflowY: 'auto',
+              transform: showDetails ? 'translateY(0)' : (screenSize.isMobile ? 'translateY(100%)' : 'scale(0.9)'),
+              opacity: showDetails ? 1 : 0,
+              transition: 'all 0.3s ease-in-out',
+              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            }}
+            onClick={(e) => e.stopPropagation()}>
+              
+              {/* Header Image */}
+              <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
+                <img 
+                  src={selectedItem.thumbnail || selectedItem.cover || selectedItem.preview} 
+                  alt={selectedItem.title}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px'
+                }}>
+                  <button
+                    onClick={() => setShowDetails(false)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      border: 'none',
+                      padding: '8px',
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <X size={20} color="#64748b" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div style={{ padding: '24px' }}>
+                {/* Type and Status */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '16px'
+                }}>
+                  <span style={{
+                    fontSize: '12px',
+                    color: selectedItem.type === 'video' ? '#16a34a' : selectedItem.type === 'book' ? '#7c3aed' : '#dc2626',
+                    backgroundColor: selectedItem.type === 'video' ? '#f0fdf4' : selectedItem.type === 'book' ? '#f3e8ff' : '#fee2e2',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontWeight: '600',
+                    textTransform: 'uppercase'
+                  }}>
+                    {selectedItem.type === 'business-plan' ? 'Business Plan' : selectedItem.type}
+                  </span>
+                  <span style={{
+                    fontSize: '12px',
+                    color: 'white',
+                    backgroundColor: selectedItem.isPro ? '#3b82f6' : '#16a34a',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontWeight: '600'
+                  }}>
+                    {selectedItem.isPro ? 'PRO' : 'FREE'}
+                  </span>
+                </div>
+
+                {/* Title */}
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: '#1a1a1a',
+                  margin: '0 0 8px 0',
+                  lineHeight: '1.3'
+                }}>
+                  {selectedItem.title}
+                </h2>
+
+                {/* Author/Instructor */}
+                <p style={{
+                  fontSize: '16px',
+                  color: '#64748b',
+                  margin: '0 0 16px 0'
+                }}>
+                  {selectedItem.type === 'video' ? `by ${selectedItem.instructor}` : 
+                   selectedItem.type === 'book' ? `by ${selectedItem.author}` : 
+                   selectedItem.category}
+                </p>
+
+                {/* Stats */}
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '16px',
+                  marginBottom: '20px',
+                  fontSize: '14px',
+                  color: '#64748b'
+                }}>
+                  {selectedItem.type === 'video' && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={14} />
+                        {selectedItem.duration}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Play size={14} />
+                        {selectedItem.lessons} lessons
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Users size={14} />
+                        {selectedItem.students?.toLocaleString()} students
+                      </div>
+                    </>
+                  )}
+                  {selectedItem.type === 'book' && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <BookOpen size={14} />
+                        {selectedItem.pages} pages
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <FileText size={14} />
+                        {selectedItem.format}
+                      </div>
+                    </>
+                  )}
+                  {selectedItem.type === 'business-plan' && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <FileText size={14} />
+                        {selectedItem.pages} pages
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Users size={14} />
+                        {selectedItem.downloads} downloads
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Rating */}
+                {selectedItem.rating && (
+                  <div style={{ marginBottom: '20px' }}>
+                    {renderStars(selectedItem.rating)}
+                  </div>
+                )}
+
+                {/* Description */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 8px 0'
+                  }}>
+                    Overview
+                  </h3>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#64748b',
+                    lineHeight: '1.6',
+                    margin: 0
+                  }}>
+                    {selectedItem.description}
+                  </p>
+                </div>
+
+                {/* Curriculum for Videos */}
+                {selectedItem.type === 'video' && selectedItem.curriculum && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      Course Curriculum
+                    </h3>
+                    <div style={{ 
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '8px',
+                      padding: '16px'
+                    }}>
+                      {selectedItem.curriculum.map((item, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          marginBottom: index === selectedItem.curriculum.length - 1 ? '0' : '8px',
+                          fontSize: '14px',
+                          color: '#374151'
+                        }}>
+                          <span style={{
+                            color: '#16a34a',
+                            fontWeight: '600',
+                            marginRight: '8px',
+                            minWidth: '20px'
+                          }}>
+                            {index + 1}.
+                          </span>
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* What You'll Learn for Videos */}
+                {selectedItem.type === 'video' && selectedItem.whatYouLearn && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      What You'll Learn
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {selectedItem.whatYouLearn.map((item, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          fontSize: '14px',
+                          color: '#374151'
+                        }}>
+                          <span style={{
+                            color: '#16a34a',
+                            marginRight: '8px',
+                            marginTop: '2px'
+                          }}>✓</span>
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Table of Contents for Books */}
+                {selectedItem.type === 'book' && selectedItem.tableOfContents && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      Table of Contents
+                    </h3>
+                    <div style={{ 
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '8px',
+                      padding: '16px'
+                    }}>
+                      {selectedItem.tableOfContents.map((chapter, index) => (
+                        <div key={index} style={{
+                          padding: '6px 0',
+                          borderBottom: index === selectedItem.tableOfContents.length - 1 ? 'none' : '1px solid #e2e8f0',
+                          fontSize: '14px',
+                          color: '#374151'
+                        }}>
+                          {chapter}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Key Topics for Books */}
+                {selectedItem.type === 'book' && selectedItem.keyTopics && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      Key Topics Covered
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {selectedItem.keyTopics.map((topic, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          fontSize: '14px',
+                          color: '#374151'
+                        }}>
+                          <span style={{
+                            color: '#7c3aed',
+                            marginRight: '8px',
+                            marginTop: '2px'
+                          }}>•</span>
+                          <span>{topic}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Plan Sections for Business Plans */}
+                {selectedItem.type === 'business-plan' && selectedItem.planSections && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      Plan Sections
+                    </h3>
+                    <div style={{ 
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '8px',
+                      padding: '16px'
+                    }}>
+                      {selectedItem.planSections.map((section, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          marginBottom: index === selectedItem.planSections.length - 1 ? '0' : '8px',
+                          fontSize: '14px',
+                          color: '#374151'
+                        }}>
+                          <span style={{
+                            color: '#dc2626',
+                            fontWeight: '600',
+                            marginRight: '8px',
+                            minWidth: '20px'
+                          }}>
+                            {index + 1}.
+                          </span>
+                          <span>{section}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Includes for Business Plans */}
+                {selectedItem.type === 'business-plan' && selectedItem.includes && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      What's Included
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {selectedItem.includes.map((item, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          fontSize: '14px',
+                          color: '#374151'
+                        }}>
+                          <span style={{
+                            color: '#dc2626',
+                            marginRight: '8px',
+                            marginTop: '2px'
+                          }}>✓</span>
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tags */}
+                {selectedItem.tags && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 8px 0'
+                    }}>
+                      Topics
+                    </h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {selectedItem.tags.map((tag, index) => (
+                        <span key={index} style={{
+                          fontSize: '12px',
+                          color: '#16a34a',
+                          backgroundColor: '#f0fdf4',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontWeight: '500'
+                        }}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+
               </div>
             </div>
           </div>

@@ -26,6 +26,8 @@ const Opportunities = () => {
   const [savedOpportunities, setSavedOpportunities] = useState(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedOpportunity, setSelectedOpportunity] = useState(null)
   const [filters, setFilters] = useState({
     type: [],
     category: [],
@@ -54,7 +56,28 @@ const Opportunities = () => {
       applicants: 156,
       isUrgent: true,
       tags: ['Machine Learning', 'Research', 'Academia'],
-      postedTime: '2 days ago'
+      postedTime: '2 days ago',
+      detailedDescription: 'The Google Research Scholar Program supports early-career professors who are pursuing research in fields relevant to computer science. The program provides unrestricted gifts to support research activities and encourages collaboration between faculty and Google researchers.',
+      eligibilityCriteria: [
+        'Hold a PhD in Computer Science, Engineering, or a related technical field',
+        'Be in an early-career academic position at a university',
+        'Demonstrate research excellence in machine learning, AI, systems, or related areas',
+        'Show potential for significant research impact',
+        'Be able to collaborate with Google research teams'
+      ],
+      selectionProcess: [
+        'Initial application review by Google Research team',
+        'Technical evaluation of research proposal',
+        'Assessment of academic track record and potential',
+        'Final selection by committee of Google researchers',
+        'Notification of results within 8-10 weeks'
+      ],
+      programDetails: {
+        fundingAmount: '$60,000 unrestricted research gift',
+        duration: '12 months with possibility of renewal',
+        mentorship: 'Access to Google Research mentors and collaborators',
+        networking: 'Invitation to exclusive research symposiums and events'
+      }
     },
     {
       id: '2',
@@ -180,6 +203,11 @@ const Opportunities = () => {
       newSaved.add(opportunityId)
     }
     setSavedOpportunities(newSaved)
+  }
+
+  const handleOpportunityClick = (opportunity) => {
+    setSelectedOpportunity(opportunity)
+    setShowDetails(true)
   }
 
   const handleApply = (opportunityId) => {
@@ -496,8 +524,10 @@ const Opportunities = () => {
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                 border: '1px solid #f0f0f0',
                 position: 'relative',
-                transition: 'all 0.2s ease-in-out'
+                transition: 'all 0.2s ease-in-out',
+                cursor: 'pointer'
               }}
+              onClick={() => handleOpportunityClick(opportunity)}
               onMouseEnter={(e) => {
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
                 e.currentTarget.style.transform = 'translateY(-2px)'
@@ -732,7 +762,10 @@ const Opportunities = () => {
                     </div>
 
                     <button
-                      onClick={() => handleApply(opportunity.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleApply(opportunity.id)
+                      }}
                       style={{
                         backgroundColor: '#16a34a',
                         color: 'white',
@@ -1280,6 +1313,372 @@ const Opportunities = () => {
                 >
                   Apply Filters ({getActiveFilterCount()})
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Opportunity Details Modal */}
+        {showDetails && selectedOpportunity && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: screenSize.isMobile ? 'flex-end' : 'center',
+            justifyContent: screenSize.isMobile ? 'stretch' : 'center',
+            transition: 'all 0.3s ease-in-out'
+          }}
+          onClick={() => setShowDetails(false)}>
+            <div style={{
+              backgroundColor: 'white',
+              width: screenSize.isMobile ? '100%' : 'min(700px, 90vw)',
+              maxHeight: screenSize.isMobile ? '80vh' : '85vh',
+              borderRadius: screenSize.isMobile ? '20px 20px 0 0' : '16px',
+              overflowY: 'auto',
+              transform: showDetails ? 'translateY(0)' : (screenSize.isMobile ? 'translateY(100%)' : 'scale(0.9)'),
+              opacity: showDetails ? 1 : 0,
+              transition: 'all 0.3s ease-in-out',
+              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            }}
+            onClick={(e) => e.stopPropagation()}>
+              
+              {/* Header Image */}
+              <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
+                <img 
+                  src={selectedOpportunity.poster} 
+                  alt={selectedOpportunity.title}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px'
+                }}>
+                  <button
+                    onClick={() => setShowDetails(false)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      border: 'none',
+                      padding: '8px',
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <X size={20} color="#64748b" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div style={{ padding: '24px' }}>
+                {/* Title and Basic Info */}
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: '12px'
+                  }}>
+                    <span style={{
+                      fontSize: '12px',
+                      color: '#3b82f6',
+                      backgroundColor: '#eff6ff',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontWeight: '600',
+                      textTransform: 'uppercase'
+                    }}>
+                      {selectedOpportunity.type}
+                    </span>
+                    <span style={{
+                      fontSize: '12px',
+                      color: '#dc2626',
+                      backgroundColor: '#fee2e2',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontWeight: '600'
+                    }}>
+                      Deadline: {new Date(selectedOpportunity.deadline).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <h2 style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: '#1a1a1a',
+                    margin: '0 0 8px 0',
+                    lineHeight: '1.3'
+                  }}>
+                    {selectedOpportunity.title}
+                  </h2>
+
+                  <p style={{
+                    fontSize: '16px',
+                    color: '#64748b',
+                    margin: '0 0 16px 0'
+                  }}>
+                    {selectedOpportunity.category}
+                  </p>
+
+                  {/* Key Stats */}
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '16px',
+                    marginBottom: '20px',
+                    fontSize: '14px',
+                    color: '#64748b'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <DollarSign size={14} />
+                      {selectedOpportunity.amount}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Clock size={14} />
+                      {selectedOpportunity.duration}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <MapPin size={14} />
+                      {selectedOpportunity.location}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Users size={14} />
+                      {selectedOpportunity.applicants} applicants
+                    </div>
+                  </div>
+                </div>
+
+                {/* Overview */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 8px 0'
+                  }}>
+                    Overview
+                  </h3>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#64748b',
+                    lineHeight: '1.6',
+                    margin: 0
+                  }}>
+                    {selectedOpportunity.detailedDescription || selectedOpportunity.description}
+                  </p>
+                </div>
+
+                {/* Eligibility Criteria */}
+                {selectedOpportunity.eligibilityCriteria && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      Eligibility Criteria
+                    </h3>
+                    <div style={{ 
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '8px',
+                      padding: '16px'
+                    }}>
+                      {selectedOpportunity.eligibilityCriteria.map((criteria, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          marginBottom: index === selectedOpportunity.eligibilityCriteria.length - 1 ? '0' : '8px',
+                          fontSize: '14px',
+                          color: '#374151'
+                        }}>
+                          <span style={{
+                            color: '#3b82f6',
+                            marginRight: '8px',
+                            marginTop: '2px'
+                          }}>•</span>
+                          <span>{criteria}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Requirements */}
+                {selectedOpportunity.requirements && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      Requirements
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {selectedOpportunity.requirements.map((req, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          fontSize: '14px',
+                          color: '#374151'
+                        }}>
+                          <span style={{
+                            color: '#dc2626',
+                            marginRight: '8px',
+                            marginTop: '2px'
+                          }}>✓</span>
+                          <span>{req}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Selection Process */}
+                {selectedOpportunity.selectionProcess && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      Selection Process
+                    </h3>
+                    <div style={{ 
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '8px',
+                      padding: '16px'
+                    }}>
+                      {selectedOpportunity.selectionProcess.map((step, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          marginBottom: index === selectedOpportunity.selectionProcess.length - 1 ? '0' : '8px',
+                          fontSize: '14px',
+                          color: '#374151'
+                        }}>
+                          <span style={{
+                            color: '#16a34a',
+                            fontWeight: '600',
+                            marginRight: '8px',
+                            minWidth: '20px'
+                          }}>
+                            {index + 1}.
+                          </span>
+                          <span>{step}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Program Details */}
+                {selectedOpportunity.programDetails && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      Program Details
+                    </h3>
+                    <div style={{ 
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '8px',
+                      padding: '16px'
+                    }}>
+                      {Object.entries(selectedOpportunity.programDetails).map(([key, value], index) => (
+                        <div key={index} style={{
+                          marginBottom: index === Object.entries(selectedOpportunity.programDetails).length - 1 ? '0' : '12px',
+                          fontSize: '14px'
+                        }}>
+                          <span style={{ 
+                            color: '#64748b',
+                            textTransform: 'capitalize',
+                            fontWeight: '500'
+                          }}>
+                            {key.replace(/([A-Z])/g, ' $1').toLowerCase()}: 
+                          </span>
+                          <span style={{ color: '#374151', marginLeft: '4px' }}>
+                            {value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Benefits & Tags */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr',
+                  gap: '20px',
+                  marginBottom: '24px'
+                }}>
+                  {/* Benefits */}
+                  <div>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 8px 0'
+                    }}>
+                      Benefits & Rewards
+                    </h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {selectedOpportunity.benefits.map((benefit, index) => (
+                        <span key={index} style={{
+                          fontSize: '12px',
+                          color: '#16a34a',
+                          backgroundColor: '#f0fdf4',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontWeight: '500'
+                        }}>
+                          {benefit}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tags */}
+                  <div>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 8px 0'
+                    }}>
+                      Topics & Skills
+                    </h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {selectedOpportunity.tags.map((tag, index) => (
+                        <span key={index} style={{
+                          fontSize: '12px',
+                          color: '#6366f1',
+                          backgroundColor: '#eef2ff',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontWeight: '500'
+                        }}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

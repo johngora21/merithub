@@ -22,6 +22,8 @@ const Jobs = () => {
   const [savedJobs, setSavedJobs] = useState(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedJob, setSelectedJob] = useState(null)
   const [filters, setFilters] = useState({
     jobType: [],
     experienceLevel: [],
@@ -52,7 +54,33 @@ const Jobs = () => {
       isRemote: true,
       urgentHiring: false,
       rating: 4.5,
-      postedBy: 'company'
+      postedBy: 'company',
+      responsibilities: [
+        'Develop and maintain responsive web applications using React and TypeScript',
+        'Collaborate with UX/UI designers to implement pixel-perfect designs',
+        'Build reusable components and maintain component libraries',
+        'Optimize applications for maximum speed and scalability',
+        'Work with backend developers to integrate APIs and services',
+        'Participate in code reviews and maintain coding standards',
+        'Debug and troubleshoot technical issues across browsers',
+        'Mentor junior developers and contribute to technical documentation'
+      ],
+      requirements: [
+        '5+ years of experience with React and modern JavaScript',
+        'Strong proficiency in TypeScript and ES6+',
+        'Experience with state management (Redux, Context API)',
+        'Knowledge of build tools (Webpack, Vite) and testing frameworks',
+        'Familiarity with Node.js and RESTful API integration',
+        'Experience with AWS services and cloud deployment',
+        'Strong understanding of responsive design and CSS',
+        'Excellent problem-solving and communication skills'
+      ],
+      companyInfo: {
+        size: '200-500 employees',
+        founded: '2018',
+        funding: 'Series B',
+        mission: 'Building innovative technology solutions that transform businesses'
+      }
     },
     {
       id: '2',
@@ -169,6 +197,11 @@ const Jobs = () => {
       newSavedJobs.add(jobId)
     }
     setSavedJobs(newSavedJobs)
+  }
+
+  const handleJobClick = (job) => {
+    setSelectedJob(job)
+    setShowDetails(true)
   }
 
   const handleApply = (jobId) => {
@@ -472,8 +505,10 @@ const Jobs = () => {
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
               border: '1px solid #f0f0f0',
               position: 'relative',
-              transition: 'all 0.2s ease-in-out'
+              transition: 'all 0.2s ease-in-out',
+              cursor: 'pointer'
             }}
+            onClick={() => handleJobClick(job)}
             onMouseEnter={(e) => {
               e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
               e.currentTarget.style.transform = 'translateY(-2px)'
@@ -544,7 +579,10 @@ const Jobs = () => {
                 </div>
                 
                 <button
-                  onClick={() => toggleSave(job.id)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleSave(job.id)
+                  }}
                   style={{
                     background: savedJobs.has(job.id) ? '#f0fdf4' : '#f8f9fa',
                     border: savedJobs.has(job.id) ? '1px solid #16a34a' : '1px solid #e2e8f0',
@@ -728,7 +766,10 @@ const Jobs = () => {
                 </div>
 
                 <button
-                  onClick={() => handleApply(job.id)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleApply(job.id)
+                  }}
                   style={{
                     backgroundColor: '#16a34a',
                     color: 'white',
@@ -1222,6 +1263,314 @@ const Jobs = () => {
                 >
                   Apply Filters ({getActiveFilterCount()})
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Job Details Modal */}
+        {showDetails && selectedJob && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: screenSize.isMobile ? 'flex-end' : 'center',
+            justifyContent: screenSize.isMobile ? 'stretch' : 'center',
+            transition: 'all 0.3s ease-in-out'
+          }}
+          onClick={() => setShowDetails(false)}>
+            <div style={{
+              backgroundColor: 'white',
+              width: screenSize.isMobile ? '100%' : 'min(700px, 90vw)',
+              maxHeight: screenSize.isMobile ? '80vh' : '85vh',
+              borderRadius: screenSize.isMobile ? '20px 20px 0 0' : '16px',
+              overflowY: 'auto',
+              transform: showDetails ? 'translateY(0)' : (screenSize.isMobile ? 'translateY(100%)' : 'scale(0.9)'),
+              opacity: showDetails ? 1 : 0,
+              transition: 'all 0.3s ease-in-out',
+              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            }}
+            onClick={(e) => e.stopPropagation()}>
+              
+              {/* Header */}
+              <div style={{ 
+                padding: '24px 24px 0 24px',
+                borderBottom: '1px solid #f0f0f0'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  marginBottom: '20px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                    <img 
+                      src={selectedJob.logo} 
+                      alt={selectedJob.company}
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '30px',
+                        objectFit: 'cover',
+                        border: '2px solid #f0f0f0'
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <h2 style={{
+                        fontSize: '24px',
+                        fontWeight: '700',
+                        color: '#1a1a1a',
+                        margin: '0 0 4px 0',
+                        lineHeight: '1.3'
+                      }}>
+                        {selectedJob.title}
+                      </h2>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#16a34a',
+                        margin: '0 0 8px 0'
+                      }}>
+                        {selectedJob.company}
+                      </h3>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        fontSize: '14px',
+                        color: '#64748b'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <MapPin size={14} />
+                          {selectedJob.location}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Briefcase size={14} />
+                          {selectedJob.type}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <DollarSign size={14} />
+                          {selectedJob.salary}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowDetails(false)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      border: '1px solid #e2e8f0',
+                      padding: '8px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      marginLeft: '12px'
+                    }}
+                  >
+                    <X size={20} color="#64748b" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div style={{ padding: '24px' }}>
+                {/* Job Overview */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 8px 0'
+                  }}>
+                    Job Overview
+                  </h3>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#64748b',
+                    lineHeight: '1.6',
+                    margin: 0
+                  }}>
+                    {selectedJob.description}
+                  </p>
+                </div>
+
+                {/* Key Responsibilities */}
+                {selectedJob.responsibilities && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      Key Responsibilities
+                    </h3>
+                    <div style={{ 
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '8px',
+                      padding: '16px'
+                    }}>
+                      {selectedJob.responsibilities.map((item, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          marginBottom: index === selectedJob.responsibilities.length - 1 ? '0' : '8px',
+                          fontSize: '14px',
+                          color: '#374151'
+                        }}>
+                          <span style={{
+                            color: '#16a34a',
+                            marginRight: '8px',
+                            marginTop: '2px'
+                          }}>•</span>
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Requirements */}
+                {selectedJob.requirements && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      Requirements & Qualifications
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {selectedJob.requirements.map((req, index) => (
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          fontSize: '14px',
+                          color: '#374151'
+                        }}>
+                          <span style={{
+                            color: '#dc2626',
+                            marginRight: '8px',
+                            marginTop: '2px'
+                          }}>✓</span>
+                          <span>{req}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Company Information */}
+                {selectedJob.companyInfo && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      About the Company
+                    </h3>
+                    <div style={{ 
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '8px',
+                      padding: '16px'
+                    }}>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#374151',
+                        lineHeight: '1.6',
+                        marginBottom: '12px'
+                      }}>
+                        {selectedJob.companyInfo.mission}
+                      </p>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                        gap: '12px',
+                        fontSize: '13px'
+                      }}>
+                        <div>
+                          <span style={{ color: '#64748b' }}>Size: </span>
+                          <span style={{ color: '#374151', fontWeight: '500' }}>{selectedJob.companyInfo.size}</span>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748b' }}>Founded: </span>
+                          <span style={{ color: '#374151', fontWeight: '500' }}>{selectedJob.companyInfo.founded}</span>
+                        </div>
+                        <div>
+                          <span style={{ color: '#64748b' }}>Stage: </span>
+                          <span style={{ color: '#374151', fontWeight: '500' }}>{selectedJob.companyInfo.funding}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Skills & Benefits */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr',
+                  gap: '20px',
+                  marginBottom: '24px'
+                }}>
+                  {/* Skills */}
+                  <div>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 8px 0'
+                    }}>
+                      Required Skills
+                    </h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {selectedJob.skills.map((skill, index) => (
+                        <span key={index} style={{
+                          fontSize: '12px',
+                          color: '#16a34a',
+                          backgroundColor: '#f0fdf4',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontWeight: '500'
+                        }}>
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Benefits */}
+                  <div>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 8px 0'
+                    }}>
+                      Benefits & Perks
+                    </h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {selectedJob.benefits.map((benefit, index) => (
+                        <span key={index} style={{
+                          fontSize: '12px',
+                          color: '#3b82f6',
+                          backgroundColor: '#eff6ff',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontWeight: '500'
+                        }}>
+                          {benefit}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
