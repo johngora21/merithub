@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { countries } from '../utils/countries'
 
@@ -24,6 +25,7 @@ import {
 } from 'lucide-react'
 
 const Opportunities = () => {
+  const navigate = useNavigate()
   const screenSize = useResponsive()
   const [savedOpportunities, setSavedOpportunities] = useState(new Set())
   const [searchQuery, setSearchQuery] = useState('')
@@ -80,7 +82,8 @@ const Opportunities = () => {
         duration: '12 months with possibility of renewal',
         mentorship: 'Access to Google Research mentors and collaborators',
         networking: 'Invitation to exclusive research symposiums and events'
-      }
+      },
+      externalUrl: 'https://research.google/outreach/research-scholar-program/'
     },
     {
       id: '2',
@@ -98,7 +101,8 @@ const Opportunities = () => {
       applicants: 289,
       isUrgent: false,
       tags: ['Leadership', 'International', 'Graduate Study'],
-      postedTime: '1 week ago'
+      postedTime: '1 week ago',
+      externalUrl: 'https://www.rhodeshouse.ox.ac.uk/scholarships/'
     },
     {
       id: '3',
@@ -116,7 +120,8 @@ const Opportunities = () => {
       applicants: 1247,
       isUrgent: true,
       tags: ['Startup', 'Entrepreneurship', 'Technology'],
-      postedTime: '3 days ago'
+      postedTime: '3 days ago',
+      externalUrl: 'https://www.startupschool.org/'
     },
     {
       id: '4',
@@ -215,7 +220,15 @@ const Opportunities = () => {
 
   const handleApply = (opportunityId) => {
     console.log('Apply clicked for opportunity:', opportunityId)
-    // Handle apply logic here
+    // For opportunities, we'll use external links
+    // This would typically open the external application URL
+    const opportunity = opportunities.find(opp => opp.id === opportunityId)
+    if (opportunity && opportunity.externalUrl) {
+      window.open(opportunity.externalUrl, '_blank')
+    } else {
+      // Fallback - could show a modal with external link or redirect
+      alert('Please visit the organization\'s website to apply for this opportunity.')
+    }
   }
 
   const toggleFilter = (category, value) => {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { countries } from '../utils/countries'
 
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react'
 
 const Jobs = () => {
+  const navigate = useNavigate()
   const screenSize = useResponsive()
   const [savedJobs, setSavedJobs] = useState(new Set())
   const [searchQuery, setSearchQuery] = useState('')
@@ -84,7 +86,8 @@ const Jobs = () => {
         founded: '2018',
         funding: 'Series B',
         mission: 'Building innovative technology solutions that transform businesses'
-      }
+      },
+      externalUrl: 'https://techcorp.com/careers/frontend-developer'
     },
     {
       id: '2',
@@ -107,6 +110,7 @@ const Jobs = () => {
       urgentHiring: true,
       rating: 4.8,
       postedBy: 'platform'
+      // No externalUrl - this is a platform job, uses direct application
     },
     {
       id: '3',
@@ -127,7 +131,8 @@ const Jobs = () => {
       isRemote: false,
       urgentHiring: true,
       rating: 4.2,
-      postedBy: 'company'
+      postedBy: 'company',
+      externalUrl: 'https://startupxyz.com/careers/product-manager'
     },
     {
       id: '4',
@@ -148,7 +153,8 @@ const Jobs = () => {
       isRemote: true,
       urgentHiring: false,
       rating: 4.7,
-      postedBy: 'company'
+      postedBy: 'company',
+      externalUrl: 'https://innovatelabs.com/jobs/ux-designer'
     },
     {
       id: '5',
@@ -169,7 +175,8 @@ const Jobs = () => {
       isRemote: true,
       urgentHiring: false,
       rating: 4.4,
-      postedBy: 'company'
+      postedBy: 'company',
+      externalUrl: 'https://datatech.com/careers/data-scientist'
     },
     {
       id: '6',
@@ -211,7 +218,24 @@ const Jobs = () => {
 
   const handleApply = (jobId) => {
     console.log('Apply clicked for job:', jobId)
-    // Handle apply logic here
+    const job = jobs.find(j => j.id === jobId)
+    
+    if (job.postedBy === 'platform') {
+      // Platform jobs (Pro features) - direct application (like LinkedIn)
+      // This would typically show a quick apply modal or redirect to company's ATS
+      alert('Application submitted successfully! The company will review your profile and contact you if interested.')
+    } else if (job.postedBy === 'company') {
+      // Company jobs - external application
+      if (job.externalUrl) {
+        window.open(job.externalUrl, '_blank')
+      } else {
+        // Fallback - could create Google Form or show contact info
+        alert('Please contact the company directly to apply for this position.')
+      }
+    } else if (job.postedBy === 'individual') {
+      // Individual posted jobs - contact directly
+      alert('Please contact the job poster directly to apply for this position.')
+    }
   }
 
   const filterOptions = {

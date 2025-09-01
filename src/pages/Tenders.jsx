@@ -59,6 +59,7 @@ const Tenders = () => {
       tags: ['Construction', 'Public Works', 'Infrastructure'],
       postedTime: '3 days ago',
       submissions: 12,
+      externalUrl: 'https://sf.gov/departments/city-administrator/procurement/current-opportunities',
       detailedDescription: 'This comprehensive infrastructure development project encompasses multiple phases of urban renewal and modernization. The project will focus on upgrading critical city infrastructure including roadways, utilities, public facilities, and digital infrastructure to support the growing population and economic development in the downtown district.',
       projectScope: [
         'Road construction and resurfacing (15 miles)',
@@ -119,6 +120,7 @@ const Tenders = () => {
       tags: ['Technology', 'Cloud', 'Education', 'Data Analytics'],
       postedTime: '1 week ago',
       submissions: 8,
+      externalUrl: 'https://www.cde.ca.gov/re/di/ws/procurement.asp',
       detailedDescription: 'The State Department of Education seeks a comprehensive digital transformation partner to modernize educational management systems across 500+ schools statewide. This initiative will enhance student information systems, implement advanced analytics for educational outcomes, and provide mobile-first solutions for students, teachers, and administrators.',
       projectScope: [
         'Cloud migration of legacy systems',
@@ -180,7 +182,8 @@ const Tenders = () => {
       prequalificationRequired: false,
       tags: ['Healthcare', 'Medical Equipment', 'Maintenance'],
       postedTime: '5 days ago',
-      submissions: 15
+      submissions: 15,
+      externalUrl: 'https://www.rhnetwork.org/procurement/medical-equipment-rfp'
     },
     {
       id: '4',
@@ -201,7 +204,8 @@ const Tenders = () => {
       prequalificationRequired: false,
       tags: ['Green Energy', 'Consulting', 'Sustainability'],
       postedTime: '2 days ago',
-      submissions: 6
+      submissions: 6,
+      externalUrl: 'https://www.bart.gov/about/business/procurement'
     },
     {
       id: '5',
@@ -222,7 +226,8 @@ const Tenders = () => {
       prequalificationRequired: true,
       tags: ['Security', 'Corporate', 'Technology'],
       postedTime: '1 week ago',
-      submissions: 9
+      submissions: 9,
+      externalUrl: 'https://careers.google.com/jobs/results/?q=security+services'
     },
     {
       id: '6',
@@ -243,7 +248,8 @@ const Tenders = () => {
       prequalificationRequired: true,
       tags: ['Manufacturing', 'Aerospace', 'Equipment', 'Automation'],
       postedTime: '6 hours ago',
-      submissions: 4
+      submissions: 4,
+      externalUrl: 'https://www.boeing.com/careers/procurement'
     }
   ]
 
@@ -289,6 +295,18 @@ const Tenders = () => {
     if (tender) {
       setSelectedTender(tender)
       setShowDetails(true)
+    }
+  }
+
+  const handleApply = (tenderId) => {
+    console.log('Apply clicked for tender:', tenderId)
+    // For tenders, we'll use external links to official tender websites
+    const tender = tenders.find(t => t.id === tenderId)
+    if (tender && tender.externalUrl) {
+      window.open(tender.externalUrl, '_blank')
+    } else {
+      // Fallback - could show a modal with external link or redirect
+      alert('Please visit the organization\'s official website to apply for this tender.')
     }
   }
 
@@ -871,7 +889,7 @@ const Tenders = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleViewDetails(tender.id)
+                        handleApply(tender.id)
                       }}
                       style={{
                         backgroundColor: '#16a34a',
@@ -893,7 +911,7 @@ const Tenders = () => {
                         e.target.style.transform = 'translateY(0)'
                       }}
                     >
-                    View Details
+                    Apply Now
                   </button>
                   </div>
                 </div>

@@ -35,6 +35,8 @@ function App() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/bookmarks" element={<Bookmarks />} />
           <Route path="/post" element={<Post />} />
+          
+
         </Routes>
       </Layout>
     </Router>
