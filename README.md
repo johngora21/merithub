@@ -31,7 +31,7 @@ Throughout the platform, you'll find integrated career guidance features includi
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd merit-platform
+cd merit
 ```
 
 2. Install dependencies:
@@ -49,7 +49,7 @@ npm run dev
 ## Project Structure
 
 ```
-merit-platform/
+merit/
 ├── src/
 │   ├── components/
 │   │   ├── Layout.jsx          # Main layout wrapper
