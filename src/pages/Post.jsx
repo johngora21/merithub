@@ -4,8 +4,16 @@ import { useResponsive } from '../hooks/useResponsive'
 import { Bell, User, Bookmark, ArrowLeft, Plus, X, ChevronDown, Briefcase, FileText, GraduationCap, Upload, Trash2 } from 'lucide-react'
 import { countries } from '../utils/countries'
 
-const Post = () => {
-  const navigate = useNavigate()
+const Post = ({ onClose }) => {
+  // Only use navigate if not in admin context
+  let navigate = null
+  try {
+    navigate = useNavigate()
+  } catch (error) {
+    // Router not available (admin context)
+    navigate = null
+  }
+  
   const screenSize = useResponsive()
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
@@ -29,6 +37,9 @@ const Post = () => {
     requirements: '',
     applicationUrl: '',
     contactEmail: '',
+    price: '',
+    tags: [],
+    customTag: '',
     documents: []
   })
 
@@ -39,14 +50,22 @@ const Post = () => {
   }, [])
 
   const handleBackClick = () => {
-    navigate('/jobs') // Navigate back to main Jobs page
+    if (onClose) {
+      onClose() // Admin context - use callback
+    } else if (navigate) {
+      navigate('/jobs') // Main app context - navigate
+    }
   }
 
   const handleFormSubmit = (e) => {
     e.preventDefault()
     console.log('Submitting:', formData)
     // Here you would normally send the data to your API
-    navigate('/jobs') // Navigate back after submission
+    if (onClose) {
+      onClose() // Admin context - use callback
+    } else if (navigate) {
+      navigate('/jobs') // Main app context - navigate
+    }
   }
 
   const handleInputChange = (field, value) => {
@@ -75,6 +94,23 @@ const Post = () => {
     setFormData(prev => ({
       ...prev,
       documents: prev.documents.filter(doc => doc.id !== documentId)
+    }))
+  }
+
+  const handleAddTag = () => {
+    if (formData.customTag && formData.customTag.trim() !== '') {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...(prev.tags || []), prev.customTag.trim()],
+        customTag: ''
+      }))
+    }
+  }
+
+  const handleRemoveTag = (tagToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: (prev.tags || []).filter(tag => tag !== tagToRemove)
     }))
   }
 
@@ -1153,6 +1189,133 @@ const Post = () => {
                   boxSizing: 'border-box'
                 }}
               />
+            </div>
+
+            {/* Price Field */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '6px',
+                display: 'block'
+              }}>
+                Price *
+              </label>
+              <select
+                required
+                value={formData.price || ''}
+                onChange={(e) => handleInputChange('price', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  outline: 'none',
+                  backgroundColor: 'white',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <option value="">Select price</option>
+                <option value="Free">Free</option>
+                <option value="Pro">Pro</option>
+              </select>
+            </div>
+
+            {/* Tags Section */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '6px',
+                display: 'block'
+              }}>
+                Tags
+              </label>
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                marginBottom: '8px'
+              }}>
+                <input
+                  type="text"
+                  value={formData.customTag || ''}
+                  onChange={(e) => handleInputChange('customTag', e.target.value)}
+                  placeholder="Add a tag..."
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleAddTag()
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddTag}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#f3f4f6',
+                    color: '#374151',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Add
+                </button>
+              </div>
+              {formData.tags && formData.tags.length > 0 && (
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '6px'
+                }}>
+                  {formData.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      style={{
+                        backgroundColor: '#f1f5f9',
+                        color: '#475569',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '0',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <X size={12} color="#64748b" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Document Upload Section */}
