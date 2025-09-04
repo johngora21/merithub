@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { apiService } from '../lib/api-service'
 import { useNavigate } from 'react-router-dom'
 import { useResponsive } from '../hooks/useResponsive'
 import { Bell, User, Bookmark, ArrowLeft, Plus, X, ChevronDown, Briefcase, FileText, GraduationCap, Upload, Trash2 } from 'lucide-react'
@@ -34,13 +35,23 @@ const Post = ({ onClose }) => {
     deadline: '',
     value: '',
     organization: '',
+    sector: '',
+    customSector: '',
     requirements: '',
+    projectScope: '',
+    technicalRequirements: '',
+    submissionProcess: '',
+    evaluationCriteria: '',
     applicationUrl: '',
     contactEmail: '',
     price: '',
+    currency: 'USD',
     tags: [],
     customTag: '',
-    documents: []
+    documents: [],
+    companyLogo: null,
+    coverImage: null,
+    isUrgent: false
   })
 
   // Show the form with a slight delay for animation
@@ -57,14 +68,193 @@ const Post = ({ onClose }) => {
     }
   }
 
-  const handleFormSubmit = (e) => {
+  const handleLogoChange = (e, field) => {
+    const file = e.target.files && e.target.files[0] ? e.target.files[0] : null
+    setFormData(prev => ({ ...prev, [field]: file }))
+  }
+
+  const normalizeJobType = (label) => {
+    const map = {
+      'Full-time': 'full-time',
+      'Part-time': 'part-time',
+      'Contract': 'contract',
+      'Internship': 'internship'
+    }
+    return map[label] || ''
+  }
+
+  const normalizeWorkType = (label) => {
+    const map = {
+      'Remote': 'remote',
+      'On-site': 'on-site',
+      'Hybrid': 'hybrid'
+    }
+    return map[label] || ''
+  }
+
+  const deriveExperienceLevel = (yearsStr) => {
+    const years = parseFloat(yearsStr || '0')
+    if (Number.isNaN(years)) return 'entry'
+    if (years < 1) return 'entry'
+    if (years < 3) return 'junior'
+    if (years < 6) return 'mid'
+    if (years < 10) return 'senior'
+    return 'executive'
+  }
+
+  const normalizeOpportunityType = (label) => {
+    const map = {
+      'Scholarships': 'scholarship',
+      'Fellowships': 'fellowship',
+      'Grants': 'grant',
+      'Funds': 'grant',
+      'Internships': 'internship',
+      'Programs': 'program',
+      'Competitions': 'competition',
+      'Research': 'program',
+      'Professional Development': 'program'
+    }
+    return map[label] || 'program'
+  }
+
+  const handleFormSubmit = async (e) => {
     e.preventDefault()
-    console.log('Submitting:', formData)
-    // Here you would normally send the data to your API
-    if (onClose) {
-      onClose() // Admin context - use callback
-    } else if (navigate) {
-      navigate('/jobs') // Main app context - navigate
+    try {
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        location: formData.location || undefined,
+        country: formData.country,
+        deadline: formData.deadline || undefined,
+        external_url: formData.applicationUrl || undefined,
+        contact_email: formData.contactEmail || undefined,
+        is_urgent: !!formData.isUrgent
+      }
+
+      if (formData.type === 'job') {
+        const normalizedJobType = normalizeJobType(formData.jobType)
+        const normalizedWork = normalizeWorkType(formData.workType)
+        const experience_level = deriveExperienceLevel(formData.experience)
+        if (!normalizedJobType || !normalizedWork) {
+          alert('Please select valid Job Type and Work Type')
+          return
+        }
+        // Parse salary range like "$80,000 - $120,000" or "80000-120000"
+        let salary_min
+        let salary_max
+        if (formData.salary) {
+          const nums = (formData.salary.match(/\d[\d,]*/g) || []).map(n => parseInt(n.replace(/[,]/g, ''), 10)).filter(n => !Number.isNaN(n))
+          if (nums.length === 1) {
+            salary_min = nums[0]
+            salary_max = nums[0]
+          } else if (nums.length >= 2) {
+            salary_min = Math.min(nums[0], nums[1])
+            salary_max = Math.max(nums[0], nums[1])
+          }
+        }
+        const skillsFromInput = formData.skills ? formData.skills.split(',').map(s => s.trim()).filter(Boolean) : []
+        const tagsFromChips = Array.isArray(formData.tags) ? formData.tags : []
+        const mergedSkills = Array.from(new Set([...(skillsFromInput || []), ...tagsFromChips]))
+        // Submit with multipart form data to support logo upload
+        const fd = new FormData()
+        const jobBody = {
+          ...payload,
+          company: formData.company,
+          job_type: normalizedJobType,
+          work_type: normalizedWork,
+          experience_level,
+          industry: formData.industry === 'Other' ? formData.customIndustry : formData.industry,
+          salary_min,
+          salary_max,
+          currency: formData.currency || 'USD',
+          application_deadline: formData.deadline || undefined,
+          posted_by: 'individual'
+        }
+        Object.entries(jobBody).forEach(([k, v]) => {
+          if (v !== undefined && v !== null) fd.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
+        })
+        ;(Array.isArray(mergedSkills) ? mergedSkills : []).forEach(s => fd.append('skills[]', s))
+        ;(formData.benefits ? formData.benefits.split(',').map(s => s.trim()).filter(Boolean) : []).forEach(b => fd.append('benefits[]', b))
+        if (formData.companyLogo instanceof File) fd.append('companyLogo', formData.companyLogo)
+
+        await fetch('http://localhost:8000/api/jobs', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` },
+          body: fd
+        }).then(async r => { if (!r.ok) throw new Error((await r.json()).message || 'Failed to create job'); return r.json() })
+      } else if (formData.type === 'tender') {
+        if (!payload.location) {
+          alert('Location is required for tenders')
+          return
+        }
+        const fd2 = new FormData()
+        const tenderBody = {
+          ...payload,
+          organization: formData.organization,
+          contract_value_min: undefined,
+          contract_value_max: undefined,
+          sector: formData.sector === 'Other' ? formData.customSector : formData.sector,
+          category: 'general',
+          submission_type: 'electronic',
+          duration: formData.experience || undefined,
+          price: formData.price || undefined,
+          currency: formData.currency || 'USD',
+          external_url: formData.applicationUrl || undefined
+        }
+        Object.entries(tenderBody).forEach(([k, v]) => {
+          if (v !== undefined && v !== null) fd2.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
+        })
+        ;(formData.requirements ? formData.requirements.split('\n').filter(Boolean) : []).forEach(r => fd2.append('requirements[]', r))
+        ;(formData.projectScope ? formData.projectScope.split('\n').filter(Boolean) : []).forEach(s => fd2.append('project_scope[]', s))
+        ;(formData.technicalRequirements ? formData.technicalRequirements.split('\n').filter(Boolean) : []).forEach(t => fd2.append('technical_requirements[]', t))
+        ;(formData.submissionProcess ? formData.submissionProcess.split('\n').filter(Boolean) : []).forEach(sp => fd2.append('submission_process[]', sp))
+        ;(formData.evaluationCriteria ? formData.evaluationCriteria.split('\n').filter(Boolean) : []).forEach(ec => fd2.append('evaluation_criteria[]', ec))
+        if (formData.coverImage instanceof File) fd2.append('coverImage', formData.coverImage)
+        ;(formData.documents || []).forEach(doc => {
+          if (doc instanceof File) fd2.append('documents', doc)
+        })
+
+        await fetch('http://localhost:8000/api/tenders', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` },
+          body: fd2
+        }).then(async r => { if (!r.ok) throw new Error((await r.json()).message || 'Failed to create tender'); return r.json() })
+      } else if (formData.type === 'opportunity') {
+        // multipart so we can upload cover + organization logo
+        const fd3 = new FormData()
+        const oppBody = {
+          ...payload,
+          organization: formData.organization,
+          type: normalizeOpportunityType(formData.jobType),
+          category: 'general',
+          benefits: formData.benefits ? formData.benefits.split(',').map(s => s.trim()).filter(Boolean) : [],
+          requirements: formData.requirements ? formData.requirements.split('\n').filter(Boolean) : [],
+          duration: formData.experience || undefined,
+          // price is admin-only via onClose
+          price: onClose ? (formData.price || undefined) : undefined
+        }
+        Object.entries(oppBody).forEach(([k, v]) => {
+          if (v !== undefined && v !== null) fd3.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
+        })
+        if (formData.organizationLogo instanceof File) fd3.append('organizationLogo', formData.organizationLogo)
+        if (formData.coverImage instanceof File) fd3.append('coverImage', formData.coverImage)
+
+        await fetch('http://localhost:8000/api/opportunities', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` },
+          body: fd3
+        }).then(async r => { if (!r.ok) throw new Error((await r.json()).message || 'Failed to create opportunity'); return r.json() })
+      }
+
+      if (onClose) {
+        onClose()
+      } else if (navigate) {
+        navigate('/jobs')
+      }
+    } catch (error) {
+      console.error('Post submit failed:', error)
+      const message = error?.response?.data?.message || error?.message || 'Failed to submit. Please try again.'
+      alert(message)
     }
   }
 
@@ -87,6 +277,14 @@ const Post = ({ onClose }) => {
     setFormData(prev => ({
       ...prev,
       documents: [...prev.documents, ...fileArray]
+    }))
+  }
+
+  const handleCoverUpload = (file) => {
+    if (!file) return
+    setFormData(prev => ({
+      ...prev,
+      coverImage: file
     }))
   }
 
@@ -415,6 +613,32 @@ const Post = ({ onClose }) => {
                     marginBottom: '6px',
                     display: 'block'
                   }}>
+                    Application Deadline
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.deadline}
+                    onChange={(e) => handleInputChange('deadline', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
                     Industry *
                   </label>
                   <select
@@ -639,6 +863,202 @@ const Post = ({ onClose }) => {
                       fontSize: '14px',
                       outline: 'none',
                       boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Sector *
+                  </label>
+                  <select
+                    required
+                    value={formData.sector}
+                    onChange={(e) => handleInputChange('sector', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <option value="">Select sector</option>
+                    <option value="construction">Construction</option>
+                    <option value="technology">Technology</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="education">Education</option>
+                    <option value="government">Government</option>
+                    <option value="manufacturing">Manufacturing</option>
+                    <option value="logistics">Logistics</option>
+                    <option value="energy">Energy</option>
+                    <option value="agriculture">Agriculture</option>
+                    <option value="finance">Finance</option>
+                    <option value="retail">Retail</option>
+                    <option value="transportation">Transportation</option>
+                    <option value="utilities">Utilities</option>
+                    <option value="consulting">Consulting</option>
+                    <option value="media">Media</option>
+                    <option value="hospitality">Hospitality</option>
+                    <option value="real_estate">Real Estate</option>
+                    <option value="legal">Legal</option>
+                    <option value="non_profit">Non-Profit</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                {/* Custom Sector Input - shown when "Other" is selected */}
+                {formData.sector === 'Other' && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '6px',
+                      display: 'block'
+                    }}>
+                      Specify Sector *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.customSector}
+                      onChange={(e) => handleInputChange('customSector', e.target.value)}
+                      placeholder="e.g., Aerospace, Defense, etc."
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                )}
+                
+                {/* Project Scope (chips via multiline) */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Project Scope (one per line)
+                  </label>
+                  <textarea
+                    value={formData.projectScope}
+                    onChange={(e) => handleInputChange('projectScope', e.target.value)}
+                    placeholder={'e.g.\nDesign system upgrade\nMigrate database\nDeploy CI/CD'}
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
+
+                {/* Technical Requirements */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Technical Requirements (one per line)
+                  </label>
+                  <textarea
+                    value={formData.technicalRequirements}
+                    onChange={(e) => handleInputChange('technicalRequirements', e.target.value)}
+                    placeholder={'e.g.\nISO 27001 compliance\nAWS expertise\nKubernetes experience'}
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
+
+                {/* Submission Process */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Submission Process (steps, one per line)
+                  </label>
+                  <textarea
+                    value={formData.submissionProcess}
+                    onChange={(e) => handleInputChange('submissionProcess', e.target.value)}
+                    placeholder={'e.g.\nRegister on portal\nUpload documents\nSubmit before deadline'}
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
+
+                {/* Evaluation Criteria */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Evaluation Criteria (one per line)
+                  </label>
+                  <textarea
+                    value={formData.evaluationCriteria}
+                    onChange={(e) => handleInputChange('evaluationCriteria', e.target.value)}
+                    placeholder={'e.g.\nTechnical proposal 40%\nFinancial proposal 40%\nExperience 20%'}
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      resize: 'vertical'
                     }}
                   />
                 </div>
@@ -1127,6 +1547,102 @@ const Post = ({ onClose }) => {
               </div>
             )}
 
+            {/* Company Logo upload (jobs only) */}
+            {formData.type === 'job' && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '6px',
+                  display: 'block'
+                }}>
+                  {formData.type === 'job' ? 'Company Logo' : 'Organization Logo'} (PNG/JPG)
+                </label>
+                <div
+                  onClick={() => document.getElementById(formData.type === 'job' ? 'company-logo-upload' : 'org-logo-upload').click()}
+                  style={{
+                    border: '2px dashed #d1d5db',
+                    borderRadius: '8px',
+                    padding: '16px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    backgroundColor: '#f9fafb'
+                  }}
+                >
+                  <Upload size={20} color="#6b7280" style={{ marginBottom: '6px' }} />
+                  <div style={{ fontSize: '13px', color: '#374151' }}>
+                    Click to upload company logo
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                    Only images are allowed (Max 5MB)
+                  </div>
+                </div>
+                <input
+                  id="company-logo-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleLogoChange(e, 'companyLogo')}
+                  style={{ display: 'none' }}
+                />
+                {formData.companyLogo && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                    <img src={URL.createObjectURL(formData.companyLogo)} alt="company logo" style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '6px' }} />
+                    <div style={{ fontSize: '12px', color: '#374151' }}>{formData.companyLogo.name}</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Cover Image (tenders only) */}
+            {formData.type === 'tender' && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '6px',
+                  display: 'block'
+                }}>
+                  Cover Image
+                </label>
+                <div style={{
+                  border: '2px dashed #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s ease-in-out',
+                  backgroundColor: '#fafafa'
+                }}
+                onClick={() => document.getElementById('cover-image-upload').click()}
+                onMouseEnter={(e) => e.target.style.borderColor = '#3b82f6'}
+                onMouseLeave={(e) => e.target.style.borderColor = '#e2e8f0'}
+                >
+                  <Upload size={24} color="#9ca3af" style={{ marginBottom: '8px' }} />
+                  <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
+                    Click to upload cover image
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+                    Only images are allowed (Max 5MB)
+                  </div>
+                </div>
+                <input
+                  id="cover-image-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleLogoChange(e, 'coverImage')}
+                  style={{ display: 'none' }}
+                />
+                {formData.coverImage && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                    <img src={URL.createObjectURL(formData.coverImage)} alt="cover image" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
+                    <div style={{ fontSize: '12px', color: '#374151' }}>{formData.coverImage.name}</div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Country field */}
             <div style={{ marginBottom: '16px' }}>
               <label style={{
@@ -1162,6 +1678,55 @@ const Post = ({ onClose }) => {
               </select>
             </div>
 
+            {/* Urgent flag (jobs and tenders only) */}
+            {(formData.type === 'job' || formData.type === 'tender') && (
+              <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  id="isUrgent"
+                  type="checkbox"
+                  checked={!!formData.isUrgent}
+                  onChange={(e) => handleInputChange('isUrgent', e.target.checked)}
+                  style={{ width: '16px', height: '16px' }}
+                />
+                <label htmlFor="isUrgent" style={{ fontSize: '14px', color: '#374151' }}>
+                  Mark as urgent
+                </label>
+              </div>
+            )}
+
+            {/* Currency selection */}
+            {(formData.type === 'job' || formData.type === 'tender') && (
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '6px',
+                display: 'block'
+              }}>
+                Currency
+              </label>
+              <select
+                value={formData.currency}
+                onChange={(e) => handleInputChange('currency', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  outline: 'none',
+                  backgroundColor: 'white',
+                  boxSizing: 'border-box'
+                }}
+              >
+                {['TZS','KES','UGX','RWF','BIF','SSP','ETB','SOS','ZAR','ZMW','NGN','USD','EUR','GBP'].map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              </div>
+            )}
+
             <div style={{ marginBottom: '16px' }}>
               <label style={{
                 fontSize: '14px',
@@ -1191,7 +1756,8 @@ const Post = ({ onClose }) => {
               />
             </div>
 
-            {/* Price Field */}
+            {/* Price Field - Admin only (shown when onClose prop is provided) */}
+            {onClose && (
             <div style={{ marginBottom: '16px' }}>
               <label style={{
                 fontSize: '14px',
@@ -1222,6 +1788,7 @@ const Post = ({ onClose }) => {
                 <option value="Pro">Pro</option>
               </select>
             </div>
+            )}
 
             {/* Tags Section */}
             <div style={{ marginBottom: '16px' }}>
@@ -1318,7 +1885,9 @@ const Post = ({ onClose }) => {
               )}
             </div>
 
-            {/* Document Upload Section */}
+
+            {/* Document Upload Section: tenders only */}
+            {formData.type === 'tender' && (
             <div style={{ marginBottom: '20px' }}>
               <label style={{
                 fontSize: '14px',
@@ -1328,7 +1897,7 @@ const Post = ({ onClose }) => {
                 display: 'block'
               }}>
                 Supporting Documents
-                {formData.type === 'tender' && ' (Recommended)'}
+                {' (Recommended)'}
               </label>
               
               {/* Upload Area */}
@@ -1427,6 +1996,7 @@ const Post = ({ onClose }) => {
                 </div>
               )}
             </div>
+            )}
 
             {/* Form Actions */}
             <div style={{

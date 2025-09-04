@@ -1,7 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { countries } from '../utils/countries'
+import { apiService, resolveAssetUrl } from '../lib/api-service'
+import { useAuth } from '../contexts/AuthContext'
+
 
 import { 
   Bookmark, 
@@ -17,13 +20,21 @@ import {
   Search,
   SlidersHorizontal,
   X,
-  Check
+  Check,
+  User,
+  GraduationCap,
+  Award,
+  FileText
 } from 'lucide-react'
 
 const Jobs = () => {
   const navigate = useNavigate()
   const screenSize = useResponsive()
+  const { user } = useAuth()
   const [savedJobs, setSavedJobs] = useState(new Set())
+  const [showProfileCompletionModal, setShowProfileCompletionModal] = useState(false)
+  const [selectedJobForApplication, setSelectedJobForApplication] = useState(null)
+  const [jobIdToSavedItemId, setJobIdToSavedItemId] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -39,176 +50,131 @@ const Jobs = () => {
     currency: 'USD'
   })
 
-  const jobs = [
-    {
-      id: '1',
-      company: 'TechCorp Solutions',
-      industry: 'Technology',
-      companyLocation: 'San Francisco, CA',
-      country: 'United States',
-      logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
-      title: 'Senior Frontend Developer',
-      location: 'San Francisco, CA',
-      salary: '$120,000 - $160,000',
-      type: 'Full-time',
-      experience: '5+ years',
-      skills: ['React', 'TypeScript', 'Node.js', 'AWS'],
-      description: 'We are looking for an experienced Frontend Developer to join our growing team. You will be responsible for building scalable web applications using modern technologies.',
-      benefits: ['Health Insurance', 'Remote Work', '401k Match', 'Stock Options'],
-      postedTime: '2 hours ago',
-      applicants: 23,
-      isRemote: true,
-      urgentHiring: false,
-      rating: 4.5,
-      postedBy: 'company',
-      responsibilities: [
-        'Develop and maintain responsive web applications using React and TypeScript',
-        'Collaborate with UX/UI designers to implement pixel-perfect designs',
-        'Build reusable components and maintain component libraries',
-        'Optimize applications for maximum speed and scalability',
-        'Work with backend developers to integrate APIs and services',
-        'Participate in code reviews and maintain coding standards',
-        'Debug and troubleshoot technical issues across browsers',
-        'Mentor junior developers and contribute to technical documentation'
-      ],
-      requirements: [
-        '5+ years of experience with React and modern JavaScript',
-        'Strong proficiency in TypeScript and ES6+',
-        'Experience with state management (Redux, Context API)',
-        'Knowledge of build tools (Webpack, Vite) and testing frameworks',
-        'Familiarity with Node.js and RESTful API integration',
-        'Experience with AWS services and cloud deployment',
-        'Strong understanding of responsive design and CSS',
-        'Excellent problem-solving and communication skills'
-      ],
-      companyInfo: {
-        size: '200-500 employees',
-        founded: '2018',
-        funding: 'Series B',
-        mission: 'Building innovative technology solutions that transform businesses'
-      },
-      externalUrl: 'https://techcorp.com/careers/frontend-developer'
-    },
-    {
-      id: '2',
-      company: 'Merit Platform',
-      industry: 'CloudTech Solutions',
-      companyLocation: 'Global',
-      country: 'Global',
-      logo: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=80&h=80&fit=crop',
-      title: 'Full Stack Developer',
-      location: 'Remote',
-      salary: '$100,000 - $140,000',
-      type: 'Full-time',
-      experience: '3+ years',
-      skills: ['React', 'Node.js', 'PostgreSQL', 'AWS'],
-      description: 'Join our team to build the next generation professional growth platform. Work on challenging problems in career development and job matching.',
-      benefits: ['Health Insurance', 'Remote Work', 'Stock Options', 'Learning Budget'],
-      postedTime: '1 hour ago',
-      applicants: 15,
-      isRemote: true,
-      urgentHiring: true,
-      rating: 4.8,
-      postedBy: 'platform'
-      // No externalUrl - this is a platform job, uses direct application
-    },
-    {
-      id: '3',
-      company: 'StartupXYZ Inc',
-      industry: 'Fintech',
-      companyLocation: 'New York, NY',
-      logo: 'https://images.unsplash.com/photo-1553484771-cc0d9b8c2b33?w=80&h=80&fit=crop',
-      title: 'Product Manager',
-      location: 'New York, NY',
-      salary: '$110,000 - $140,000',
-      type: 'Full-time',
-      experience: '3-5 years',
-      skills: ['Product Strategy', 'Analytics', 'Agile', 'Roadmapping'],
-      description: 'Lead product strategy and work with cross-functional teams to deliver innovative solutions that drive business growth.',
-      benefits: ['Health Insurance', 'Flexible Hours', 'Learning Budget', 'Equity'],
-      postedTime: '4 hours ago',
-      applicants: 45,
-      isRemote: false,
-      urgentHiring: true,
-      rating: 4.2,
-      postedBy: 'company',
-      externalUrl: 'https://startupxyz.com/careers/product-manager'
-    },
-    {
-      id: '4',
-      company: 'InnovateLabs',
-      industry: 'Software Development',
-      companyLocation: 'Austin, TX',
-      logo: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=80&h=80&fit=crop',
-      title: 'UX/UI Designer',
-      location: 'Austin, TX',
-      salary: '$85,000 - $115,000',
-      type: 'Full-time',
-      experience: '2-4 years',
-      skills: ['Figma', 'User Research', 'Prototyping', 'Design Systems'],
-      description: 'Create beautiful and intuitive user experiences for our mobile and web applications. Work closely with product and engineering teams.',
-      benefits: ['Health Insurance', 'Remote Work', 'Design Conference Budget', 'Gym Membership'],
-      postedTime: '1 day ago',
-      applicants: 67,
-      isRemote: true,
-      urgentHiring: false,
-      rating: 4.7,
-      postedBy: 'company',
-      externalUrl: 'https://innovatelabs.com/jobs/ux-designer'
-    },
-    {
-      id: '5',
-      company: 'DataTech Corp',
-      industry: 'Data Analytics',
-      companyLocation: 'Seattle, WA',
-      logo: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=80&h=80&fit=crop',
-      title: 'Senior Data Scientist',
-      location: 'Seattle, WA',
-      salary: '$130,000 - $170,000',
-      type: 'Full-time',
-      experience: '4+ years',
-      skills: ['Python', 'Machine Learning', 'SQL', 'TensorFlow'],
-      description: 'Build machine learning models and extract insights from large datasets to drive business decisions and product improvements.',
-      benefits: ['Health Insurance', 'Stock Options', 'Learning Budget', 'Flexible PTO'],
-      postedTime: '2 days ago',
-      applicants: 89,
-      isRemote: true,
-      urgentHiring: false,
-      rating: 4.4,
-      postedBy: 'company',
-      externalUrl: 'https://datatech.com/careers/data-scientist'
-    },
-    {
-      id: '6',
-      company: 'Merit Platform',
-      industry: 'FinanceFlow Corp',
-      companyLocation: 'Global',
-      logo: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=80&h=80&fit=crop',
-      title: 'Marketing Manager',
-      location: 'San Francisco, CA',
-      salary: '$95,000 - $125,000',
-      type: 'Full-time',
-      experience: '4+ years',
-      skills: ['Digital Marketing', 'Content Strategy', 'Analytics', 'SEO'],
-      description: 'Drive growth through strategic marketing initiatives. Lead campaigns to attract top talent and partner companies to our platform.',
-      benefits: ['Health Insurance', 'Remote Work', 'Marketing Budget', 'Professional Development'],
-      postedTime: '6 hours ago',
-      applicants: 32,
-      isRemote: false,
-      urgentHiring: false,
-      rating: 4.8,
-      postedBy: 'platform'
-    }
-  ]
+  const [jobs, setJobs] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const toggleSave = (jobId) => {
-    const newSavedJobs = new Set(savedJobs)
-    if (newSavedJobs.has(jobId)) {
-      newSavedJobs.delete(jobId)
-    } else {
-      newSavedJobs.add(jobId)
+  useEffect(() => {
+    fetchJobs()
+    fetchSavedJobs()
+  }, [])
+
+  const fetchSavedJobs = async () => {
+    try {
+      const resp = await apiService.get('/saved-items')
+      const items = resp?.data?.items || resp?.data || []
+      const savedSet = new Set()
+      const map = {}
+      items.forEach(si => {
+        if (si.job) {
+          savedSet.add(String(si.job.id))
+          map[String(si.job.id)] = si.id
+        }
+      })
+      setSavedJobs(savedSet)
+      setJobIdToSavedItemId(map)
+    } catch (e) {
+      // ignore
     }
-    setSavedJobs(newSavedJobs)
+  }
+
+  const transformJobData = (apiJob) => {
+    const logo = apiJob.company_logo
+      ? resolveAssetUrl(apiJob.company_logo)
+      : 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop'
+
+    const min = apiJob.salary_min != null ? Number(apiJob.salary_min) : undefined
+    const max = apiJob.salary_max != null ? Number(apiJob.salary_max) : undefined
+    const fmt = (n) => typeof n === 'number' && !Number.isNaN(n) ? n.toLocaleString() : ''
+    let salary
+    if (min != null && max != null) {
+      salary = min === max
+        ? `${apiJob.currency} ${fmt(min)}`
+        : `${apiJob.currency} ${fmt(min)} - ${apiJob.currency} ${fmt(max)}`
+    } else if (min != null) {
+      salary = `${apiJob.currency} ${fmt(min)}`
+    } else if (max != null) {
+      salary = `${apiJob.currency} ${fmt(max)}`
+    } else {
+      salary = 'Salary not specified'
+    }
+
+    return {
+      id: apiJob.id.toString(),
+      company: apiJob.company,
+      industry: apiJob.industry,
+      companyLocation: apiJob.location,
+      country: apiJob.country,
+      logo,
+      title: apiJob.title,
+      location: apiJob.location,
+      salary,
+      type: apiJob.job_type ? apiJob.job_type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('-') : 'Not specified',
+      experience: apiJob.experience_level ? apiJob.experience_level.charAt(0).toUpperCase() + apiJob.experience_level.slice(1) + ' level' : 'Not specified',
+      skills: apiJob.skills || [],
+      description: apiJob.description,
+      benefits: apiJob.benefits || [],
+      postedTime: apiJob.created_at ? new Date(apiJob.created_at).toLocaleDateString() : 'Recently',
+      applicants: apiJob.applications_count || 0,
+      isRemote: apiJob.work_type === 'remote',
+      urgentHiring: apiJob.is_urgent || false,
+      price: apiJob.price || null,
+      rating: 4.5, // Default rating since not in API
+      postedBy: apiJob.posted_by || 'platform',
+      externalUrl: apiJob.external_url,
+      contactEmail: apiJob.contact_email,
+      applicationDeadline: apiJob.application_deadline,
+      isFeatured: apiJob.is_featured || false,
+      status: apiJob.status || 'active'
+    }
+  }
+
+  const fetchJobs = async () => {
+    try {
+      setLoading(true)
+      const response = await apiService.get('/jobs')
+      const transformedJobs = (response.data.jobs || []).map(transformJobData)
+      setJobs(transformedJobs)
+    } catch (error) {
+      console.error('Error fetching jobs:', error)
+      // Keep existing static data as fallback
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Static jobs data as fallback
+  const staticJobs = []
+
+  const toggleSave = async (jobId) => {
+    const idStr = String(jobId)
+    try {
+      if (savedJobs.has(idStr)) {
+        const savedId = jobIdToSavedItemId[idStr]
+        if (savedId) {
+          await apiService.delete(`/saved-items/${savedId}`)
+        }
+        const next = new Set(savedJobs)
+        next.delete(idStr)
+        setSavedJobs(next)
+        setJobIdToSavedItemId(prev => {
+          const copy = { ...prev }
+          delete copy[idStr]
+          return copy
+        })
+    } else {
+        const resp = await apiService.post('/saved-items', { item_type: 'job', job_id: Number(jobId) })
+        const savedItem = resp?.data?.saved_item || resp?.data
+        const next = new Set(savedJobs)
+        next.add(idStr)
+        setSavedJobs(next)
+        if (savedItem?.id) {
+          setJobIdToSavedItemId(prev => ({ ...prev, [idStr]: savedItem.id }))
+        }
+      }
+    } catch (e) {
+      console.error('Toggle save failed', e)
+      alert(e?.message || 'Failed to update bookmark')
+    }
   }
 
   const handleJobClick = (job) => {
@@ -216,26 +182,124 @@ const Jobs = () => {
     setShowDetails(true)
   }
 
-  const handleApply = (jobId) => {
+  const handleApply = async (jobId) => {
     console.log('Apply clicked for job:', jobId)
-    const job = jobs.find(j => j.id === jobId)
+    const job = currentJobs.find(j => j.id === jobId)
     
-    if (job.postedBy === 'platform') {
-      // Platform jobs (Pro features) - direct application (like LinkedIn)
-      // This would typically show a quick apply modal or redirect to company's ATS
-      alert('Application submitted successfully! The company will review your profile and contact you if interested.')
-    } else if (job.postedBy === 'company') {
-      // Company jobs - external application
-      if (job.externalUrl) {
-        window.open(job.externalUrl, '_blank')
-      } else {
-        // Fallback - could create Google Form or show contact info
-        alert('Please contact the company directly to apply for this position.')
-      }
-    } else if (job.postedBy === 'individual') {
-      // Individual posted jobs - contact directly
-      alert('Please contact the job poster directly to apply for this position.')
+    // Check if user is authenticated
+    if (!user) {
+      alert('Please log in to apply for jobs.')
+      return
     }
+
+    // Check profile completeness for automatic application
+    const isProfileComplete = checkProfileCompleteness()
+    
+    if (!isProfileComplete.complete) {
+      // Show profile completion modal
+      setShowProfileCompletionModal(true)
+      setSelectedJobForApplication(job)
+      return
+    }
+
+    // Submit automatic application
+    try {
+      const applicationData = {
+        application_type: 'job',
+        job_id: parseInt(jobId),
+        cover_letter: generateCoverLetter(job),
+        application_data: {
+          profile_summary: generateProfileSummary(),
+          skills: user.skills || [],
+          experience_summary: generateExperienceSummary(),
+          education_summary: generateEducationSummary()
+        }
+      }
+
+      console.log('Submitting application with data:', applicationData)
+      console.log('User token:', localStorage.getItem('auth-token') ? 'Present' : 'Missing')
+      
+      const response = await apiService.post('/applications', applicationData)
+      
+      console.log('Application response:', response)
+      
+      if (response.success) {
+        alert('Application submitted successfully! The company will review your profile and contact you if interested.')
+        // Refresh jobs to update application count
+        fetchJobs()
+      } else {
+        console.error('Application failed:', response.message)
+        alert(response.message || 'Failed to submit application. Please try again.')
+      }
+    } catch (error) {
+      console.error('Application error:', error)
+      console.error('Error details:', error.message)
+      alert(`Failed to submit application: ${error.message}`)
+    }
+  }
+
+  const checkProfileCompleteness = () => {
+    const requiredFields = [
+      user?.first_name,
+      user?.last_name,
+      user?.email,
+      user?.phone,
+      user?.location,
+      user?.industry,
+      user?.current_job_title
+    ]
+
+    const hasRequiredFields = requiredFields.every(field => field && field.trim() !== '')
+    const hasEducation = user?.education && user.education.length > 0
+    const hasExperience = user?.experience && user.experience.length > 0
+
+    return {
+      complete: hasRequiredFields && (hasEducation || hasExperience),
+      missingFields: {
+        basicInfo: !hasRequiredFields,
+        education: !hasEducation,
+        experience: !hasExperience
+      }
+    }
+  }
+
+  const generateCoverLetter = (job) => {
+    return `Dear Hiring Manager,
+
+I am writing to express my interest in the ${job.title} position at ${job.company}. 
+
+With my background in ${user?.industry || 'technology'} and experience as a ${user?.current_job_title || 'professional'}, I am confident that I would be a valuable addition to your team.
+
+I am particularly drawn to this opportunity because of ${job.company}'s reputation in the industry and the chance to contribute to meaningful projects.
+
+I look forward to the opportunity to discuss how my skills and experience align with your needs.
+
+Best regards,
+${user?.first_name} ${user?.last_name}`
+  }
+
+  const generateProfileSummary = () => {
+    return `${user?.first_name} ${user?.last_name} is a ${user?.current_job_title || 'professional'} with experience in ${user?.industry || 'technology'}. Based in ${user?.location || 'various locations'}, they bring expertise and dedication to their work.`
+  }
+
+  const generateExperienceSummary = () => {
+    if (!user?.experience || user.experience.length === 0) {
+      return 'Experience details available upon request.'
+    }
+    
+    return user.experience.map(exp => 
+      `${exp.title} at ${exp.company} (${exp.period}) - ${exp.description || 'Key responsibilities and achievements.'}`
+    ).join('\n\n')
+  }
+
+  const generateEducationSummary = () => {
+    if (!user?.education || user.education.length === 0) {
+      return 'Education details available upon request.'
+    }
+    
+    return user.education.map(edu => 
+      `${edu.level} in ${edu.program} from ${edu.school} (${edu.period})`
+    ).join('\n')
   }
 
   const filterOptions = {
@@ -305,7 +369,8 @@ const Jobs = () => {
   }
 
   // Filter and search jobs
-  const filteredJobs = jobs.filter(job => {
+  const currentJobs = jobs.length > 0 ? jobs : staticJobs
+  const filteredJobs = currentJobs.filter(job => {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
@@ -401,8 +466,6 @@ const Jobs = () => {
   return (
     <div style={{ backgroundColor: '#f8f9fa' }}>
       <div style={{ padding: '16px 12px 90px 12px' }}>
-        
-
         {/* Search Bar */}
         <div style={{
           display: 'flex',
@@ -534,31 +597,31 @@ const Jobs = () => {
             </div>
           ) : (
             filteredJobs.map((job) => (
-            <div key={job.id} style={{
-              backgroundColor: 'white',
-              borderRadius: '12px',
+              <div key={job.id} style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
               padding: '16px 12px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-              border: '1px solid #f0f0f0',
-              position: 'relative',
-              transition: 'all 0.2s ease-in-out',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                border: '1px solid #f0f0f0',
+                position: 'relative',
+                transition: 'all 0.2s ease-in-out',
               cursor: 'pointer'
-            }}
-            onClick={() => handleJobClick(job)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
-              e.currentTarget.style.transform = 'translateY(-2px)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
-              e.currentTarget.style.transform = 'translateY(0)'
-            }}>
-              
+              }}
+              onClick={() => handleJobClick(job)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+                e.currentTarget.style.transform = 'translateY(-2px)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}>
+                
               {/* Company Profile Header */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
                 marginBottom: '10px'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
@@ -573,31 +636,31 @@ const Jobs = () => {
                       border: '2px solid #f8f9fa'
                     }}
                   />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 style={{
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{
                       fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
                       margin: '0 0 1px 0',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {job.company}
-                    </h3>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px'
-                    }}>
-                      <span style={{
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        color: '#64748b'
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
                       }}>
-                        {job.industry}
-                      </span>
-                      {job.postedBy === 'platform' && (
+                        {job.company}
+                      </h3>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                      gap: '6px'
+                      }}>
+                        <span style={{
+                        fontSize: '12px',
+                          fontWeight: '500',
+                          color: '#64748b'
+                        }}>
+                          {job.industry}
+                        </span>
+                      {(job.price === 'Pro' || job.postedBy === 'platform') && (
                         <span style={{
                           fontSize: '10px',
                           color: 'white',
@@ -609,74 +672,87 @@ const Jobs = () => {
                           PRO
                         </span>
                       )}
-                    </div>
+                      {job.price === 'Free' && (
+                        <span style={{
+                          fontSize: '10px',
+                          color: '#16a34a',
+                          backgroundColor: '#f0fdf4',
+                          padding: '1px 4px',
+                          borderRadius: '3px',
+                          fontWeight: '600',
+                          border: '1px solid #bbf7d0'
+                        }}>
+                          FREE
+                        </span>
+                      )}
+                      </div>
 
+                    </div>
                   </div>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleSave(job.id)
+                    }}
+                    style={{
+                      background: savedJobs.has(job.id) ? '#f0fdf4' : '#f8f9fa',
+                      border: savedJobs.has(job.id) ? '1px solid #16a34a' : '1px solid #e2e8f0',
+                      padding: '8px',
+                      cursor: 'pointer',
+                      borderRadius: '8px',
+                      flexShrink: 0,
+                      marginLeft: '8px',
+                      transition: 'all 0.2s ease-in-out'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = savedJobs.has(job.id) ? '#dcfce7' : '#f1f5f9'
+                      e.target.style.transform = 'scale(1.05)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = savedJobs.has(job.id) ? '#f0fdf4' : '#f8f9fa'
+                      e.target.style.transform = 'scale(1)'
+                    }}
+                  >
+                    <Bookmark 
+                      size={20} 
+                      color={savedJobs.has(job.id) ? '#16a34a' : '#64748b'}
+                      fill={savedJobs.has(job.id) ? '#16a34a' : 'none'}
+                    />
+                  </button>
                 </div>
-                
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleSave(job.id)
-                  }}
-                  style={{
-                    background: savedJobs.has(job.id) ? '#f0fdf4' : '#f8f9fa',
-                    border: savedJobs.has(job.id) ? '1px solid #16a34a' : '1px solid #e2e8f0',
-                    padding: '8px',
-                    cursor: 'pointer',
-                    borderRadius: '8px',
-                    flexShrink: 0,
-                    marginLeft: '8px',
-                    transition: 'all 0.2s ease-in-out'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = savedJobs.has(job.id) ? '#dcfce7' : '#f1f5f9'
-                    e.target.style.transform = 'scale(1.05)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = savedJobs.has(job.id) ? '#f0fdf4' : '#f8f9fa'
-                    e.target.style.transform = 'scale(1)'
-                  }}
-                >
-                  <Bookmark 
-                    size={20} 
-                    color={savedJobs.has(job.id) ? '#16a34a' : '#64748b'}
-                    fill={savedJobs.has(job.id) ? '#16a34a' : 'none'}
-                  />
-                </button>
-              </div>
 
               {/* Job Title */}
-              <h2 style={{
+                <h2 style={{
                 fontSize: '16px',
-                fontWeight: '600',
-                color: '#1a1a1a',
+                  fontWeight: '600',
+                  color: '#1a1a1a',
                 margin: '0 0 8px 0',
-                display: 'flex',
-                alignItems: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
                 gap: '4px'
-              }}>
-                {job.title}
+                }}>
+                  {job.title}
                 {job.urgentHiring && (
-                  <Star size={14} color="#16a34a" fill="#16a34a" />
-                )}
-              </h2>
+                  <Star size={14} color="#3b82f6" fill="#3b82f6" />
+                  )}
+                </h2>
 
               {/* Job Location and Status */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
                 gap: '6px',
                 marginBottom: '8px',
                 fontSize: '12px',
-                color: '#666',
-                flexWrap: 'wrap'
-              }}>
+                  color: '#666',
+                  flexWrap: 'wrap'
+                }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                   <MapPin size={11} />
-                  {job.location}
-                </div>
-                <span>•</span>
+                    {job.location}
+                  </div>
+                  <span>•</span>
                 <span>{job.postedTime}</span>
                 {job.isRemote && (
                   <>
@@ -691,145 +767,145 @@ const Jobs = () => {
                   </>
                 )}
                 
-              </div>
+                </div>
 
               {/* Quick Info */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
                 gap: '8px',
                 marginBottom: '8px',
-                flexWrap: 'wrap'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
                   gap: '3px',
                   fontSize: '12px',
-                  color: '#16a34a',
-                  fontWeight: '600'
-                }}>
+                    color: '#16a34a',
+                    fontWeight: '600'
+                  }}>
                   <DollarSign size={12} />
                   {job.salary}
-                </div>
-                <span style={{ color: '#e2e8f0' }}>•</span>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
+                  </div>
+                  <span style={{ color: '#e2e8f0' }}>•</span>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
                   gap: '3px',
                   fontSize: '12px',
-                  color: '#64748b'
-                }}>
+                    color: '#64748b'
+                  }}>
                   <Briefcase size={12} />
                   {job.type}
-                </div>
-                <span style={{ color: '#e2e8f0' }}>•</span>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
+                  </div>
+                  <span style={{ color: '#e2e8f0' }}>•</span>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
                   gap: '3px',
                   fontSize: '12px',
-                  color: '#64748b'
-                }}>
+                    color: '#64748b'
+                  }}>
                   <Clock size={12} />
                   {job.experience}
+                  </div>
                 </div>
-              </div>
 
-              {/* Description */}
-              <p style={{
+                {/* Description */}
+                <p style={{
                 fontSize: '13px',
-                color: '#475569',
+                  color: '#475569',
                 lineHeight: '1.4',
                 margin: '0 0 8px 0',
-                display: '-webkit-box',
+                  display: '-webkit-box',
                 WebkitLineClamp: 1,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden'
-              }}>
-                {job.description}
-              </p>
-
-              {/* Skills */}
-              <div style={{ marginBottom: '10px' }}>
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '4px'
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden'
                 }}>
-                  {job.skills.slice(0, 4).map((skill, index) => (
-                    <span key={index} style={{
-                      backgroundColor: '#f1f5f9',
-                      color: '#475569',
+                  {job.description}
+                </p>
+
+                {/* Skills */}
+              <div style={{ marginBottom: '10px' }}>
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                  gap: '4px'
+                    }}>
+                      {job.skills.slice(0, 4).map((skill, index) => (
+                        <span key={index} style={{
+                          backgroundColor: '#f1f5f9',
+                          color: '#475569',
                       padding: '2px 6px',
                       borderRadius: '4px',
                       fontSize: '11px',
-                      fontWeight: '500'
-                    }}>
-                      {skill}
-                    </span>
-                  ))}
-                  {job.skills.length > 4 && (
-                    <span style={{
-                      color: '#64748b',
+                          fontWeight: '500'
+                        }}>
+                          {skill}
+                        </span>
+                      ))}
+                      {job.skills.length > 4 && (
+                        <span style={{
+                          color: '#64748b',
                       fontSize: '11px',
                       padding: '2px 6px',
-                      fontWeight: '500'
-                    }}>
-                      +{job.skills.length - 4} more
-                    </span>
-                  )}
-                </div>
-              </div>
+                          fontWeight: '500'
+                        }}>
+                          +{job.skills.length - 4} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-              {/* Footer */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingTop: '8px',
-                borderTop: '1px solid #f1f5f9'
-              }}>
+                {/* Footer */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'space-between',
+                paddingTop: '8px',
+                borderTop: '1px solid #f1f5f9'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
                   gap: '3px',
                   fontSize: '11px',
-                  color: '#64748b'
-                }}>
+                    color: '#64748b'
+                  }}>
                   <Users size={11} />
                   {job.applicants || 0} applicants
-                </div>
+                  </div>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleApply(job.id)
-                  }}
-                  style={{
-                    backgroundColor: '#16a34a',
-                    color: 'white',
-                    border: 'none',
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleApply(job.id)
+                      }}
+                      style={{
+                        backgroundColor: '#16a34a',
+                        color: 'white',
+                        border: 'none',
                     padding: '6px 12px',
                     borderRadius: '6px',
                     fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease-in-out'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = '#15803d'
-                    e.target.style.transform = 'translateY(-1px)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = '#16a34a'
-                    e.target.style.transform = 'translateY(0)'
-                  }}
-                >
-                  {job.postedBy === 'individual' ? 'Contact' : 'Apply Now'}
-                </button>
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease-in-out'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = '#15803d'
+                        e.target.style.transform = 'translateY(-1px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = '#16a34a'
+                        e.target.style.transform = 'translateY(0)'
+                      }}
+                    >
+                  Apply Now
+                    </button>
+                </div>
               </div>
-            </div>
             ))
           )}
         </div>
@@ -947,7 +1023,7 @@ const Jobs = () => {
                           borderColor: filters.jobType.includes(type) ? '#16a34a' : '#e2e8f0',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
+            justifyContent: 'center',
                           transition: 'all 0.2s ease-in-out'
                         }}
                         onClick={() => toggleFilter('jobType', type)}>
@@ -981,8 +1057,8 @@ const Jobs = () => {
                     {filterOptions.experienceLevel.map((level) => (
                       <label key={level} style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
+            alignItems: 'center',
+            gap: '8px',
                         cursor: 'pointer',
                         padding: '8px 0'
                       }}>
@@ -1197,13 +1273,13 @@ const Jobs = () => {
                     <select
                       value={filters.currency}
                       onChange={(e) => updateSalaryRange('currency', e.target.value)}
-                      style={{
+              style={{
                         width: '100%',
                         padding: '10px',
-                        borderRadius: '6px',
+                borderRadius: '6px',
                         border: '1px solid #e2e8f0',
                         fontSize: '14px',
-                        backgroundColor: 'white',
+                backgroundColor: 'white',
                         color: '#1a1a1a',
                         outline: 'none',
                         transition: 'border-color 0.2s ease-in-out'
@@ -1236,27 +1312,27 @@ const Jobs = () => {
                         Minimum Salary
                       </label>
                       <div style={{ position: 'relative' }}>
-                        <span style={{
+            <span style={{
                           position: 'absolute',
                           left: '10px',
                           top: '50%',
                           transform: 'translateY(-50%)',
-                          fontSize: '14px',
+              fontSize: '14px',
                           color: '#64748b',
                           fontWeight: '500'
-                        }}>
+            }}>
                           {currencies.find(c => c.code === filters.currency)?.symbol}
-                        </span>
+            </span>
                         <input
                           type="number"
                           placeholder="0"
                           value={filters.salaryMin}
                           onChange={(e) => updateSalaryRange('salaryMin', e.target.value)}
-                          style={{
+              style={{
                             width: '100%',
                             padding: '10px 10px 10px 30px',
                             borderRadius: '6px',
-                            border: '1px solid #e2e8f0',
+                border: '1px solid #e2e8f0',
                             fontSize: '14px',
                             backgroundColor: 'white',
                             color: '#1a1a1a',
@@ -1303,10 +1379,10 @@ const Jobs = () => {
                           style={{
                             width: '100%',
                             padding: '10px 10px 10px 30px',
-                            borderRadius: '6px',
+                borderRadius: '6px',
                             border: '1px solid #e2e8f0',
                             fontSize: '14px',
-                            backgroundColor: 'white',
+                backgroundColor: 'white',
                             color: '#1a1a1a',
                             outline: 'none',
                             transition: 'border-color 0.2s ease-in-out'
@@ -1354,7 +1430,7 @@ const Jobs = () => {
                   }}
                 >
                   Apply Filters ({getActiveFilterCount()})
-                </button>
+            </button>
               </div>
             </div>
           </div>
@@ -1663,6 +1739,172 @@ const Jobs = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Profile Completion Modal */}
+        {showProfileCompletionModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              padding: '32px',
+              maxWidth: '500px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '24px'
+              }}>
+                <h2 style={{
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: '#0f172a',
+                  margin: 0
+                }}>
+                  Complete Your Profile
+                </h2>
+                <button
+                  onClick={() => setShowProfileCompletionModal(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    color: '#64748b'
+                  }}
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <p style={{
+                  fontSize: '16px',
+                  color: '#64748b',
+                  margin: '0 0 16px 0',
+                  lineHeight: '1.5'
+                }}>
+                  To apply for jobs automatically, please complete your profile with the following information:
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <User size={20} color="#16a34a" />
+                    <div>
+                      <div style={{ fontWeight: '600', color: '#0f172a' }}>Basic Information</div>
+                      <div style={{ fontSize: '14px', color: '#64748b' }}>
+                        Name, email, phone, location, industry, current job title
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <GraduationCap size={20} color="#16a34a" />
+                    <div>
+                      <div style={{ fontWeight: '600', color: '#0f172a' }}>Education</div>
+                      <div style={{ fontSize: '14px', color: '#64748b' }}>
+                        At least one education entry
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <Briefcase size={20} color="#16a34a" />
+                    <div>
+                      <div style={{ fontWeight: '600', color: '#0f172a' }}>Experience</div>
+                      <div style={{ fontSize: '14px', color: '#64748b' }}>
+                        At least one work experience entry
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                justifyContent: 'flex-end'
+              }}>
+                <button
+                  onClick={() => setShowProfileCompletionModal(false)}
+                  style={{
+                    padding: '12px 24px',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    backgroundColor: 'white',
+                    color: '#64748b',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowProfileCompletionModal(false)
+                    navigate('/profile')
+                  }}
+                  style={{
+                    padding: '12px 24px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    backgroundColor: '#16a34a',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  Complete Profile
+                </button>
               </div>
             </div>
           </div>

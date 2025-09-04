@@ -16,68 +16,7 @@ import {
 const Notifications = () => {
   const screenSize = useResponsive()
   const [selectedFilter, setSelectedFilter] = useState('all')
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'job',
-      title: 'New Job Match',
-      message: 'Senior Software Engineer position at TechCorp matches your profile',
-      time: '5 minutes ago',
-      read: false,
-      icon: Briefcase,
-      color: '#16a34a'
-    },
-    {
-      id: 2,
-      type: 'application',
-      title: 'Application Update',
-      message: 'Your application for Frontend Developer has been reviewed',
-      time: '1 hour ago',
-      read: false,
-      icon: User,
-      color: '#3b82f6'
-    },
-    {
-      id: 3,
-      type: 'tender',
-      title: 'Tender Deadline',
-      message: 'City Infrastructure Project deadline is approaching (2 days left)',
-      time: '2 hours ago',
-      read: true,
-      icon: FileText,
-      color: '#dc2626'
-    },
-    {
-      id: 4,
-      type: 'course',
-      title: 'Course Completed',
-      message: 'You have successfully completed "React Development Fundamentals"',
-      time: '1 day ago',
-      read: true,
-      icon: GraduationCap,
-      color: '#16a34a'
-    },
-    {
-      id: 5,
-      type: 'job',
-      title: 'Profile Views',
-      message: '3 employers viewed your profile this week',
-      time: '2 days ago',
-      read: false,
-      icon: User,
-      color: '#059669'
-    },
-    {
-      id: 6,
-      type: 'application',
-      title: 'Interview Scheduled',
-      message: 'Interview scheduled for Data Scientist position at DataFlow Inc',
-      time: '3 days ago',
-      read: true,
-      icon: Briefcase,
-      color: '#7c3aed'
-    }
-  ])
+  const [notifications, setNotifications] = useState([])
 
   const filters = [
     { id: 'all', name: 'All', count: notifications.length },

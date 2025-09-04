@@ -1,0 +1,28 @@
+-- Create course_enrollments table
+CREATE TABLE IF NOT EXISTS `course_enrollments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `course_id` int(11) NOT NULL,
+  `status` enum('enrolled','in-progress','completed','dropped') DEFAULT 'enrolled',
+  `progress` int(11) DEFAULT 0,
+  `completed_lessons` int(11) DEFAULT 0,
+  `total_lessons` int(11) DEFAULT 0,
+  `time_spent` int(11) DEFAULT 0,
+  `last_accessed` datetime DEFAULT NULL,
+  `enrolled_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` datetime DEFAULT NULL,
+  `certificate_issued` tinyint(1) DEFAULT 0,
+  `certificate_url` varchar(500) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `rating` int(11) DEFAULT NULL,
+  `review` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_course_enrollment` (`user_id`,`course_id`),
+  KEY `course_enrollments_user_id` (`user_id`),
+  KEY `course_enrollments_course_id` (`course_id`),
+  KEY `course_enrollments_status` (`status`),
+  CONSTRAINT `course_enrollments_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `course_enrollments_ibfk_2` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

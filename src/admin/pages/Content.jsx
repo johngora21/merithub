@@ -27,6 +27,7 @@ import {
   X
 } from 'lucide-react'
 import Post from '../../pages/Post'
+import { apiService } from '../../lib/api-service'
 
 const Content = () => {
   // Simple responsive detection
@@ -56,6 +57,11 @@ const Content = () => {
   const [showForm, setShowForm] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [jobsData, setJobsData] = useState([])
+  const [tendersData, setTendersData] = useState([])
+  const [opportunitiesData, setOpportunitiesData] = useState([])
+  const [coursesData, setCoursesData] = useState([])
+  const [applicationsData, setApplicationsData] = useState([])
   const [courseFormData, setCourseFormData] = useState({
     type: 'video', // video, book, business-plan
     title: '',
@@ -85,6 +91,119 @@ const Content = () => {
     targetAudience: '',
     documents: []
   })
+
+  // Replace mock content with API data while preserving UI structure
+  useEffect(() => {
+    const mapJob = (j) => ({
+      id: String(j.id || j.job_id || ''),
+      company: j.company || j.company_name || '',
+      industry: j.industry || j.category || '',
+      title: j.title || j.position || '',
+      location: j.location || j.country || '',
+      salary: j.salary || j.salary_range || '',
+      type: j.type || j.employment_type || '',
+      experience: j.experience || j.experience_level || '',
+      skills: Array.isArray(j.skills) ? j.skills : [],
+      description: j.description || '',
+      postedTime: j.posted_time || j.created_at || '',
+      applicants: j.applicants_count || 0,
+      status: j.status || 'Active',
+      logo: j.logo || j.company_logo || ''
+    })
+
+    const mapTender = (t) => ({
+      id: String(t.id || t.tender_id || ''),
+      company: t.organization || t.company || '',
+      industry: t.industry || 'Government',
+      title: t.title || '',
+      location: t.location || t.country || '',
+      salary: t.budget || t.price_range || '',
+      type: t.type || 'Tender',
+      experience: t.experience || '',
+      skills: Array.isArray(t.requirements) ? t.requirements : [],
+      description: t.description || '',
+      postedTime: t.posted_time || t.created_at || '',
+      applicants: t.applicants_count || 0,
+      status: t.status || 'Active',
+      logo: t.logo || t.organization_logo || ''
+    })
+
+    const mapOpportunity = (o) => ({
+      id: String(o.id || o.opportunity_id || ''),
+      company: o.organization || o.company || '',
+      industry: o.industry || o.category || '',
+      title: o.title || '',
+      location: o.location || o.country || 'Remote',
+      salary: o.stipend || o.compensation || '',
+      type: 'Opportunity',
+      experience: o.experience || '',
+      skills: Array.isArray(o.benefits) ? o.benefits : [],
+      description: o.description || '',
+      postedTime: o.posted_time || o.created_at || '',
+      applicants: o.applicants_count || 0,
+      status: o.status || 'Active',
+      logo: o.logo || o.organization_logo || ''
+    })
+
+    const mapCourse = (c) => ({
+      id: String(c.id || c.course_id || ''),
+      type: c.type || c.format || 'video',
+      title: c.title || '',
+      description: c.description || '',
+      instructor: c.instructor || '',
+      author: c.author || '',
+      authorType: c.author_type || '',
+      companyName: c.company_name || '',
+      duration: c.duration || '',
+      language: c.language || 'English',
+      category: c.category || '',
+      level: c.level || 'Beginner',
+      format: c.format || '',
+      price: c.price || 'Free',
+      rating: c.rating ?? 5,
+      enrolledStudents: c.enrolled_students ?? 0,
+      thumbnailUrl: c.thumbnail || c.thumbnail_url || '',
+      videoUrl: c.video_url || '',
+      downloadUrl: c.download_url || '',
+      tags: Array.isArray(c.tags) ? c.tags : [],
+      businessType: c.business_type || '',
+      industrySector: c.industry_sector || '',
+      stage: c.stage || '',
+      pageCount: c.page_count || '',
+      fileSize: c.file_size || '',
+      targetAudience: c.target_audience || '',
+      documents: Array.isArray(c.documents) ? c.documents : []
+    })
+
+    const loadContent = async () => {
+      try {
+        const [jobs, tenders, opportunities, courses, applications] = await Promise.all([
+          apiService.get('/admin/content', { type: 'jobs', limit: 50 }).catch(() => ({ content: [] })),
+          apiService.get('/admin/content', { type: 'tenders', limit: 50 }).catch(() => ({ content: [] })),
+          apiService.get('/admin/content', { type: 'opportunities', limit: 50 }).catch(() => ({ content: [] })),
+          apiService.get('/admin/content', { type: 'courses', limit: 50 }).catch(() => ({ content: [] })),
+          apiService.get('/admin/applications', { limit: 50 }).catch(() => ({ applications: [] }))
+        ])
+        const jobsArr = (jobs?.content || [])
+        const tendersArr = (tenders?.content || [])
+        const oppArr = (opportunities?.content || [])
+        const coursesArr = (courses?.content || [])
+        const appsArr = (applications?.applications || [])
+
+        // Set real data into state used by the UI
+        setJobsData(jobsArr.map(mapJob))
+        setTendersData(tendersArr.map(mapTender))
+        setOpportunitiesData(oppArr.map(mapOpportunity))
+        setCoursesData(Array.isArray(coursesArr) ? coursesArr.map(mapCourse) : [])
+        setApplicationsData(appsArr)
+      } catch (e) {
+        console.error('Failed to load admin content:', e)
+        // Leave arrays as-is if API fails
+      }
+    }
+    loadContent()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Sample data - in real app this would come from API
   const contentData = {
@@ -818,11 +937,50 @@ const Content = () => {
     })
   }
 
-  const handleCourseFormSubmit = (e) => {
+  const handleCourseFormSubmit = async (e) => {
     e.preventDefault()
-    console.log('Submitting course:', courseFormData)
-    // Here you would normally send the data to your API
-    handleCloseCourseForm()
+    try {
+      const payload = {
+        title: courseFormData.title,
+        description: courseFormData.description,
+        instructor: courseFormData.instructor || courseFormData.author || 'Instructor',
+        category: courseFormData.category,
+        level: (courseFormData.level || 'Beginner').toLowerCase(),
+        duration_hours: courseFormData.duration?.match(/\d+/) ? parseInt(courseFormData.duration.match(/\d+/)[0], 10) : null,
+        price: courseFormData.price === 'Free' ? 0 : Number(courseFormData.price) || 0,
+        currency: 'USD',
+        thumbnail_url: courseFormData.thumbnailUrl || undefined,
+        video_url: courseFormData.videoUrl || undefined,
+        materials: courseFormData.documents?.map(d => ({ name: d.name, size: d.size, type: d.type })) || [],
+        learning_objectives: courseFormData.tags || [],
+        status: 'published'
+      }
+      const res = await apiService.post('/courses', payload)
+      const created = res?.course || res
+      setCoursesData(prev => [{
+        id: String(created.id),
+        ...payload,
+        type: courseFormData.type,
+        title: payload.title,
+        description: payload.description,
+        instructor: payload.instructor,
+        duration: courseFormData.duration || '',
+        language: courseFormData.language,
+        category: payload.category,
+        level: courseFormData.level,
+        price: courseFormData.price,
+        rating: 5,
+        enrolledStudents: 0,
+        thumbnailUrl: payload.thumbnail_url,
+        videoUrl: payload.video_url,
+        downloadUrl: courseFormData.downloadUrl,
+        tags: courseFormData.tags
+      }, ...prev])
+      handleCloseCourseForm()
+    } catch (err) {
+      console.error('Create course failed', err)
+      alert(err.message || 'Failed to create course')
+    }
   }
 
   const handleCourseInputChange = (field, value) => {
@@ -882,6 +1040,34 @@ const Content = () => {
   const handleViewDetails = (item, type) => {
     setSelectedItem({ ...item, type })
     setShowDetails(true)
+  }
+
+  const handleDelete = async (item, type) => {
+    try {
+      if (!window.confirm('Delete this item?')) return
+      await apiService.delete(`/admin/content/${type}/${item.id}`)
+      if (type === 'jobs') setJobsData(prev => prev.filter(x => x.id !== item.id))
+      if (type === 'tenders') setTendersData(prev => prev.filter(x => x.id !== item.id))
+      if (type === 'opportunities') setOpportunitiesData(prev => prev.filter(x => x.id !== item.id))
+      if (type === 'courses') setCoursesData(prev => prev.filter(x => x.id !== item.id))
+    } catch (e) {
+      console.error('Delete failed', e)
+      alert(e.message || 'Delete failed')
+    }
+  }
+
+  const handleStatusChange = async (item, type, nextStatus) => {
+    try {
+      await apiService.put(`/admin/content/${type}/${item.id}/status`, { status: nextStatus })
+      const update = (arr) => arr.map(x => x.id === item.id ? { ...x, status: nextStatus } : x)
+      if (type === 'jobs') setJobsData(update)
+      if (type === 'tenders') setTendersData(update)
+      if (type === 'opportunities') setOpportunitiesData(update)
+      if (type === 'courses') setCoursesData(update)
+    } catch (e) {
+      console.error('Status update failed', e)
+      alert(e.message || 'Status update failed')
+    }
   }
 
   const getStatusColor = (status) => {
@@ -1185,6 +1371,9 @@ const Content = () => {
                         color: '#6b7280',
                         cursor: 'pointer',
                         padding: '4px'
+                      }} onClick={() => {
+                        const next = item.status === 'Active' ? 'Paused' : 'Active'
+                        handleStatusChange(item, type, next)
                       }}>
                         <Edit size={16} />
                       </button>
@@ -1194,7 +1383,7 @@ const Content = () => {
                         color: '#dc2626',
                         cursor: 'pointer',
                         padding: '4px'
-                      }}>
+                      }} onClick={() => handleDelete(item, type)}>
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -1214,7 +1403,7 @@ const Content = () => {
         return (
           <ContentTable
             type="jobs"
-            data={contentData.jobs}
+            data={jobsData}
             columns={[
               { key: 'title', label: 'Job Title' },
               { key: 'company', label: 'Company' },
@@ -1252,7 +1441,7 @@ const Content = () => {
         return (
           <ContentTable
             type="tenders"
-            data={contentData.tenders}
+            data={tendersData}
             columns={[
               { key: 'title', label: 'Tender Title' },
               { key: 'organization', label: 'Organization' },
@@ -1290,7 +1479,7 @@ const Content = () => {
         return (
           <ContentTable
             type="opportunities"
-            data={contentData.opportunities}
+            data={opportunitiesData}
             columns={[
               { key: 'title', label: 'Opportunity Title' },
               { key: 'type', label: 'Type' },
@@ -1328,7 +1517,7 @@ const Content = () => {
         return (
           <ContentTable
             type="courses"
-            data={contentData.courses}
+            data={coursesData}
             columns={[
               { key: 'title', label: 'Course Title' },
               { key: 'category', label: 'Category' },
@@ -1367,7 +1556,7 @@ const Content = () => {
         return (
           <ContentTable
             type="applications"
-            data={contentData.applications}
+            data={applicationsData}
             columns={[
               { key: 'applicant', label: 'Applicant' },
               { key: 'appliedFor', label: 'Applied For' },

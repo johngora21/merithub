@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
+import { apiService } from '../lib/api-service'
 import { 
   FileText,
   CheckCircle,
@@ -197,35 +198,49 @@ const TenderTools = () => {
     }
   ]
 
-  const myTenders = [
-    {
-      id: 1,
-      title: 'City Infrastructure Development',
-      organization: 'City of San Francisco',
-      deadline: '2024-04-30',
-      status: 'In Progress',
-      value: '$2.5M - $5.2M',
-      progress: 75
-    },
-    {
-      id: 2,
-      title: 'Digital Transformation Services',
-      organization: 'State Department of Education',
-      deadline: '2024-05-15',
-      status: 'Draft',
-      value: '$800K - $1.5M',
-      progress: 30
-    },
-    {
-      id: 3,
-      title: 'Medical Equipment Supply',
-      organization: 'Regional Health Network',
-      deadline: '2024-04-20',
-      status: 'Submitted',
-      value: '$1.2M - $3.0M',
-      progress: 100
+  const [myTenders, setMyTenders] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    fetchMyTenders()
+  }, [])
+
+  const fetchMyTenders = async () => {
+    try {
+      setLoading(true)
+      // Fetch user's tender applications
+      const response = await apiService.get('/applications/my-applications')
+      const applications = response.data.applications || []
+      
+      // Filter tender applications
+      const tenderApplications = applications.filter(app => app.tender)
+      
+      // Transform to tender format
+      const tenders = tenderApplications.map((app, index) => ({
+        id: app.id,
+        title: app.tender.title,
+        organization: app.tender.organization,
+        deadline: app.deadline || '2024-12-31',
+        status: app.status === 'pending' ? 'In Progress' : 
+                app.status === 'accepted' ? 'Submitted' : 
+                app.status === 'rejected' ? 'Draft' : 'In Progress',
+        value: app.tender.contract_value_min && app.tender.contract_value_max 
+          ? `${app.tender.currency} ${(app.tender.contract_value_min / 1000000).toFixed(1)}M - ${app.tender.currency} ${(app.tender.contract_value_max / 1000000).toFixed(1)}M`
+          : 'Amount not specified',
+        progress: app.status === 'accepted' ? 100 : 
+                 app.status === 'pending' ? 75 : 
+                 app.status === 'rejected' ? 30 : 50
+      }))
+      
+      setMyTenders(tenders)
+    } catch (error) {
+      console.error('Error fetching my tenders:', error)
+      // Keep empty array as fallback
+      setMyTenders([])
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
 
   const getStatusColor = (status) => {
     switch (status) {

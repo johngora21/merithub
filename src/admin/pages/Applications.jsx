@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { RefreshCw, Download, Users, MapPin, DollarSign, Briefcase, Clock, Star, Search, SlidersHorizontal, X, Check, FileText, GraduationCap } from 'lucide-react'
 import { useResponsive, getGridColumns, getGridGap } from '../../hooks/useResponsive'
 import { countries } from '../../utils/countries'
 import ApplicantsList from './ApplicantsList'
+import { apiService } from '../../lib/api-service'
 
 const Applications = () => {
   const screenSize = useResponsive()
@@ -18,117 +19,95 @@ const Applications = () => {
     location: ''
   })
 
-  // Sample data for all three services
-  const jobsData = [
-    {
-      id: 'JOB-001',
-      title: 'Senior Frontend Developer',
-      company: 'TechCorp Solutions',
-      industry: 'Technology',
-      location: 'San Francisco, CA',
-      type: 'Full-time',
-      experience: '5+ years',
-      salary: '$120,000 - $160,000',
-      postedTime: '2 hours ago',
-      applicants: 23,
-      description: 'We are looking for an experienced Frontend Developer to join our growing team.',
-      skills: ['React', 'TypeScript', 'Node.js', 'AWS'],
-      logo: 'https://via.placeholder.com/44x44/3b82f6/ffffff?text=TC',
-      urgentHiring: true,
-      isRemote: false,
-      postedBy: 'platform',
-      status: 'Active'
-    },
-    {
-      id: 'JOB-002',
-      title: 'Backend Engineer',
-      company: 'Digital Innovations Ltd',
-      industry: 'Software',
-      location: 'Nairobi, Kenya',
-      type: 'Contract',
-      experience: '3-5 years',
-      salary: '$80,000 - $120,000',
-      postedTime: '1 day ago',
-      applicants: 15,
-      description: 'Join our backend team to build scalable APIs and microservices.',
-      skills: ['Python', 'Django', 'PostgreSQL', 'Docker'],
-      logo: 'https://via.placeholder.com/44x44/16a34a/ffffff?text=DI',
-      urgentHiring: false,
-      isRemote: true,
-      postedBy: 'company',
-      status: 'Active'
-    }
-  ]
+  // API-driven data (preserve UI and structure)
+  const [jobsState, setJobsState] = useState([])
+  const [tendersState, setTendersState] = useState([])
+  const [opportunitiesState, setOpportunitiesState] = useState([])
+  const [loadingData, setLoadingData] = useState(false)
+  const [loadError, setLoadError] = useState('')
 
-  const tendersData = [
-    {
-      id: 'TENDER-001',
-      title: 'Government IT Infrastructure Tender',
-      company: 'Ministry of Technology',
-      industry: 'Government',
-      location: 'Nairobi, Kenya',
-      budget: '$500,000 - $750,000',
-      deadline: '2024-02-15',
-      postedTime: '1 day ago',
-      applicants: 8,
-      description: 'Comprehensive IT infrastructure development and maintenance services for government departments.',
-      requirements: ['ISO 27001', '5+ Years Experience', 'Local Registration'],
-      logo: 'https://via.placeholder.com/44x44/16a34a/ffffff?text=MT',
-      postedBy: 'government',
-      status: 'Active'
-    },
-    {
-      id: 'TENDER-002',
-      title: 'Hospital Equipment Supply Tender',
-      company: 'County Health Department',
-      industry: 'Healthcare',
-      location: 'Mombasa, Kenya',
-      budget: '$200,000 - $300,000',
-      deadline: '2024-03-01',
-      postedTime: '3 days ago',
-      applicants: 12,
-      description: 'Supply and installation of medical equipment for county hospitals.',
-      requirements: ['Medical Equipment License', '3+ Years Experience', 'Warranty Support'],
-      logo: 'https://via.placeholder.com/44x44/8b5cf6/ffffff?text=CH',
-      postedBy: 'government',
-      status: 'Active'
-    }
-  ]
+  // Map backend payloads to the exact UI fields used by the cards
+  const mapJob = (j) => ({
+    id: j.id || j.job_id || `JOB-${j?.id || ''}`,
+    title: j.title || j.position || '',
+    company: j.company || j.company_name || '',
+    industry: j.industry || j.category || '',
+    location: j.location || j.country || '',
+    type: j.type || j.employment_type || '',
+    experience: j.experience || j.experience_level || '',
+    salary: j.salary || j.salary_range || '',
+    postedTime: j.posted_time || j.created_at || '',
+    applicants: j.applicants_count || 0,
+    description: j.description || '',
+    skills: Array.isArray(j.skills) ? j.skills : [],
+    logo: j.logo || j.company_logo || '',
+    urgentHiring: !!(j.is_urgent || j.urgentHiring),
+    isRemote: !!(j.is_remote || j.remote),
+    postedBy: j.posted_by || j.source || 'platform',
+    status: j.status || 'Active'
+  })
 
-  const opportunitiesData = [
-    {
-      id: 'OPP-001',
-      title: 'Tech Innovation Scholarship',
-      company: 'Global Tech Foundation',
-      industry: 'Education',
-      location: 'Remote',
-      duration: '12 months',
-      stipend: '$2,500/month',
-      postedTime: '3 days ago',
-      applicants: 156,
-      description: 'Full scholarship for innovative tech projects with mentorship and funding support.',
-      benefits: ['Full Funding', 'Mentorship', 'Networking', 'Project Support'],
-      logo: 'https://via.placeholder.com/44x44/ea580c/ffffff?text=GT',
-      postedBy: 'foundation',
-      status: 'Active'
-    },
-    {
-      id: 'OPP-002',
-      title: 'Youth Leadership Program',
-      company: 'African Development Bank',
-      industry: 'Leadership',
-      location: 'Multiple Locations',
-      duration: '6 months',
-      stipend: '$1,800/month',
-      postedTime: '1 week ago',
-      applicants: 89,
-      description: 'Leadership development program for young African professionals.',
-      benefits: ['Leadership Training', 'Networking', 'Career Guidance', 'Stipend'],
-      logo: 'https://via.placeholder.com/44x44/0891b2/ffffff?text=AD',
-      postedBy: 'institution',
-      status: 'Active'
+  const mapTender = (t) => ({
+    id: t.id || t.tender_id || `TENDER-${t?.id || ''}`,
+    title: t.title || '',
+    company: t.organization || t.company || '',
+    industry: t.industry || 'Government',
+    location: t.location || t.country || '',
+    budget: t.budget || t.price_range || '',
+    deadline: t.deadline || t.closing_date || '',
+    postedTime: t.posted_time || t.created_at || '',
+    applicants: t.applicants_count || 0,
+    description: t.description || '',
+    requirements: Array.isArray(t.requirements) ? t.requirements : [],
+    logo: t.logo || t.organization_logo || '',
+    postedBy: t.posted_by || 'government',
+    status: t.status || 'Active'
+  })
+
+  const mapOpportunity = (o) => ({
+    id: o.id || o.opportunity_id || `OPP-${o?.id || ''}`,
+    title: o.title || '',
+    company: o.organization || o.company || '',
+    industry: o.industry || o.category || '',
+    location: o.location || o.country || 'Remote',
+    duration: o.duration || '',
+    stipend: o.stipend || o.compensation || '',
+    postedTime: o.posted_time || o.created_at || '',
+    applicants: o.applicants_count || 0,
+    description: o.description || '',
+    benefits: Array.isArray(o.benefits) ? o.benefits : [],
+    logo: o.logo || o.organization_logo || '',
+    postedBy: o.posted_by || 'institution',
+    status: o.status || 'Active'
+  })
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        setLoadingData(true)
+        setLoadError('')
+        const resp = await apiService.get('/admin/applications/overview')
+        const payload = resp?.data || resp || {}
+        const jobs = Array.isArray(payload.jobs) ? payload.jobs : (payload.data?.jobs || [])
+        const tenders = Array.isArray(payload.tenders) ? payload.tenders : (payload.data?.tenders || [])
+        const opportunities = Array.isArray(payload.opportunities) ? payload.opportunities : (payload.data?.opportunities || [])
+        setJobsState(jobs.map(mapJob))
+        setTendersState(tenders.map(mapTender))
+        setOpportunitiesState(opportunities.map(mapOpportunity))
+      } catch (e) {
+        console.error('Error fetching applications:', e)
+        setJobsState([])
+        setTendersState([])
+        setOpportunitiesState([])
+        setLoadError(e?.message || 'Failed to load applications')
+      } finally {
+        setLoadingData(false)
+      }
     }
-  ]
+    fetchApplications()
+  }, [])
+
+  // Removed mock data: use real API data only
 
   const filterOptions = {
     status: ['All Status', 'Active', 'Closed', 'Draft', 'Pending Review'],
@@ -182,10 +161,10 @@ const Applications = () => {
   // Get current data based on active tab
   const getCurrentData = () => {
     switch(activeTab) {
-      case 'jobs': return jobsData
-      case 'tenders': return tendersData
-      case 'opportunities': return opportunitiesData
-      default: return jobsData
+      case 'jobs': return jobsState
+      case 'tenders': return tendersState
+      case 'opportunities': return opportunitiesState
+      default: return jobsState
     }
   }
 
@@ -228,7 +207,7 @@ const Applications = () => {
   }
 
   const handleViewApplicants = (item) => {
-    setSelectedItemForApplicants(item)
+    setSelectedItemForApplicants({ ...item, __type: activeTab })
     setShowApplicantsList(true)
   }
 

@@ -1,6 +1,8 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { countries } from '../utils/countries'
+import { tendersAPI } from '../lib/api-service'
+import { resolveAssetUrl } from '../lib/api-service'
 
 import { 
   Bookmark, 
@@ -19,12 +21,14 @@ import {
   Briefcase,
   Factory,
   X,
-  Check
+  Check,
+  Star
 } from 'lucide-react'
 
 const Tenders = () => {
   const screenSize = useResponsive()
   const [savedTenders, setSavedTenders] = useState(new Set())
+  
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState({
@@ -36,223 +40,60 @@ const Tenders = () => {
   })
   const [showDetails, setShowDetails] = useState(false)
   const [selectedTender, setSelectedTender] = useState(null)
+  const [tenders, setTenders] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const tenders = [
-    {
-      id: '1',
-      title: 'City Infrastructure Development Project',
-      organization: 'City of San Francisco',
-      sector: 'Government',
-      category: 'Infrastructure',
-      contractValue: '$2.5M - $5.2M',
-      duration: '18 months',
-      location: 'San Francisco, CA',
-      country: 'United States',
-      deadline: '2024-04-30',
-      description: 'Comprehensive infrastructure development including road construction, utility upgrades, and public facility improvements across downtown district.',
-      requirements: ['Valid contractor license', 'Minimum $1M bonding capacity', '5+ years infrastructure experience', 'Local workforce compliance'],
-      documents: ['RFP Document', 'Technical Specifications', 'Site Plans', 'Compliance Requirements'],
-      submissionType: 'Online Portal',
-      isUrgent: true,
-      bondRequired: true,
-      prequalificationRequired: true,
-      tags: ['Construction', 'Public Works', 'Infrastructure'],
-      postedTime: '3 days ago',
-      submissions: 12,
-      externalUrl: 'https://sf.gov/departments/city-administrator/procurement/current-opportunities',
-      detailedDescription: 'This comprehensive infrastructure development project encompasses multiple phases of urban renewal and modernization. The project will focus on upgrading critical city infrastructure including roadways, utilities, public facilities, and digital infrastructure to support the growing population and economic development in the downtown district.',
-      projectScope: [
-        'Road construction and resurfacing (15 miles)',
-        'Utility upgrades (water, sewer, electrical)',
-        'Public facility improvements (3 buildings)',
-        'Digital infrastructure installation',
-        'Traffic management systems',
-        'Public safety enhancements'
-      ],
-      technicalRequirements: [
-        'LEED Gold certification compliance',
-        'ADA accessibility standards',
-        'Environmental impact mitigation',
-        'Local labor requirements (30% minimum)',
-        'Safety protocols and certifications',
-        'Quality assurance programs'
-      ],
-      organizationInfo: {
-        name: 'City of San Francisco',
-        type: 'Municipal Government',
-        established: '1850',
-        employees: '25,000+',
-        budget: '$12.3B annually',
-        focus: 'Public services, infrastructure, community development'
-      },
-      submissionProcess: [
-        'Pre-qualification application review',
-        'Technical proposal submission',
-        'Financial proposal submission',
-        'Presentation to evaluation committee',
-        'Reference verification',
-        'Contract negotiation'
-      ],
-      evaluationCriteria: [
-        'Technical capability (40%)',
-        'Financial proposal (30%)',
-        'Past experience (20%)',
-        'Local participation (10%)'
-      ]
-    },
-    {
-      id: '2',
-      title: 'Digital Transformation Services',
-      organization: 'State Department of Education',
-      sector: 'Government',
-      category: 'Technology',
-      contractValue: '$800K - $1.5M',
-      duration: '12 months',
-      location: 'Sacramento, CA',
-      deadline: '2024-05-15',
-      description: 'Complete digital transformation of educational management systems including cloud migration, data analytics platform, and mobile application development.',
-      requirements: ['Security clearance eligible', 'Microsoft Azure certification', 'Education sector experience', 'WCAG compliance knowledge'],
-      documents: ['Statement of Work', 'Security Requirements', 'System Architecture', 'Evaluation Criteria'],
-      submissionType: 'Electronic Submission',
-      isUrgent: false,
-      bondRequired: false,
-      prequalificationRequired: true,
-      tags: ['Technology', 'Cloud', 'Education', 'Data Analytics'],
-      postedTime: '1 week ago',
-      submissions: 8,
-      externalUrl: 'https://www.cde.ca.gov/re/di/ws/procurement.asp',
-      detailedDescription: 'The State Department of Education seeks a comprehensive digital transformation partner to modernize educational management systems across 500+ schools statewide. This initiative will enhance student information systems, implement advanced analytics for educational outcomes, and provide mobile-first solutions for students, teachers, and administrators.',
-      projectScope: [
-        'Cloud migration of legacy systems',
-        'Student information system upgrade',
-        'Data analytics and reporting platform',
-        'Mobile application development',
-        'Teacher portal and gradebook system',
-        'Parent engagement platform',
-        'Integration with third-party tools'
-      ],
-      technicalRequirements: [
-        'Microsoft Azure cloud platform',
-        'WCAG 2.1 AA accessibility compliance',
-        'FERPA and state privacy regulations',
-        'Single sign-on (SSO) integration',
-        'API-first architecture',
-        'Multi-factor authentication',
-        'Real-time data synchronization'
-      ],
-      organizationInfo: {
-        name: 'State Department of Education',
-        type: 'State Government Agency',
-        established: '1849',
-        employees: '2,500+',
-        budget: '$85B annually',
-        focus: 'K-12 education, curriculum standards, teacher certification'
-      },
-      submissionProcess: [
-        'Pre-qualification questionnaire',
-        'Technical demonstration',
-        'Security assessment',
-        'Reference evaluation',
-        'Cost proposal review',
-        'Final presentation'
-      ],
-      evaluationCriteria: [
-        'Technical solution (35%)',
-        'Implementation approach (25%)',
-        'Security and compliance (20%)',
-        'Cost effectiveness (20%)'
-      ]
-    },
-    {
-      id: '3',
-      title: 'Medical Equipment Supply Contract',
-      organization: 'Regional Health Network',
-      sector: 'Healthcare',
-      category: 'Procurement',
-      contractValue: '$1.2M - $3.0M',
-      duration: '24 months',
-      location: 'Los Angeles, CA',
-      deadline: '2024-04-20',
-      description: 'Multi-year contract for supply and maintenance of medical equipment including MRI machines, surgical instruments, and diagnostic equipment.',
-      requirements: ['FDA compliance certification', 'Medical device experience', 'Service network coverage', 'Insurance requirements'],
-      documents: ['Equipment Specifications', 'Service Level Agreement', 'Compliance Documentation', 'Pricing Schedule'],
-      submissionType: 'Sealed Bid',
-      isUrgent: true,
-      bondRequired: true,
-      prequalificationRequired: false,
-      tags: ['Healthcare', 'Medical Equipment', 'Maintenance'],
-      postedTime: '5 days ago',
-      submissions: 15,
-      externalUrl: 'https://www.rhnetwork.org/procurement/medical-equipment-rfp'
-    },
-    {
-      id: '4',
-      title: 'Green Energy Consulting Services',
-      organization: 'Metropolitan Transit Authority',
-      sector: 'Transportation',
-      category: 'Consulting',
-      contractValue: '$300K - $750K',
-      duration: '8 months',
-      location: 'Bay Area, CA',
-      deadline: '2024-05-30',
-      description: 'Consulting services for implementing renewable energy solutions across transit facilities including solar installations and energy efficiency assessments.',
-      requirements: ['LEED certification preferred', 'Renewable energy experience', 'Transit industry knowledge', 'Environmental compliance'],
-      documents: ['Scope of Services', 'Facility Assessment Guide', 'Sustainability Requirements', 'Payment Terms'],
-      submissionType: 'Proposal Submission',
-      isUrgent: false,
-      bondRequired: false,
-      prequalificationRequired: false,
-      tags: ['Green Energy', 'Consulting', 'Sustainability'],
-      postedTime: '2 days ago',
-      submissions: 6,
-      externalUrl: 'https://www.bart.gov/about/business/procurement'
-    },
-    {
-      id: '5',
-      title: 'Corporate Campus Security Services',
-      organization: 'Fortune 500 Technology Company',
-      sector: 'Private',
-      category: 'Security',
-      contractValue: '$1.8M - $2.5M',
-      duration: '36 months',
-      location: 'Silicon Valley, CA',
-      deadline: '2024-04-25',
-      description: 'Comprehensive security services for multi-building corporate campus including personnel, technology systems, and emergency response protocols.',
-      requirements: ['Security license', 'Technology integration experience', 'Background check capability', '24/7 service coverage'],
-      documents: ['Security Requirements', 'Site Layout', 'Technology Specifications', 'Service Level Metrics'],
-      submissionType: 'RFP Response',
-      isUrgent: false,
-      bondRequired: true,
-      prequalificationRequired: true,
-      tags: ['Security', 'Corporate', 'Technology'],
-      postedTime: '1 week ago',
-      submissions: 9,
-      externalUrl: 'https://careers.google.com/jobs/results/?q=security+services'
-    },
-    {
-      id: '6',
-      title: 'Manufacturing Equipment Upgrade',
-      organization: 'Aerospace Manufacturing Corp',
-      sector: 'Manufacturing',
-      category: 'Equipment',
-      contractValue: '$4.2M - $6.8M',
-      duration: '15 months',
-      location: 'Long Beach, CA',
-      deadline: '2024-04-10',
-      description: 'Complete upgrade of manufacturing equipment for aerospace component production including CNC machines, quality control systems, and automation integration.',
-      requirements: ['Aerospace industry experience', 'AS9100 certification', 'Equipment certification', 'Training provision'],
-      documents: ['Technical Specifications', 'Installation Requirements', 'Training Program', 'Warranty Terms'],
-      submissionType: 'Technical Proposal',
-      isUrgent: true,
-      bondRequired: true,
-      prequalificationRequired: true,
-      tags: ['Manufacturing', 'Aerospace', 'Equipment', 'Automation'],
-      postedTime: '6 hours ago',
-      submissions: 4,
-      externalUrl: 'https://www.boeing.com/careers/procurement'
+  useEffect(() => {
+    const fetchTenders = async () => {
+      try {
+        setLoading(true)
+        const data = await tendersAPI.getAll()
+        const apiTenders = data?.tenders || data || []
+        const transformed = apiTenders.map((t) => {
+          const orgLogo = t.organization_logo ? resolveAssetUrl(t.organization_logo) : ''
+          const coverImage = t.cover_image ? resolveAssetUrl(t.cover_image) : ''
+          const contractValue = (t.contract_value_min && t.contract_value_max)
+            ? `${t.currency} ${Number(t.contract_value_min).toLocaleString()} - ${t.currency} ${Number(t.contract_value_max).toLocaleString()}`
+            : 'Value not specified'
+          const sector = (t.sector || '').split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('-')
+          return {
+            id: String(t.id),
+            title: t.title,
+            organization: t.organization,
+            organizationLogo: orgLogo,
+            coverImage,
+            sector,
+            category: t.category,
+            location: t.location,
+            country: t.country,
+            contractValue,
+            currency: t.currency,
+            duration: t.duration || 'Not specified',
+            deadline: t.deadline,
+            description: t.description,
+            detailedDescription: t.detailed_description,
+            documents: Array.isArray(t.documents) ? t.documents : [],
+            tags: [], // Remove project scope from tags
+            projectScope: t.project_scope || [],
+            technicalRequirements: t.technical_requirements || [],
+            organizationInfo: t.organization_info || null,
+            submissionProcess: t.submission_process || [],
+            evaluationCriteria: t.evaluation_criteria || [],
+            submissions: t.submissions_count || 0,
+            externalUrl: t.external_url,
+            status: t.status || 'active',
+            isUrgent: !!t.is_urgent
+          }
+        })
+        setTenders(transformed)
+      } catch (e) {
+        console.error('Error fetching tenders:', e)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
-
+    fetchTenders()
+  }, [])
   const filterOptions = {
     sector: [
       'Technology', 'Construction', 'Healthcare', 'Transportation', 'Energy', 
@@ -300,13 +141,13 @@ const Tenders = () => {
 
   const handleApply = (tenderId) => {
     console.log('Apply clicked for tender:', tenderId)
-    // For tenders, we'll use external links to official tender websites
     const tender = tenders.find(t => t.id === tenderId)
     if (tender && tender.externalUrl) {
       window.open(tender.externalUrl, '_blank')
     } else {
-      // Fallback - could show a modal with external link or redirect
-      alert('Please visit the organization\'s official website to apply for this tender.')
+      // Show tender details modal as fallback
+      setSelectedTender(tender)
+      setShowDetails(true)
     }
   }
 
@@ -317,7 +158,21 @@ const Tenders = () => {
 
   const handleDownloadDocs = (tenderId) => {
     console.log('Download documents clicked for tender:', tenderId)
-    // Handle download logic here
+    const tender = tenders.find(t => t.id === tenderId)
+    if (tender && tender.documents && tender.documents.length > 0) {
+      // Download each document
+      tender.documents.forEach((doc, index) => {
+        const link = document.createElement('a')
+        link.href = resolveAssetUrl(doc.url || doc)
+        link.download = doc.name || `document-${index + 1}`
+        link.target = '_blank'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      })
+    } else {
+      alert('No documents available for this tender.')
+    }
   }
 
   const toggleFilter = (category, value) => {
@@ -590,14 +445,15 @@ const Tenders = () => {
               <div key={tender.id} style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
-                padding: screenSize.isMobile ? '16px 12px' : '20px',
+                overflow: 'hidden',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                 border: '1px solid #f0f0f0',
                 position: 'relative',
                 transition: 'all 0.2s ease-in-out',
                 cursor: 'pointer',
-                width: '100%',
-                boxSizing: 'border-box'
+                height: '480px',
+                display: 'flex',
+                flexDirection: 'column'
               }}
               onClick={() => handleTenderClick(tender)}
               onMouseEnter={(e) => {
@@ -609,310 +465,298 @@ const Tenders = () => {
                 e.currentTarget.style.transform = 'translateY(0)'
               }}>
                 
-                {/* Header */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  marginBottom: '16px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                    <div style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '8px',
-                      backgroundColor: `${sectorColor}15`,
-                      border: `2px solid ${sectorColor}30`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <SectorIcon size={24} color={sectorColor} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h3 style={{
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        color: '#1a1a1a',
-                        margin: '0 0 2px 0',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {tender.organization}
-                      </h3>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        marginBottom: '2px'
-                      }}>
-                        <span style={{
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          color: '#64748b'
-                        }}>
-                          {tender.sector}
-                        </span>
-                      </div>
-        </div>
-      </div>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      toggleSave(tender.id)
-                    }}
-                    style={{
-                      background: savedTenders.has(tender.id) ? '#f0fdf4' : '#f8f9fa',
-                      border: savedTenders.has(tender.id) ? '1px solid #16a34a' : '1px solid #e2e8f0',
-                      padding: '8px',
-                      cursor: 'pointer',
-                      borderRadius: '8px',
-                      flexShrink: 0,
-                      marginLeft: '8px',
-                      transition: 'all 0.2s ease-in-out'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = savedTenders.has(tender.id) ? '#dcfce7' : '#f1f5f9'
-                      e.target.style.transform = 'scale(1.05)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = savedTenders.has(tender.id) ? '#f0fdf4' : '#f8f9fa'
-                      e.target.style.transform = 'scale(1)'
-                    }}
-                  >
-                    <Bookmark 
-                      size={20} 
-                      color={savedTenders.has(tender.id) ? '#16a34a' : '#64748b'}
-                      fill={savedTenders.has(tender.id) ? '#16a34a' : 'none'}
+                {/* Cover Image */}
+                <div style={{ position: 'relative' }}>
+                  {tender.coverImage ? (
+                    <img 
+                      src={resolveAssetUrl(tender.coverImage)} 
+                      alt={tender.title}
+                      style={{
+                        width: '100%',
+                        height: '200px',
+                        objectFit: 'cover'
+                      }}
                     />
-                  </button>
-                </div>
-
-                {/* Title */}
-                <h2 style={{
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: '#1a1a1a',
-                  margin: '0 0 12px 0',
+                  ) : (
+                <div style={{
+                      width: '100%',
+                      height: '200px',
+                      backgroundColor: '#f8f9fa',
                   display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}>
-                  {tender.title}
-                  {tender.isUrgent && (
-                    <AlertCircle size={16} color="#dc2626" fill="#dc2626" />
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#64748b'
+                    }}>
+                      <SectorIcon size={48} color={sectorColor} />
+                    </div>
                   )}
-                </h2>
-
-                {/* Location and Deadline */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginBottom: '12px',
-                  fontSize: '13px',
-                  color: '#666',
-                  flexWrap: 'wrap'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                    <MapPin size={12} />
-                    {tender.location}
-                  </div>
-                  <span>•</span>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '3px',
-                    color: isDeadlineUrgent ? '#dc2626' : '#666',
-                    fontWeight: isDeadlineUrgent ? '600' : 'normal'
-                  }}>
-                    <Calendar size={12} />
-                    Due: {new Date(tender.deadline).toLocaleDateString()} ({daysUntilDeadline} days)
-          </div>
-
-      </div>
-
-                {/* Contract Value and Duration */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  marginBottom: '12px',
-                  flexWrap: 'wrap'
-                }}>
+                  
+                  {/* Overlay badges */}
                   <div style={{
+                    position: 'absolute',
+                    top: '12px',
+                    left: '12px',
+                    right: '12px',
                     display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '13px',
-                    color: '#16a34a',
-                    fontWeight: '600'
-                  }}>
-                    <DollarSign size={14} />
-                    {tender.contractValue}
-                  </div>
-                  <span style={{ color: '#e2e8f0' }}>•</span>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '13px',
-                    color: '#64748b'
-                  }}>
-                    <Clock size={14} />
-                    {tender.duration}
-        </div>
-                  <span style={{ color: '#e2e8f0' }}>•</span>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '13px',
-                    color: '#64748b'
-                  }}>
-                    <FileText size={14} />
-                    {tender.documents.length} documents
-                  </div>
-                </div>
-
-
-
-                {/* Description */}
-                <p style={{
-                  fontSize: '14px',
-                  color: '#475569',
-                  lineHeight: '1.5',
-                  margin: '0 0 12px 0',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden'
-                }}>
-                  {tender.description}
-                </p>
-
-                {/* Tags */}
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '6px'
-                  }}>
-                    {tender.tags.slice(0, 4).map((tag, index) => (
-                      <span key={index} style={{
-                        backgroundColor: '#f1f5f9',
-                        color: '#475569',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        fontWeight: '500'
-                      }}>
-                        {tag}
-                      </span>
-                    ))}
-                    {tender.tags.length > 4 && (
-                      <span style={{
-                        color: '#64748b',
-                        fontSize: '12px',
-                        padding: '4px 8px',
-                        fontWeight: '500'
-                      }}>
-                        +{tender.tags.length - 4} more
-                    </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
                   justifyContent: 'space-between',
-                  paddingTop: '12px',
-                  borderTop: '1px solid #f1f5f9',
-                  flexWrap: 'wrap',
-                  gap: '8px'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '12px',
-                    color: '#64748b'
+                    alignItems: 'flex-start'
                   }}>
-                    <Users size={12} />
-                    {tender.submissions} submissions
-                  </div>
-
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: screenSize.isMobile ? '6px' : '8px',
-                    flexShrink: 0
-                  }}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDownloadDocs(tender.id)
-                      }}
-                      style={{
-                        backgroundColor: 'white',
-                        color: '#64748b',
-                        border: '1px solid #e2e8f0',
-                        padding: screenSize.isMobile ? '6px 8px' : '6px 12px',
-                        borderRadius: '6px',
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <span style={{
                         fontSize: '12px',
+                        color: 'white',
+                        backgroundColor: sectorColor,
+                        padding: '4px 8px',
+                        borderRadius: '6px',
                         fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease-in-out',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = '#f8f9fa'
-                        e.target.style.borderColor = '#16a34a'
-                        e.target.style.color = '#16a34a'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = 'white'
-                        e.target.style.borderColor = '#e2e8f0'
-                        e.target.style.color = '#64748b'
-                      }}
-                    >
-                      <Download size={12} />
-                      Docs
-                  </button>
-
+                        backdropFilter: 'blur(10px)'
+                      }}>
+                        {tender.sector}
+                      </span>
+                      {tender.isUrgent && (
+                        <span style={{
+                          fontSize: '10px',
+                          color: 'white',
+                          backgroundColor: '#3b82f6',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontWeight: '700',
+                          letterSpacing: '0.5px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minHeight: '20px',
+                          lineHeight: '1'
+                        }}>
+                          URGENT
+                        </span>
+                      )}
+                    </div>
+                    
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleApply(tender.id)
+                        toggleSave(tender.id)
                       }}
                       style={{
-                        backgroundColor: '#16a34a',
-                        color: 'white',
-                        border: 'none',
-                        padding: screenSize.isMobile ? '6px 12px' : '8px 16px',
-                        borderRadius: '8px',
-                        fontSize: screenSize.isMobile ? '12px' : '13px',
-                        fontWeight: '600',
+                        background: savedTenders.has(tender.id) ? '#f0fdf4' : '#f8f9fa',
+                        border: savedTenders.has(tender.id) ? '1px solid #16a34a' : '1px solid #e2e8f0',
+                        padding: '8px',
                         cursor: 'pointer',
+                        borderRadius: '8px',
+                        flexShrink: 0,
+                        marginLeft: '8px',
                         transition: 'all 0.2s ease-in-out'
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = '#15803d'
-                        e.target.style.transform = 'translateY(-1px)'
+                        e.target.style.backgroundColor = savedTenders.has(tender.id) ? '#dcfce7' : '#f1f5f9'
+                        e.target.style.transform = 'scale(1.05)'
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = '#16a34a'
-                        e.target.style.transform = 'translateY(0)'
+                        e.target.style.backgroundColor = savedTenders.has(tender.id) ? '#f0fdf4' : '#f8f9fa'
+                        e.target.style.transform = 'scale(1)'
                       }}
                     >
-                    Apply Now
-                  </button>
+                      <Bookmark 
+                        size={20} 
+                        color={savedTenders.has(tender.id) ? '#16a34a' : '#64748b'}
+                        fill={savedTenders.has(tender.id) ? '#16a34a' : 'none'}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  {/* Title */}
+                  <h2 style={{
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 12px 0',
+                    lineHeight: '1.3'
+                  }}>
+                    {tender.title}
+                  </h2>
+
+                  {/* Organization */}
+                  <div style={{
+                    fontSize: '13px',
+                    color: '#64748b',
+                    marginBottom: '12px',
+                    fontWeight: '500'
+                  }}>
+                    {tender.organization}
+                  </div>
+
+                  {/* Location and Deadline */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginBottom: '12px',
+                    flexWrap: 'wrap',
+                    flexShrink: 0
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '13px',
+                      color: '#64748b'
+                    }}>
+                      <MapPin size={14} />
+                      {tender.location}
+                    </div>
+                    <span style={{ color: '#e2e8f0' }}>•</span>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '13px',
+                      color: isDeadlineUrgent ? '#dc2626' : '#64748b',
+                      fontWeight: isDeadlineUrgent ? '600' : '500'
+                    }}>
+                      <Calendar size={12} />
+                      Due: {new Date(tender.deadline).toLocaleDateString()} ({daysUntilDeadline} days)
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#475569',
+                    lineHeight: '1.5',
+                    margin: '0 0 12px 0',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    flex: 1
+                  }}>
+                    {tender.description}
+                  </p>
+
+                  {/* Tags */}
+                  <div style={{ marginBottom: '16px', flexShrink: 0 }}>
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '6px'
+                    }}>
+                      {tender.tags.slice(0, 3).map((tag, index) => (
+                        <span key={index} style={{
+                          backgroundColor: '#f1f5f9',
+                          color: '#475569',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '500'
+                        }}>
+                          {tag}
+                        </span>
+                      ))}
+                      {tender.tags.length > 3 && (
+                        <span style={{
+                          color: '#64748b',
+                          fontSize: '12px',
+                          padding: '4px 8px',
+                          fontWeight: '500'
+                        }}>
+                          +{tender.tags.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingTop: '12px',
+                    borderTop: '1px solid #f1f5f9',
+                    marginTop: 'auto',
+                    flexShrink: 0
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '12px',
+                      color: '#64748b'
+                    }}>
+                      <Users size={12} />
+                      {tender.submissions} submissions
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDownloadDocs(tender.id)
+                        }}
+                        style={{
+                          backgroundColor: 'white',
+                          color: '#64748b',
+                          border: '1px solid #e2e8f0',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease-in-out',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#f8f9fa'
+                          e.target.style.borderColor = '#16a34a'
+                          e.target.style.color = '#16a34a'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = 'white'
+                          e.target.style.borderColor = '#e2e8f0'
+                          e.target.style.color = '#64748b'
+                        }}
+                      >
+                        <Download size={12} />
+                        Docs
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleApply(tender.id)
+                        }}
+                        style={{
+                          backgroundColor: '#16a34a',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease-in-out'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#15803d'
+                          e.target.style.transform = 'translateY(-1px)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#16a34a'
+                          e.target.style.transform = 'translateY(0)'
+                        }}
+                      >
+                        Apply Now
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1343,11 +1187,25 @@ const Tenders = () => {
                   marginBottom: '20px'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: screenSize.isMobile ? '12px' : '16px', flex: 1 }}>
+                    {selectedTender.organizationLogo ? (
+                      <img
+                        src={selectedTender.organizationLogo}
+                        alt={selectedTender.organization}
+                        style={{
+                          width: screenSize.isMobile ? '48px' : '60px',
+                          height: screenSize.isMobile ? '48px' : '60px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '2px solid #f8f9fa',
+                          flexShrink: 0
+                        }}
+                      />
+                    ) : (
                     <div style={{
                       width: screenSize.isMobile ? '48px' : '60px',
                       height: screenSize.isMobile ? '48px' : '60px',
                       backgroundColor: getSectorColor(selectedTender.sector) + '15',
-                      borderRadius: '12px',
+                        borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1358,6 +1216,7 @@ const Tenders = () => {
                         color: getSectorColor(selectedTender.sector)
                       })}
                     </div>
+                    )}
                     
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <h2 style={{

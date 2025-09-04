@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { 
   Users, 
   Search, 
@@ -22,6 +22,8 @@ import {
   Menu
 } from 'lucide-react'
 
+import { apiService } from '../../lib/api-service'
+
 const CRM = () => {
   // Simple responsive detection
   const [screenSize] = useState({
@@ -30,194 +32,13 @@ const CRM = () => {
   })
 
   // State management
-  const [customers, setCustomers] = useState([
-    {
-      id: '1',
-      name: 'John Smith',
-      email: 'john.smith@email.com',
-      phone: '+254 700 123 456',
-      company: 'TechCorp Solutions',
-      location: 'Nairobi, Kenya',
-      status: 'vip',
-      userType: 'Premium',
-      profileCompletion: '95%',
-      joinedDate: '2023-01-15',
-      lastActivity: '2024-01-15T10:30:00Z',
-      totalSpent: 25000,
-      jobsApplied: 12,
-      tendersSubmitted: 8,
-      opportunitiesApplied: 15,
-      profilePicture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop'
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@email.com',
-      phone: '+254 700 234 567',
-      company: 'Digital Innovations Ltd',
-      location: 'Mombasa, Kenya',
-      status: 'active',
-      userType: 'Premium',
-      profileCompletion: '88%',
-      joinedDate: '2023-03-20',
-      lastActivity: '2024-01-14T14:20:00Z',
-      totalSpent: 18000,
-      jobsApplied: 8,
-      tendersSubmitted: 5,
-      opportunitiesApplied: 12,
-      profilePicture: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=80&h=80&fit=crop'
-    },
-    {
-      id: '3',
-      name: 'Michael Chen',
-      email: 'michael.chen@email.com',
-      phone: '+254 700 345 678',
-      company: 'Global Solutions Inc',
-      location: 'Kisumu, Kenya',
-      status: 'active',
-      userType: 'Free',
-      profileCompletion: '72%',
-      joinedDate: '2023-06-10',
-      lastActivity: '2024-01-13T09:15:00Z',
-      totalSpent: 8500,
-      jobsApplied: 15,
-      tendersSubmitted: 3,
-      opportunitiesApplied: 8,
-      profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop'
-    },
-    {
-      id: '4',
-      name: 'Emily Davis',
-      email: 'emily.davis@email.com',
-      phone: '+254 700 456 789',
-      company: 'StartupXYZ',
-      location: 'Nakuru, Kenya',
-      status: 'prospect',
-      userType: 'Free',
-      profileCompletion: '45%',
-      joinedDate: '2023-09-05',
-      lastActivity: '2024-01-12T16:45:00Z',
-      totalSpent: 3200,
-      jobsApplied: 6,
-      tendersSubmitted: 1,
-      opportunitiesApplied: 4,
-      profilePicture: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop'
-    },
-    {
-      id: '5',
-      name: 'David Wilson',
-      email: 'david.wilson@email.com',
-      phone: '+254 700 567 890',
-      company: 'Enterprise Corp',
-      location: 'Eldoret, Kenya',
-      status: 'vip',
-      userType: 'Premium',
-      profileCompletion: '98%',
-      joinedDate: '2022-11-30',
-      lastActivity: '2024-01-15T11:20:00Z',
-      totalSpent: 42000,
-      jobsApplied: 25,
-      tendersSubmitted: 12,
-      opportunitiesApplied: 20,
-      profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop'
-    },
-    {
-      id: '6',
-      name: 'Lisa Anderson',
-      email: 'lisa.anderson@email.com',
-      phone: '+254 700 678 901',
-      company: 'Creative Agency',
-      location: 'Thika, Kenya',
-      status: 'active',
-      userType: 'Premium',
-      profileCompletion: '82%',
-      joinedDate: '2023-04-12',
-      lastActivity: '2024-01-14T13:30:00Z',
-      totalSpent: 15600,
-      jobsApplied: 10,
-      tendersSubmitted: 6,
-      opportunitiesApplied: 14,
-      profilePicture: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop'
-    },
-    {
-      id: '7',
-      name: 'Robert Brown',
-      email: 'robert.brown@email.com',
-      phone: '+254 700 789 012',
-      company: 'Tech Startup',
-      location: 'Nairobi, Kenya',
-      status: 'prospect',
-      userType: 'Free',
-      profileCompletion: '38%',
-      joinedDate: '2023-12-01',
-      lastActivity: '2024-01-11T10:00:00Z',
-      totalSpent: 1200,
-      jobsApplied: 3,
-      tendersSubmitted: 0,
-      opportunitiesApplied: 2,
-      profilePicture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop'
-    },
-    {
-      id: '8',
-      name: 'Jennifer Garcia',
-      email: 'jennifer.garcia@email.com',
-      phone: '+254 700 890 123',
-      company: 'Marketing Solutions',
-      location: 'Mombasa, Kenya',
-      status: 'active',
-      userType: 'Premium',
-      profileCompletion: '91%',
-      joinedDate: '2023-02-28',
-      lastActivity: '2024-01-15T08:45:00Z',
-      totalSpent: 22000,
-      jobsApplied: 18,
-      tendersSubmitted: 9,
-      opportunitiesApplied: 16,
-      profilePicture: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=80&h=80&fit=crop'
-    },
-    {
-      id: '9',
-      name: 'Thomas Martinez',
-      email: 'thomas.martinez@email.com',
-      phone: '+254 700 901 234',
-      company: 'Consulting Group',
-      location: 'Kisumu, Kenya',
-      status: 'inactive',
-      userType: 'Free',
-      profileCompletion: '65%',
-      joinedDate: '2023-07-15',
-      lastActivity: '2023-12-20T14:30:00Z',
-      totalSpent: 5800,
-      jobsApplied: 7,
-      tendersSubmitted: 2,
-      opportunitiesApplied: 5,
-      profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop'
-    },
-    {
-      id: '10',
-      name: 'Amanda Taylor',
-      email: 'amanda.taylor@email.com',
-      phone: '+254 700 012 345',
-      company: 'Design Studio',
-      location: 'Nakuru, Kenya',
-      status: 'vip',
-      userType: 'Premium',
-      profileCompletion: '96%',
-      joinedDate: '2022-08-20',
-      lastActivity: '2024-01-15T12:15:00Z',
-      totalSpent: 38000,
-      jobsApplied: 30,
-      tendersSubmitted: 15,
-      opportunitiesApplied: 25,
-      profilePicture: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=80&h=80&fit=crop'
-    }
-  ])
+  const [customers, setCustomers] = useState([])
   const [interactions] = useState([])
-  const [stats] = useState({
-    totalCustomers: 10,
-    activeCustomers: 6,
-    vipCustomers: 3,
-    totalRevenue: 189300
+  const [stats, setStats] = useState({
+    totalCustomers: 0,
+    activeCustomers: 0,
+    vipCustomers: 0,
+    totalRevenue: 0
   })
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -232,6 +53,96 @@ const CRM = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [dataLoading, setDataLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const [limit] = useState(20)
+  const [totalPages, setTotalPages] = useState(1)
+
+  const normalizeStatus = (status) => {
+    if (!status) return 'active'
+    if (status === 'premium' || status === 'regular' || status === 'active') return 'active'
+    if (status === 'vip') return 'vip'
+    if (status === 'inactive') return 'inactive'
+    return 'active'
+  }
+
+  const mapUserToCustomer = (u) => ({
+    id: u.id || u._id || u.user_id || String(Date.now()),
+    name: u.name || [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Unknown',
+    email: u.email || 'N/A',
+    phone: u.phone || 'N/A',
+    company: u.employment_status || u.company || u.organization || '',
+    location: u.location || u.country || '',
+    status: normalizeStatus(u.status || u.subscription_type),
+    userType: u.userType || (u.subscription_type ? u.subscription_type.charAt(0).toUpperCase() + u.subscription_type.slice(1) : 'Basic'),
+    profileCompletion: u.profileCompletion || '0%',
+    joinedDate: u.joinedDate || u.created_at || new Date().toISOString(),
+    lastActivity: u.lastActivity || u.last_login || new Date().toISOString(),
+    totalSpent: u.totalSpent || 0,
+    jobsApplied: u.jobsApplied || 0,
+    tendersSubmitted: u.tendersSubmitted || 0,
+    opportunitiesApplied: u.opportunitiesApplied || 0,
+    profilePicture: u.profilePicture || u.profile_image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop',
+    // Profile data from user profile
+    bio: u.bio || '',
+    industry: u.industry || '',
+    experience_level: u.experience_level || '',
+    skills: u.skills || [],
+    education: u.education || [],
+    certificates: u.certificates || [],
+    experience: u.experience || [],
+    documents: u.documents || [],
+    // Additional profile fields
+    username: u.username || '',
+    current_job_title: u.current_job_title || '',
+    years_experience: u.years_experience || '',
+    employment_status: u.employment_status || '',
+    marital_status: u.marital_status || '',
+    nationality: u.nationality || '',
+    country_of_residence: u.country_of_residence || '',
+    date_of_birth: u.date_of_birth || '',
+    gender: u.gender || '',
+    disability_status: u.disability_status || '',
+    languages: u.languages || '',
+    linkedin_url: u.linkedin_url || '',
+    profile_link1_name: u.profile_link1_name || '',
+    profile_link1_url: u.profile_link1_url || '',
+    profile_link2_name: u.profile_link2_name || '',
+    profile_link2_url: u.profile_link2_url || '',
+    profile_link3_name: u.profile_link3_name || '',
+    profile_link3_url: u.profile_link3_url || ''
+  })
+
+  const loadUsers = async () => {
+    try {
+      setDataLoading(true)
+      const params = { page, limit }
+      if (searchTerm) params.search = searchTerm
+      const resp = await apiService.get('/admin/users', params)
+      const respUsers = resp?.users || []
+      console.log('Raw user data from admin API:', respUsers)
+      const normalized = respUsers.map(mapUserToCustomer)
+      console.log('Normalized user data:', normalized)
+      setCustomers(normalized)
+      setTotalPages(parseInt(resp?.totalPages || 1, 10))
+      const activeCount = normalized.filter(c => normalizeStatus(c.status) === 'active' || normalizeStatus(c.status) === 'vip').length
+      const vipCount = normalized.filter(c => normalizeStatus(c.status) === 'vip').length
+      setStats({
+        totalCustomers: resp?.total || normalized.length,
+        activeCustomers: activeCount,
+        vipCustomers: vipCount,
+        totalRevenue: 0
+      })
+    } catch (e) {
+      console.error('Failed to load users', e)
+    } finally {
+      setDataLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadUsers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, searchTerm])
   
   // Filter states for bulk messaging
   const [bulkMessageStatusFilter, setBulkMessageStatusFilter] = useState('all')
@@ -339,21 +250,44 @@ const CRM = () => {
   }
 
   const handleAddCustomer = async (customerData) => {
-    const newCustomer = {
-      ...customerData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-    
-    setCustomers([...customers, newCustomer])
+    try {
+      const created = await apiService.post('/admin/users', customerData)
+      const user = created?.user || created
+      const mapped = mapUserToCustomer(user)
+      setCustomers([...customers, mapped])
     setShowAddCustomer(false)
+    } catch (e) {
+      console.error('Add customer failed', e)
+      alert(e.message || 'Failed to add customer')
+    }
   }
 
   const handleRouteToEmail = (customer) => {
     setContactType('email')
     setSelectedContacts([customer.email])
     setShowContactSelector(true)
+  }
+  const updateCustomer = async (id, updates) => {
+    try {
+      const res = await apiService.put(`/admin/users/${id}`, updates)
+      const updated = res?.user || res
+      const mapped = mapUserToCustomer(updated)
+      setCustomers(prev => prev.map(c => c.id === id ? mapped : c))
+    } catch (e) {
+      console.error('Update customer failed', e)
+      alert(e.message || 'Failed to update customer')
+    }
+  }
+
+  const deleteCustomer = async (id) => {
+    try {
+      if (!window.confirm('Delete this user?')) return
+      await apiService.delete(`/admin/users/${id}`)
+      setCustomers(prev => prev.filter(c => c.id !== id))
+    } catch (e) {
+      console.error('Delete customer failed', e)
+      alert(e.message || 'Failed to delete customer')
+    }
   }
 
   const handleSendSMS = (customer) => {
@@ -363,15 +297,11 @@ const CRM = () => {
   }
 
   const sendBulkSMS = async (contacts, message) => {
-    // Simulate SMS sending
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    console.log('Sending SMS to:', contacts, 'Message:', message)
+    await apiService.post('/notifications/bulk', { channel: 'sms', recipients: contacts, message })
   }
 
   const sendBulkEmail = async (contacts, message) => {
-    // Simulate email sending
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    console.log('Sending email to:', contacts, 'Message:', message)
+    await apiService.post('/notifications/bulk', { channel: 'email', recipients: contacts, message })
   }
 
   // Contact Selector Modal Component
@@ -973,7 +903,7 @@ const CRM = () => {
                 }} />
                 <input
                   type="text"
-                  placeholder="Search by name, email, company, or location..."
+                  placeholder="Search by name, email, employment status, or location..."
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
                   style={{
@@ -1077,7 +1007,7 @@ const CRM = () => {
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em'
                     }}>
-                      Company
+                      Employment Status
                     </th>
                     <th style={{
                       padding: '12px 24px',
@@ -1416,7 +1346,11 @@ const CRM = () => {
                 borderBottom: '1px solid #e5e7eb'
               }}>
                 <img 
-                  src={selectedCustomer.profilePicture || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop'} 
+                  src={selectedCustomer.profilePicture ? 
+                    (selectedCustomer.profilePicture.startsWith('http') ? 
+                      selectedCustomer.profilePicture : 
+                      `http://localhost:8000${selectedCustomer.profilePicture}`) : 
+                    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop'} 
                   alt={selectedCustomer.name}
                   style={{
                     width: '80px',
@@ -1441,7 +1375,7 @@ const CRM = () => {
                     color: '#64748b',
                     margin: '0 0 12px 0'
                   }}>
-                    {selectedCustomer.company}
+                    {selectedCustomer.company ? selectedCustomer.company.charAt(0).toUpperCase() + selectedCustomer.company.slice(1) : 'No employment status'}
                   </h3>
                   <div style={{
                     display: 'flex',
@@ -1556,13 +1490,59 @@ const CRM = () => {
                       margin: 0,
                       padding: '3px 0'
                     }}>
-                      @{selectedCustomer.username || 'johnsmith'}
+                      @{selectedCustomer.username || selectedCustomer.email?.split('@')[0] || 'user'}
                     </p>
                   </div>
                   
                   <div style={{ 
                     display: 'grid', 
-                    gridTemplateColumns: '1fr 1fr 1fr', 
+                    gridTemplateColumns: '1fr 1fr', 
+                    gap: '6px' 
+                  }}>
+                    <div>
+                      <label style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#64748b',
+                        marginBottom: '2px',
+                        display: 'block'
+                      }}>
+                        Employment Status
+                      </label>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#1a1a1a',
+                        margin: 0,
+                        padding: '3px 0'
+                      }}>
+                        {selectedCustomer.employment_status || ''}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#64748b',
+                        marginBottom: '2px',
+                        display: 'block'
+                      }}>
+                        Current Position
+                      </label>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#1a1a1a',
+                        margin: 0,
+                        padding: '3px 0'
+                      }}>
+                        {selectedCustomer.current_job_title || ''}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 1fr', 
                     gap: '6px' 
                   }}>
                     <div>
@@ -1581,7 +1561,7 @@ const CRM = () => {
                         margin: 0,
                         padding: '3px 0'
                       }}>
-                        {selectedCustomer.industry || 'Technology'}
+                        {selectedCustomer.industry || ''}
                       </p>
                     </div>
                     
@@ -1593,7 +1573,7 @@ const CRM = () => {
                         marginBottom: '2px',
                         display: 'block'
                       }}>
-                        Experience
+                        Years of Experience
                       </label>
                       <p style={{
                         fontSize: '14px',
@@ -1601,27 +1581,7 @@ const CRM = () => {
                         margin: 0,
                         padding: '3px 0'
                       }}>
-                        {selectedCustomer.yearsExperience || '5-10 years'}
-                      </p>
-                    </div>
-
-                    <div>
-                      <label style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#64748b',
-                        marginBottom: '2px',
-                        display: 'block'
-                      }}>
-                        Status
-                      </label>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#1a1a1a',
-                        margin: 0,
-                        padding: '3px 0'
-                      }}>
-                        {selectedCustomer.employmentStatus || 'Employed'}
+                        {selectedCustomer.years_experience || ''}
                       </p>
                     </div>
                   </div>
@@ -1639,7 +1599,7 @@ const CRM = () => {
                         marginBottom: '2px',
                         display: 'block'
                       }}>
-                        LinkedIn
+                        Marital Status
                       </label>
                       <p style={{
                         fontSize: '14px',
@@ -1647,7 +1607,7 @@ const CRM = () => {
                         margin: 0,
                         padding: '3px 0'
                       }}>
-                        {selectedCustomer.linkedinProfile || 'linkedin.com/in/johnsmith'}
+                        {selectedCustomer.marital_status || ''}
                       </p>
                     </div>
                     
@@ -1659,7 +1619,7 @@ const CRM = () => {
                         marginBottom: '2px',
                         display: 'block'
                       }}>
-                        GitHub
+                        Nationality
                       </label>
                       <p style={{
                         fontSize: '14px',
@@ -1667,7 +1627,99 @@ const CRM = () => {
                         margin: 0,
                         padding: '3px 0'
                       }}>
-                        {selectedCustomer.githubProfile || 'github.com/johnsmith'}
+                        {selectedCustomer.nationality || ''}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 1fr', 
+                    gap: '6px' 
+                  }}>
+                    <div>
+                      <label style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#64748b',
+                        marginBottom: '2px',
+                        display: 'block'
+                      }}>
+                        Country of Residence
+                      </label>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#1a1a1a',
+                        margin: 0,
+                        padding: '3px 0'
+                      }}>
+                        {selectedCustomer.country_of_residence || ''}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#64748b',
+                        marginBottom: '2px',
+                        display: 'block'
+                      }}>
+                        Date of Birth
+                      </label>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#1a1a1a',
+                        margin: 0,
+                        padding: '3px 0'
+                      }}>
+                        {selectedCustomer.date_of_birth || ''}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 1fr', 
+                    gap: '6px' 
+                  }}>
+                    <div>
+                      <label style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#64748b',
+                        marginBottom: '2px',
+                        display: 'block'
+                      }}>
+                        Gender
+                      </label>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#1a1a1a',
+                        margin: 0,
+                        padding: '3px 0'
+                      }}>
+                        {selectedCustomer.gender || ''}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <label style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#64748b',
+                        marginBottom: '2px',
+                        display: 'block'
+                      }}>
+                        Disability Status
+                      </label>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#1a1a1a',
+                        margin: 0,
+                        padding: '3px 0'
+                      }}>
+                        {selectedCustomer.disability_status || ''}
                       </p>
                     </div>
                   </div>
@@ -1680,7 +1732,7 @@ const CRM = () => {
                       marginBottom: '2px',
                       display: 'block'
                     }}>
-                      Other Profiles
+                      Languages
                     </label>
                     <p style={{
                       fontSize: '14px',
@@ -1688,9 +1740,60 @@ const CRM = () => {
                       margin: 0,
                       padding: '3px 0'
                     }}>
-                      {selectedCustomer.otherProfiles || 'behance.com/johnsmith'}
+                      {selectedCustomer.languages || ''}
                     </p>
                   </div>
+                  
+                  <div>
+                    <label style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#64748b',
+                      marginBottom: '2px',
+                      display: 'block'
+                    }}>
+                      LinkedIn Profile
+                    </label>
+                    <p style={{
+                      fontSize: '14px',
+                      color: '#1a1a1a',
+                      margin: 0,
+                      padding: '3px 0'
+                    }}>
+                      {selectedCustomer.linkedin_url || ''}
+                    </p>
+                  </div>
+                  
+                  {(selectedCustomer.profile_link1_name || selectedCustomer.profile_link2_name || selectedCustomer.profile_link3_name) && (
+                    <div>
+                      <label style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#64748b',
+                        marginBottom: '2px',
+                        display: 'block'
+                      }}>
+                        Additional Profile Links
+                      </label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {selectedCustomer.profile_link1_name && selectedCustomer.profile_link1_url && (
+                          <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>
+                            {selectedCustomer.profile_link1_name}: {selectedCustomer.profile_link1_url}
+                          </p>
+                        )}
+                        {selectedCustomer.profile_link2_name && selectedCustomer.profile_link2_url && (
+                          <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>
+                            {selectedCustomer.profile_link2_name}: {selectedCustomer.profile_link2_url}
+                          </p>
+                        )}
+                        {selectedCustomer.profile_link3_name && selectedCustomer.profile_link3_url && (
+                          <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>
+                            {selectedCustomer.profile_link3_name}: {selectedCustomer.profile_link3_url}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1710,7 +1813,7 @@ const CRM = () => {
                   color: '#374151',
                   margin: 0
                 }}>
-                  {selectedCustomer.about || 'Experienced software developer with 5+ years of expertise in frontend development, specializing in React, TypeScript, and modern web technologies. Passionate about creating user-friendly applications and contributing to innovative projects.'}
+                  {selectedCustomer.bio || 'No bio provided'}
                 </p>
               </div>
 
@@ -1729,7 +1832,7 @@ const CRM = () => {
                   flexWrap: 'wrap',
                   gap: '8px'
                 }}>
-                  {(selectedCustomer.skills || ['React', 'TypeScript', 'JavaScript', 'Node.js', 'CSS', 'HTML', 'Git', 'AWS']).map((skill, index) => (
+                  {(selectedCustomer.skills && selectedCustomer.skills.length > 0 ? selectedCustomer.skills : ['No skills listed']).map((skill, index) => (
                     <span key={index} style={{
                       backgroundColor: '#f1f5f9',
                       color: '#475569',
@@ -1738,7 +1841,7 @@ const CRM = () => {
                       fontSize: '14px',
                       fontWeight: '500'
                     }}>
-                      {skill}
+                      {typeof skill === 'string' ? skill : skill.name || 'Unnamed Skill'}
                     </span>
                   ))}
                 </div>
@@ -1755,18 +1858,12 @@ const CRM = () => {
                   Experience
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {(selectedCustomer.experience || [
+                  {(selectedCustomer.experience && selectedCustomer.experience.length > 0 ? selectedCustomer.experience : [
                     {
-                      title: 'Senior Frontend Developer',
-                      company: 'TechCorp Solutions',
-                      duration: '2022 - Present',
-                      description: 'Led development of multiple React applications, mentored junior developers, and implemented best practices for code quality and performance.'
-                    },
-                    {
-                      title: 'Frontend Developer',
-                      company: 'Digital Innovations Ltd',
-                      duration: '2020 - 2022',
-                      description: 'Developed responsive web applications using React and TypeScript, collaborated with design and backend teams.'
+                      title: 'No experience listed',
+                      company: '',
+                      duration: '',
+                      description: 'No work experience information provided.'
                     }
                   ]).map((exp, index) => (
                     <div key={index} style={{
@@ -1846,14 +1943,14 @@ const CRM = () => {
                       color: '#1a1a1a',
                       margin: 0
                     }}>
-                      {selectedCustomer.education?.degree || 'Bachelor of Science in Computer Science'}
+                      {selectedCustomer.education?.[0]?.program || selectedCustomer.education?.[0]?.level || 'No education listed'}
                     </h4>
                     <span style={{
                       fontSize: '14px',
                       color: '#64748b',
                       fontWeight: '500'
                     }}>
-                      {selectedCustomer.education?.duration || '2016 - 2020'}
+                      {selectedCustomer.education?.[0]?.period || ''}
                     </span>
                   </div>
                   <p style={{
@@ -1862,7 +1959,7 @@ const CRM = () => {
                     color: '#16a34a',
                     margin: '0 0 8px 0'
                   }}>
-                    {selectedCustomer.education?.institution || 'University of Nairobi'}
+                    {selectedCustomer.education?.[0]?.institution || ''}
                   </p>
                   <p style={{
                     fontSize: '14px',
@@ -1870,7 +1967,7 @@ const CRM = () => {
                     color: '#374151',
                     margin: 0
                   }}>
-                    {selectedCustomer.education?.description || 'Graduated with First Class Honours. Specialized in Software Engineering and Web Development.'}
+                    {selectedCustomer.education?.[0]?.description || ''}
                   </p>
                 </div>
               </div>
@@ -1886,20 +1983,21 @@ const CRM = () => {
                   Certificates
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {(selectedCustomer.certificates || [
+                  {(selectedCustomer.certificates && selectedCustomer.certificates.length > 0 ? selectedCustomer.certificates : [
                     {
-                      name: 'React Developer Certification',
-                      issuer: 'Meta',
-                      date: '2023',
+                      name: 'No certificates listed',
+                      issuer: '',
+                      date: '',
                       image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=60&h=60&fit=crop'
-                    },
-                    {
-                      name: 'AWS Certified Developer',
-                      issuer: 'Amazon Web Services',
-                      date: '2022',
-                      image: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=60&h=60&fit=crop'
                     }
-                  ]).map((cert, index) => (
+                  ]).map((cert, index) => {
+                    console.log('Certificate data:', cert);
+                    console.log('Certificate fields:', Object.keys(cert));
+                    console.log('Certificate file field:', cert.certificate_file);
+                    console.log('Certificate file field (file):', cert.file);
+                    console.log('Certificate file field (filePath):', cert.filePath);
+                    console.log('Full certificate object:', JSON.stringify(cert, null, 2));
+                    return (
                     <div key={index} style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -1910,7 +2008,11 @@ const CRM = () => {
                       border: '1px solid #e5e7eb'
                     }}>
                       <img 
-                        src={cert.image} 
+                        src={cert.image ? 
+                          (cert.image.startsWith('http') ? 
+                            cert.image : 
+                            `http://localhost:8000${cert.image}`) : 
+                          'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop'} 
                         alt={cert.name}
                         style={{
                           width: '48px',
@@ -1936,8 +2038,34 @@ const CRM = () => {
                           {cert.issuer} • {cert.date}
                         </p>
                       </div>
+                      {cert.certificate_file && (
+                        <button
+                          onClick={() => {
+                            const fileUrl = cert.certificate_file.startsWith('http') 
+                              ? cert.certificate_file 
+                              : `http://localhost:8000${cert.certificate_file}`;
+                            window.open(fileUrl, '_blank');
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#3b82f6',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          📥 Download
+                        </button>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1952,26 +2080,20 @@ const CRM = () => {
                   Documents
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {(selectedCustomer.documents || [
+                  {(selectedCustomer.documents && selectedCustomer.documents.length > 0 ? selectedCustomer.documents : [
                     {
-                      name: 'Resume.pdf',
-                      type: 'Resume',
-                      size: '2.4 MB',
-                      date: '2024-01-15'
-                    },
-                    {
-                      name: 'Cover Letter.pdf',
-                      type: 'Cover Letter',
-                      size: '1.2 MB',
-                      date: '2024-01-15'
-                    },
-                    {
-                      name: 'Portfolio.pdf',
-                      type: 'Portfolio',
-                      size: '5.8 MB',
-                      date: '2024-01-10'
+                      name: 'No documents uploaded',
+                      type: 'Document',
+                      size: '',
+                      date: ''
                     }
-                  ]).map((doc, index) => (
+                  ]).map((doc, index) => {
+                    console.log('Document data:', doc);
+                    console.log('Document fields:', Object.keys(doc));
+                                            console.log('Document file field:', doc.file);
+                        console.log('Document file field (file_path):', doc.file_path);
+                        console.log('Document file field (filePath):', doc.filePath);
+                    return (
                     <div key={index} style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -2009,8 +2131,34 @@ const CRM = () => {
                           {doc.type} • {doc.size} • {doc.date}
                         </p>
                       </div>
+                      {doc.file && (
+                        <button
+                          onClick={() => {
+                            const fileUrl = doc.file.startsWith('http') 
+                              ? doc.file 
+                              : `http://localhost:8000${doc.file}`;
+                            window.open(fileUrl, '_blank');
+                          }}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          📥 Download
+                        </button>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -2263,7 +2411,7 @@ const CRM = () => {
                         color: '#374151',
                         marginBottom: '8px'
                       }}>
-                        Company/Organization
+                        Employment Status
                       </label>
                       <input
                         type="text"
@@ -2275,7 +2423,7 @@ const CRM = () => {
                           borderRadius: '8px',
                           fontSize: '14px'
                         }}
-                        placeholder="Enter company name"
+                        placeholder="Enter employment status (e.g., Employed, Unemployed, Self-employed)"
                       />
                     </div>
 

@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { Calendar, MapPin, DollarSign, Clock, Search, Eye, FileText, ExternalLink } from 'lucide-react'
+import { apiService } from '../lib/api-service'
 
 const MyApplications = () => {
   const screenSize = useResponsive()
@@ -15,41 +16,64 @@ const MyApplications = () => {
     { id: 'rejected', name: 'Rejected', count: 2 }
   ]
 
-  const applications = [
-    {
-      id: 1,
-      title: 'Senior Software Engineer',
-      company: 'TechCorp Inc.',
-      type: 'Job',
-      status: 'Interview',
-      appliedDate: 'Jan 15',
-      location: 'San Francisco, CA',
-      salary: '$120K - $160K',
-      nextAction: 'Technical Interview on Jan 25'
-    },
-    {
-      id: 2,
-      title: 'Google Summer of Code',
-      company: 'Google',
-      type: 'Opportunity',
-      status: 'Pending',
-      appliedDate: 'Jan 12',
-      location: 'Remote',
-      salary: '$6K stipend',
-      nextAction: 'Results expected by Feb 1'
-    },
-    {
-      id: 3,
-      title: 'Frontend Developer',
-      company: 'StartupXYZ',
-      type: 'Job',
-      status: 'Accepted',
-      appliedDate: 'Jan 10',
-      location: 'New York, NY',
-      salary: '$95K - $115K',
-      nextAction: 'Start date: Feb 15'
+  const [applications, setApplications] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    fetchApplications()
+  }, [])
+
+  const transformApplicationData = (apiApplication) => {
+    return {
+      id: apiApplication.id,
+      title: apiApplication.job?.title || apiApplication.opportunity?.title || apiApplication.tender?.title || 'Unknown Title',
+      company: apiApplication.job?.company || apiApplication.opportunity?.organization || apiApplication.tender?.organization || 'Unknown Company',
+      type: apiApplication.job ? 'Job' : apiApplication.opportunity ? 'Opportunity' : apiApplication.tender ? 'Tender' : 'Application',
+      status: apiApplication.status?.charAt(0).toUpperCase() + apiApplication.status?.slice(1) || 'Pending',
+      appliedDate: apiApplication.created_at ? new Date(apiApplication.created_at).toLocaleDateString() : 'Recently',
+      location: apiApplication.job?.location || apiApplication.opportunity?.location || apiApplication.tender?.location || 'Not specified',
+      salary: (function() {
+        const j = apiApplication.job
+        if (j) {
+          const min = j?.salary_min != null ? Number(j.salary_min) : undefined
+          const max = j?.salary_max != null ? Number(j.salary_max) : undefined
+          const fmt = (n) => typeof n === 'number' && !Number.isNaN(n) ? n.toLocaleString() : ''
+          if (min != null && max != null) return min === max ? `${j.currency} ${fmt(min)}` : `${j.currency} ${fmt(min)} - ${j.currency} ${fmt(max)}`
+          if (min != null) return `${j.currency} ${fmt(min)}`
+          if (max != null) return `${j.currency} ${fmt(max)}`
+        }
+        return undefined
+      })() 
+        || apiApplication.opportunity?.amount_min 
+          ? `${apiApplication.opportunity.currency} ${apiApplication.opportunity.amount_min} stipend`
+          : apiApplication.tender?.contract_value_min 
+            ? `${apiApplication.tender.currency} ${(apiApplication.tender.contract_value_min / 1000000).toFixed(1)}M`
+            : 'Amount not specified',
+      nextAction: apiApplication.next_action || 'Awaiting response',
+      applicationUrl: apiApplication.application_url,
+      documents: apiApplication.documents || [],
+      notes: apiApplication.notes || '',
+      deadline: apiApplication.deadline,
+      responses: apiApplication.responses || []
     }
-  ]
+  }
+
+  const fetchApplications = async () => {
+    try {
+      setLoading(true)
+      const response = await apiService.get('/applications/my-applications')
+      const transformedApplications = (response.data.applications || []).map(transformApplicationData)
+      setApplications(transformedApplications)
+    } catch (error) {
+      console.error('Error fetching applications:', error)
+      // Keep existing static data as fallback
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Static applications data as fallback
+  const staticApplications = []
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -168,7 +192,26 @@ const MyApplications = () => {
           gridTemplateColumns: `repeat(${getGridColumns(screenSize)}, 1fr)`,
           gap: getGridGap(screenSize)
         }}>
-          {filteredApplications.length > 0 ? (
+          {(() => {
+            const currentApplications = applications.length > 0 ? applications : staticApplications
+            const filteredApplications = currentApplications.filter(application => {
+              // Filter by tab
+              if (activeTab !== 'all' && application.status.toLowerCase() !== activeTab) {
+                return false
+              }
+              
+              // Filter by search query
+              if (searchQuery) {
+                const query = searchQuery.toLowerCase()
+                return application.title.toLowerCase().includes(query) ||
+                       application.company.toLowerCase().includes(query) ||
+                       application.type.toLowerCase().includes(query)
+              }
+              
+              return true
+            })
+            
+            return filteredApplications.length > 0 ? (
             filteredApplications.map((application) => {
               const statusColors = getStatusColor(application.status)
               return (
@@ -343,7 +386,8 @@ const MyApplications = () => {
                 Try adjusting your search or filters
               </p>
             </div>
-          )}
+          )
+          })()}
         </div>
       </div>
     </div>

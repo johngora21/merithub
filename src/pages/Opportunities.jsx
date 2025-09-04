@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { countries } from '../utils/countries'
+import { opportunitiesAPI, apiService } from '../lib/api-service'
 
 import { 
   Bookmark, 
@@ -28,6 +29,7 @@ const Opportunities = () => {
   const navigate = useNavigate()
   const screenSize = useResponsive()
   const [savedOpportunities, setSavedOpportunities] = useState(new Set())
+  const [opportunityIdToSavedItemId, setOpportunityIdToSavedItemId] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -42,143 +44,69 @@ const Opportunities = () => {
     amountMax: '',
     currency: 'USD'
   })
+  const [opportunities, setOpportunities] = useState([])
 
-  const opportunities = [
-    {
-      id: '1',
-      title: 'Google Research Scholar Program',
-      poster: 'https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?w=400&h=240&fit=crop',
-      type: 'Fellowship',
-      category: 'Technology',
-      amount: '$60,000',
-      duration: '12 months',
-      location: 'Global',
-      country: 'Global',
-      deadline: '2024-04-15',
-      description: 'Support exceptional early-career professors doing research in fields relevant to computer science. Recipients receive unrestricted gifts to support their research.',
-      requirements: ['PhD in Computer Science or related field', 'Faculty position at a university', 'Research focus in ML, AI, or Systems'],
-      benefits: ['Research funding', 'Mentorship', 'Google collaboration', 'Conference attendance'],
-      applicants: 156,
-      isUrgent: true,
-      tags: ['Machine Learning', 'Research', 'Academia'],
-      postedTime: '2 days ago',
-      detailedDescription: 'The Google Research Scholar Program supports early-career professors who are pursuing research in fields relevant to computer science. The program provides unrestricted gifts to support research activities and encourages collaboration between faculty and Google researchers.',
-      eligibilityCriteria: [
-        'Hold a PhD in Computer Science, Engineering, or a related technical field',
-        'Be in an early-career academic position at a university',
-        'Demonstrate research excellence in machine learning, AI, systems, or related areas',
-        'Show potential for significant research impact',
-        'Be able to collaborate with Google research teams'
-      ],
-      selectionProcess: [
-        'Initial application review by Google Research team',
-        'Technical evaluation of research proposal',
-        'Assessment of academic track record and potential',
-        'Final selection by committee of Google researchers',
-        'Notification of results within 8-10 weeks'
-      ],
-      programDetails: {
-        fundingAmount: '$60,000 unrestricted research gift',
-        duration: '12 months with possibility of renewal',
-        mentorship: 'Access to Google Research mentors and collaborators',
-        networking: 'Invitation to exclusive research symposiums and events'
-      },
-      externalUrl: 'https://research.google/outreach/research-scholar-program/'
-    },
-    {
-      id: '2',
-      title: 'Rhodes Scholarship at Oxford',
-      poster: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=240&fit=crop',
-      type: 'Scholarship',
-      category: 'Education',
-      amount: '$70,000/year',
-      duration: '2-3 years',
-      location: 'Oxford, UK',
-      deadline: '2024-03-30',
-      description: 'The Rhodes Scholarship is one of the oldest and most prestigious international scholarship programmes, enabling outstanding young people to study at the University of Oxford.',
-      requirements: ['Exceptional academic achievement', 'Leadership potential', 'Commitment to service', 'Age 18-24'],
-      benefits: ['Full tuition coverage', 'Living stipend', 'Travel allowance', 'Oxford network'],
-      applicants: 289,
-      isUrgent: false,
-      tags: ['Leadership', 'International', 'Graduate Study'],
-      postedTime: '1 week ago',
-      externalUrl: 'https://www.rhodeshouse.ox.ac.uk/scholarships/'
-    },
-    {
-      id: '3',
-      title: 'Y Combinator Startup School',
-      poster: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=240&fit=crop',
-      type: 'Program',
-      category: 'Entrepreneurship',
-      amount: 'Free',
-      duration: '10 weeks',
-      location: 'Online',
-      deadline: '2024-05-01',
-      description: 'A free online program for founders who are determined to build a startup. Get access to the same advice we give to YC startups.',
-      requirements: ['Startup idea or early-stage company', 'Commitment to weekly sessions', 'Team of 1-4 founders'],
-      benefits: ['YC curriculum access', 'Founder community', 'Mentorship', 'Demo day opportunity'],
-      applicants: 1247,
-      isUrgent: true,
-      tags: ['Startup', 'Entrepreneurship', 'Technology'],
-      postedTime: '3 days ago',
-      externalUrl: 'https://www.startupschool.org/'
-    },
-    {
-      id: '4',
-      title: 'NASA Research Internship',
-      poster: 'https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400&h=240&fit=crop',
-      type: 'Internship',
-      category: 'Space & Science',
-      amount: '$7,000/month',
-      duration: '10-16 weeks',
-      location: 'Various NASA Centers',
-      deadline: '2024-04-01',
-      description: 'Undergraduate Student Research Program provides opportunities for students to participate in research aligned to NASA mission goals.',
-      requirements: ['US Citizen', 'Enrolled in STEM degree', 'Minimum 3.0 GPA', 'Sophomore level or above'],
-      benefits: ['Research experience', 'NASA mentorship', 'Professional development', 'Potential job offers'],
-      applicants: 892,
-      isUrgent: false,
-      tags: ['Space', 'STEM', 'Research', 'Government'],
-      postedTime: '5 days ago'
-    },
-    {
-      id: '5',
-      title: 'Fulbright Research Grant',
-      poster: 'https://images.unsplash.com/photo-1541746972996-4e0b0f93e586?w=400&h=240&fit=crop',
-      type: 'Grant',
-      category: 'Research',
-      amount: '$30,000',
-      duration: '6-12 months',
-      location: 'Global',
-      deadline: '2024-06-15',
-      description: 'Fulbright Research Grants provide opportunities for scholars to conduct research and lecture abroad, promoting mutual understanding between nations.',
-      requirements: ['US Citizen', 'PhD or equivalent professional experience', 'Language proficiency', 'Research proposal'],
-      benefits: ['Research funding', 'Cultural exchange', 'International network', 'Career advancement'],
-      applicants: 445,
-      isUrgent: false,
-      tags: ['International', 'Research', 'Cultural Exchange'],
-      postedTime: '1 week ago'
-    },
-    {
-      id: '6',
-      title: 'Gates Millennium Scholars',
-      poster: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=240&fit=crop',
-      type: 'Scholarship',
-      category: 'Education',
-      amount: 'Full Tuition',
-      duration: '4 years',
-      location: 'United States',
-      deadline: '2024-02-28',
-      description: 'Provides outstanding African American, American Indian, Asian & Pacific Islander American, and Hispanic American students with opportunities to complete their undergraduate education.',
-      requirements: ['High school senior', 'Minority student', 'Financial need', 'Academic excellence', 'Leadership'],
-      benefits: ['Full tuition coverage', 'Graduate school funding', 'Leadership development', 'Mentorship'],
-      applicants: 1856,
-      isUrgent: true,
-      tags: ['Diversity', 'Leadership', 'Full Funding'],
-      postedTime: '4 hours ago'
+  useEffect(() => {
+    fetchOpportunities()
+    fetchSavedOpportunities()
+  }, [])
+
+  const fetchSavedOpportunities = async () => {
+    try {
+      const resp = await apiService.get('/saved-items')
+      const items = resp?.data?.items || resp?.data || []
+      const savedSet = new Set()
+      const map = {}
+      items.forEach(si => {
+        if (si.opportunity) {
+          savedSet.add(String(si.opportunity.id))
+          map[String(si.opportunity.id)] = si.id
+        }
+      })
+      setSavedOpportunities(savedSet)
+      setOpportunityIdToSavedItemId(map)
+    } catch (e) {
+      // ignore
     }
-  ]
+  }
 
+  const fetchOpportunities = async () => {
+    try {
+      const data = await opportunitiesAPI.getAll({ limit: 50 })
+      const mapped = (data.opportunities || []).map((o) => ({
+        id: o.id,
+        title: o.title,
+        organization: o.organization || '',
+        type: (o.type || '').charAt(0).toUpperCase() + (o.type || '').slice(1),
+        category: o.category || 'General',
+        location: o.location || (o.country || 'Global'),
+        duration: o.duration || 'Varies',
+        description: o.description || '',
+        poster: (() => {
+          const fromDocs = Array.isArray(o.documents) ? o.documents.find(d => d && d.type === 'cover') : null
+          const url = fromDocs?.url || null
+          const resolved = url ? (url.startsWith('http') ? url : `http://localhost:8000${url.startsWith('/') ? '' : '/'}${url}`) : null
+          if (resolved) return resolved
+          if (o.organization_logo) {
+            const logo = o.organization_logo.startsWith('http') ? o.organization_logo : `http://localhost:8000${o.organization_logo.startsWith('/') ? '' : '/'}${o.organization_logo}`
+            return logo
+          }
+          return 'https://via.placeholder.com/800x400?text=Opportunity'
+        })(),
+        deadline: o.deadline || new Date().toISOString(),
+        amount: (o.amount_min || o.amount_max) ? `${o.currency || 'USD'} ${o.amount_min || o.amount_max}` : 'Varies',
+        tags: Array.isArray(o.benefits) ? o.benefits : [],
+        organization_logo: o.organization_logo ? (o.organization_logo.startsWith('http') ? o.organization_logo : `http://localhost:8000${o.organization_logo.startsWith('/') ? '' : '/'}${o.organization_logo}`) : undefined,
+        applicants: o.applications_count || 0,
+        externalUrl: o.external_url || undefined,
+        price: undefined
+      }))
+      setOpportunities(mapped)
+    } catch (e) {
+      console.error('Failed to load opportunities', e)
+      setOpportunities([])
+    }
+  }
   const filterOptions = {
     type: ['Fellowship', 'Scholarship', 'Grant', 'Program', 'Internship'],
     category: ['Scholarships', 'Fellowships', 'Funds', 'Grants', 'Internships', 'Programs', 'Competitions', 'Research', 'Professional Development'],
@@ -203,14 +131,36 @@ const Opportunities = () => {
     { code: 'BIF', symbol: 'FBu', name: 'Burundian Franc' }
   ]
 
-  const toggleSave = (opportunityId) => {
-    const newSaved = new Set(savedOpportunities)
-    if (newSaved.has(opportunityId)) {
-      newSaved.delete(opportunityId)
+  const toggleSave = async (opportunityId) => {
+    const idStr = String(opportunityId)
+    try {
+      if (savedOpportunities.has(idStr)) {
+        const savedId = opportunityIdToSavedItemId[idStr]
+        if (savedId) {
+          await apiService.delete(`/saved-items/${savedId}`)
+        }
+        const next = new Set(savedOpportunities)
+        next.delete(idStr)
+        setSavedOpportunities(next)
+        setOpportunityIdToSavedItemId(prev => {
+          const copy = { ...prev }
+          delete copy[idStr]
+          return copy
+        })
     } else {
-      newSaved.add(opportunityId)
+        const resp = await apiService.post('/saved-items', { item_type: 'opportunity', opportunity_id: Number(opportunityId) })
+        const savedItem = resp?.data?.saved_item || resp?.data
+        const next = new Set(savedOpportunities)
+        next.add(idStr)
+        setSavedOpportunities(next)
+        if (savedItem?.id) {
+          setOpportunityIdToSavedItemId(prev => ({ ...prev, [idStr]: savedItem.id }))
+        }
+      }
+    } catch (e) {
+      console.error('Toggle save failed', e)
+      alert(e?.message || 'Failed to update bookmark')
     }
-    setSavedOpportunities(newSaved)
   }
 
   const handleOpportunityClick = (opportunity) => {
@@ -255,7 +205,7 @@ const Opportunities = () => {
 
   const getActiveFilterCount = () => {
     let count = 0
-    count += filters.type.length
+    // removed type count
     count += filters.category.length
     count += filters.location.length
     count += filters.country.length
@@ -309,9 +259,7 @@ const Opportunities = () => {
     }
 
     // Type filter
-    if (filters.type.length > 0 && !filters.type.includes(opportunity.type)) {
-      return false
-    }
+    // removed type filter
 
     // Category filter
     if (filters.category.length > 0 && !filters.category.includes(opportunity.category)) {
@@ -583,46 +531,62 @@ const Opportunities = () => {
                       }}>
                         {opportunity.type}
                       </span>
-                      {opportunity.isUrgent && (
+                      {opportunity.price === 'Pro' && (
                         <span style={{
-                          fontSize: '12px',
+                          fontSize: '10px',
                           color: 'white',
-                          backgroundColor: '#16a34a',
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          fontWeight: '600',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
+                          backgroundColor: '#3b82f6',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontWeight: '700',
+                          letterSpacing: '0.5px'
                         }}>
-                          <Star size={12} fill="white" />
-                          Urgent
+                          PRO
                         </span>
                       )}
+                      {opportunity.price === 'Free' && (
+                        <span style={{
+                          fontSize: '10px',
+                          color: 'white',
+                          backgroundColor: '#16a34a',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontWeight: '700'
+                        }}>
+                          Free
+                        </span>
+                      )}
+                      {/* Urgent badge intentionally not shown for opportunities */}
                     </div>
                     
                     <button
-                      onClick={() => toggleSave(opportunity.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleSave(opportunity.id)
+                      }}
                       style={{
-                        background: savedOpportunities.has(opportunity.id) ? 'rgba(22, 163, 74, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                        border: 'none',
+                        background: savedOpportunities.has(String(opportunity.id)) ? '#f0fdf4' : '#f8f9fa',
+                        border: savedOpportunities.has(String(opportunity.id)) ? '1px solid #16a34a' : '1px solid #e2e8f0',
                         padding: '8px',
                         cursor: 'pointer',
                         borderRadius: '8px',
-                        transition: 'all 0.2s ease-in-out',
-                        backdropFilter: 'blur(10px)'
+                        flexShrink: 0,
+                        marginLeft: '8px',
+                        transition: 'all 0.2s ease-in-out'
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.transform = 'scale(1.1)'
+                        e.target.style.backgroundColor = savedOpportunities.has(String(opportunity.id)) ? '#dcfce7' : '#f1f5f9'
+                        e.target.style.transform = 'scale(1.05)'
                       }}
                       onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = savedOpportunities.has(String(opportunity.id)) ? '#f0fdf4' : '#f8f9fa'
                         e.target.style.transform = 'scale(1)'
                       }}
                     >
                       <Bookmark 
-                        size={18} 
-                        color={savedOpportunities.has(opportunity.id) ? 'white' : '#64748b'}
-                        fill={savedOpportunities.has(opportunity.id) ? 'white' : 'none'}
+                        size={20} 
+                        color={savedOpportunities.has(String(opportunity.id)) ? '#16a34a' : '#64748b'}
+                        fill={savedOpportunities.has(String(opportunity.id)) ? '#16a34a' : 'none'}
                       />
                     </button>
                   </div>
@@ -641,14 +605,14 @@ const Opportunities = () => {
                     {opportunity.title}
                   </h2>
 
-                  {/* Category */}
+                  {/* Organization (fallback to category) */}
                   <div style={{
                     fontSize: '13px',
                     color: '#64748b',
                     marginBottom: '12px',
                     fontWeight: '500'
                   }}>
-                    {opportunity.category}
+                    {opportunity.organization || opportunity.category}
                   </div>
 
                   {/* Key Info Row */}
@@ -729,7 +693,7 @@ const Opportunities = () => {
                       flexWrap: 'wrap',
                       gap: '6px'
                     }}>
-                      {opportunity.tags.slice(0, 4).map((tag, index) => (
+                      {(opportunity.tags || []).slice(0, 4).map((tag, index) => (
                         <span key={index} style={{
                           backgroundColor: '#f1f5f9',
                           color: '#475569',
@@ -891,55 +855,6 @@ const Opportunities = () => {
                 flexDirection: screenSize.isDesktop ? 'initial' : 'column',
                 gap: screenSize.isDesktop ? '32px' : '24px'
               }}>
-                
-                {/* Opportunity Type */}
-                <div>
-                  <h3 style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#1a1a1a',
-                    margin: '0 0 12px 0'
-                  }}>
-                    Opportunity Type
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {filterOptions.type.map((type) => (
-                      <label key={type} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        cursor: 'pointer',
-                        padding: '8px 0'
-                      }}>
-                        <div style={{
-                          width: '20px',
-                          height: '20px',
-                          borderRadius: '4px',
-                          border: '2px solid #e2e8f0',
-                          backgroundColor: filters.type.includes(type) ? '#16a34a' : 'transparent',
-                          borderColor: filters.type.includes(type) ? '#16a34a' : '#e2e8f0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'all 0.2s ease-in-out'
-                        }}
-                        onClick={() => toggleFilter('type', type)}>
-                          {filters.type.includes(type) && (
-                            <Check size={12} color="white" />
-                          )}
-                        </div>
-                        <span style={{
-                          fontSize: '14px',
-                          color: '#1a1a1a',
-                          fontWeight: '500'
-                        }}>
-                          {type}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Category/Field */}
                 <div>
                   <h3 style={{
@@ -1443,7 +1358,7 @@ const Opportunities = () => {
                     color: '#64748b',
                     margin: '0 0 16px 0'
                   }}>
-                    {selectedOpportunity.category}
+                    {selectedOpportunity.organization || selectedOpportunity.category}
                   </p>
 
                   {/* Key Stats */}
@@ -1510,11 +1425,11 @@ const Opportunities = () => {
                       borderRadius: '8px',
                       padding: '16px'
                     }}>
-                      {selectedOpportunity.eligibilityCriteria.map((criteria, index) => (
+                      {(selectedOpportunity.eligibilityCriteria || []).map((criteria, index) => (
                         <div key={index} style={{
                           display: 'flex',
                           alignItems: 'flex-start',
-                          marginBottom: index === selectedOpportunity.eligibilityCriteria.length - 1 ? '0' : '8px',
+                          marginBottom: index === (selectedOpportunity.eligibilityCriteria || []).length - 1 ? '0' : '8px',
                           fontSize: '14px',
                           color: '#374151'
                         }}>
@@ -1542,7 +1457,7 @@ const Opportunities = () => {
                       Requirements
                     </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {selectedOpportunity.requirements.map((req, index) => (
+                      {(selectedOpportunity.requirements || []).map((req, index) => (
                         <div key={index} style={{
                           display: 'flex',
                           alignItems: 'flex-start',
@@ -1577,11 +1492,11 @@ const Opportunities = () => {
                       borderRadius: '8px',
                       padding: '16px'
                     }}>
-                      {selectedOpportunity.selectionProcess.map((step, index) => (
+                      {(selectedOpportunity.selectionProcess || []).map((step, index) => (
                         <div key={index} style={{
                           display: 'flex',
                           alignItems: 'flex-start',
-                          marginBottom: index === selectedOpportunity.selectionProcess.length - 1 ? '0' : '8px',
+                          marginBottom: index === (selectedOpportunity.selectionProcess || []).length - 1 ? '0' : '8px',
                           fontSize: '14px',
                           color: '#374151'
                         }}>
@@ -1616,9 +1531,9 @@ const Opportunities = () => {
                       borderRadius: '8px',
                       padding: '16px'
                     }}>
-                      {Object.entries(selectedOpportunity.programDetails).map(([key, value], index) => (
+                      {Object.entries(selectedOpportunity.programDetails || {}).map(([key, value], index) => (
                         <div key={index} style={{
-                          marginBottom: index === Object.entries(selectedOpportunity.programDetails).length - 1 ? '0' : '12px',
+                          marginBottom: index === Object.entries(selectedOpportunity.programDetails || {}).length - 1 ? '0' : '12px',
                           fontSize: '14px'
                         }}>
                           <span style={{ 
@@ -1655,7 +1570,7 @@ const Opportunities = () => {
                       Benefits & Rewards
                     </h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {selectedOpportunity.benefits.map((benefit, index) => (
+                      {(selectedOpportunity.benefits || []).map((benefit, index) => (
                         <span key={index} style={{
                           fontSize: '12px',
                           color: '#16a34a',
@@ -1681,7 +1596,7 @@ const Opportunities = () => {
                       Topics & Skills
                     </h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {selectedOpportunity.tags.map((tag, index) => (
+                      {(selectedOpportunity.tags || []).map((tag, index) => (
                         <span key={index} style={{
                           fontSize: '12px',
                           color: '#6366f1',

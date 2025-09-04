@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useResponsive } from '../hooks/useResponsive'
 import { Play, Book, FileText, Calendar, Clock, Star, Download, Award, Search, Eye } from 'lucide-react'
+import { apiService } from '../lib/api-service'
 
 const MyCourses = () => {
   const screenSize = useResponsive()
@@ -14,52 +15,52 @@ const MyCourses = () => {
     { id: 'saved', name: 'Saved', count: 1 }
   ]
 
-  const courses = [
-    {
-      id: 1,
-      title: 'Complete Web Development Bootcamp',
-      instructor: 'Angela Yu',
-      type: 'Video',
-      progress: 75,
-      status: 'In Progress',
-      duration: '65h',
-      rating: 4.8,
-      certificate: true
-    },
-    {
-      id: 2,
-      title: 'Clean Code: A Handbook',
-      instructor: 'Robert C. Martin',
-      type: 'Book',
-      progress: 100,
-      status: 'Completed',
-      duration: '12h read',
-      rating: 5.0,
-      certificate: false
-    },
-    {
-      id: 3,
-      title: 'SaaS Startup Business Plan',
-      instructor: 'Tech Ventures Inc.',
-      type: 'Business Plan',
-      progress: 45,
-      status: 'In Progress',
-      duration: '3h study',
-      rating: 4.5,
-      certificate: false
-    },
-    {
-      id: 4,
-      title: 'React Advanced Patterns',
-      instructor: 'Kent C. Dodds',
-      type: 'Video',
-      progress: 100,
-      status: 'Completed',
-      duration: '8h',
-      rating: 4.9,
-      certificate: true
+  const [courses, setCourses] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  // Static courses data as fallback
+  const staticCourses = []
+
+  useEffect(() => {
+    fetchMyCourses()
+  }, [])
+
+  const transformMyCourseData = (apiCourse) => {
+    return {
+      id: apiCourse.id,
+      title: apiCourse.course?.title || 'Unknown Course',
+      instructor: apiCourse.course?.instructor || apiCourse.course?.author || 'Unknown Instructor',
+      type: apiCourse.course?.type === 'video' ? 'Video' : apiCourse.course?.type === 'book' ? 'Book' : 'Business Plan',
+      progress: apiCourse.progress || 0,
+      status: apiCourse.status === 'completed' ? 'Completed' : apiCourse.status === 'in-progress' ? 'In Progress' : 'Saved',
+      duration: apiCourse.course?.duration || 'Not specified',
+      rating: apiCourse.course?.rating || 4.5,
+      certificate: apiCourse.course?.certificate_eligible || false,
+      enrolledDate: apiCourse.created_at ? new Date(apiCourse.created_at).toLocaleDateString() : 'Recently',
+      lastAccessed: apiCourse.last_accessed ? new Date(apiCourse.last_accessed).toLocaleDateString() : 'Never',
+      completedLessons: apiCourse.completed_lessons || 0,
+      totalLessons: apiCourse.course?.lessons_count || 0,
+      timeSpent: apiCourse.time_spent || '0h',
+      nextLesson: apiCourse.next_lesson || null,
+      notes: apiCourse.notes || ''
     }
-  ]
+  }
+
+  const fetchMyCourses = async () => {
+    try {
+      setLoading(true)
+      const response = await apiService.get('/courses/my-courses')
+      const transformedCourses = (response.data.courses || []).map(transformMyCourseData)
+      setCourses(transformedCourses)
+    } catch (error) {
+      console.error('Error fetching my courses:', error)
+      // Keep existing static data as fallback
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Static courses data as fallback
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -189,7 +190,29 @@ const MyCourses = () => {
           gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
           gap: '16px'
         }}>
-          {filteredCourses.length > 0 ? (
+          {(() => {
+            const currentCourses = courses.length > 0 ? courses : staticCourses
+            const filteredCourses = currentCourses.filter(course => {
+              // Filter by tab
+              if (activeTab !== 'all') {
+                const statusMatch = activeTab === 'in-progress' ? course.status === 'In Progress' :
+                                   activeTab === 'completed' ? course.status === 'Completed' :
+                                   activeTab === 'saved' ? course.status === 'Saved' : true
+                if (!statusMatch) return false
+              }
+              
+              // Filter by search query
+              if (searchQuery) {
+                const query = searchQuery.toLowerCase()
+                return course.title.toLowerCase().includes(query) ||
+                       course.instructor.toLowerCase().includes(query) ||
+                       course.type.toLowerCase().includes(query)
+              }
+              
+              return true
+            })
+            
+            return filteredCourses.length > 0 ? (
             filteredCourses.map((course) => {
               const Icon = getTypeIcon(course.type)
               const statusColors = getStatusColor(course.status)
@@ -480,7 +503,8 @@ const MyCourses = () => {
                 Try adjusting your search or filters
               </p>
             </div>
-          )}
+          )
+          })()}
         </div>
       </div>
     </div>

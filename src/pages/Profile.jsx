@@ -1,153 +1,237 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useResponsive } from '../hooks/useResponsive'
 import { User, Edit3, Upload, Download, Eye, MapPin, Calendar, Mail, Phone, Globe, Briefcase, GraduationCap, Award, FileText, Save, X } from 'lucide-react'
+import { apiService } from '../lib/api-service'
+import { useAuth } from '../contexts/AuthContext'
 
 const Profile = () => {
   const screenSize = useResponsive()
+  const { user, updateProfile, checkAuthStatus } = useAuth()
   const [activeTab, setActiveTab] = useState('personal')
   const [showEditModal, setShowEditModal] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const tabs = [
     { id: 'personal', name: 'Personal' },
     { id: 'education', name: 'Education' },
     { id: 'certificates', name: 'Certificates' },
     { id: 'experience', name: 'Experience' },
+    { id: 'skills', name: 'Skills' },
     { id: 'documents', name: 'Documents' }
   ]
 
   const [profileData, setProfileData] = useState({
-    name: 'User Name',
-    username: 'username',
-    email: 'user@example.com',
-    phone: '+1 (555) 123-4567',
-    location: 'San Francisco, CA',
-    website: 'www.portfolio.com',
-    bio: 'Passionate software developer with 5 years of experience building scalable web applications.',
-    joinDate: 'Jan 2023',
-    jobTitle: 'Senior Software Engineer at TechCorp Inc.',
-    industry: 'Technology',
-    yearsExperience: '5-10 years',
-    employmentStatus: 'Employed',
-    linkedinProfile: 'linkedin.com/in/username',
-    githubProfile: 'github.com/username',
-    otherProfiles: 'behance.com/username'
+    name: '',
+    username: '',
+    email: '',
+    phone: '',
+    location: '',
+    website: '',
+    bio: '',
+    joinDate: '',
+    jobTitle: '',
+    industry: '',
+    yearsExperience: '',
+    employmentStatus: '',
+    maritalStatus: '',
+    nationality: '',
+    countryOfResidence: '',
+    dateOfBirth: '',
+    gender: '',
+    disabilityStatus: '',
+    languages: '',
+    linkedinProfile: '',
+    profileLink1: { name: '', url: '' },
+    profileLink2: { name: '', url: '' },
+    profileLink3: { name: '', url: '' },
+    profileImage: ''
   })
 
-  const [experience, setExperience] = useState([
-    {
-      id: 1,
-      title: 'Senior Software Engineer',
-      company: 'TechCorp Inc.',
-      location: 'San Francisco, CA',
-      period: 'Jan 2022 - Present',
-      type: 'Full-time',
-      description: 'Leading frontend development team, building scalable React applications.'
-    },
-    {
-      id: 2,
-      title: 'Frontend Developer',
-      company: 'StartupXYZ',
-      location: 'Remote',
-      period: 'Jun 2020 - Dec 2021',
-      type: 'Full-time',
-      description: 'Developed user interfaces for web applications using React and TypeScript.'
-    }
-  ])
+  const [experience, setExperience] = useState([])
 
-  const [education, setEducation] = useState([
-    {
-      id: 1,
-      level: 'Bachelor\'s Degree (4-year)',
-      program: 'Computer Science',
-      school: 'University of California',
-      location: 'Berkeley, CA',
-      period: '2016 - 2020',
-      gpa: '3.8/4.0'
-    },
-    {
-      id: 2,
-      level: 'Professional Degree (JD, MD, etc.)',
-      program: 'Full Stack Web Development Bootcamp',
-      school: 'Tech Academy',
-      location: 'Online',
-      period: '2020'
-    }
-  ])
+  const [education, setEducation] = useState([])
 
-  const [certificates, setCertificates] = useState([
-    {
-      id: 1,
-      name: 'AWS Certified Solutions Architect',
-      issuer: 'Amazon Web Services',
-      issueDate: 'March 2023',
-      expiryDate: 'March 2026',
-      credentialId: 'AWS-SAA-123456',
-      type: 'Professional Certification',
-      certificateFile: null
-    },
-    {
-      id: 2,
-      name: 'Google Analytics Certified',
-      issuer: 'Google',
-      issueDate: 'January 2023',
-      expiryDate: 'January 2024',
-      credentialId: 'GA-789012',
-      type: 'Industry Certification',
-      certificateFile: null
-    },
-    {
-      id: 3,
-      name: 'React Developer Certificate',
-      issuer: 'freeCodeCamp',
-      issueDate: 'December 2022',
-      expiryDate: null,
-      credentialId: 'FCC-RDC-345678',
-      type: 'Course Certificate',
-      certificateFile: null
-    }
-  ])
+  const [certificates, setCertificates] = useState([])
 
-  const [documents, setDocuments] = useState([
-    {
-      id: 1,
-      name: 'Software Engineer Resume',
-      type: 'Resume/CV',
-      category: 'Job Application Documents',
-      file: null,
-      size: '245 KB',
-      updated: 'Jan 15, 2024',
-      status: 'Active',
-      description: 'Updated resume for software engineering positions'
-    },
-    {
-      id: 2,
-      name: 'Generic Cover Letter',
-      type: 'Cover Letter Templates',
-      category: 'Job Application Documents',
-      file: null,
-      size: '128 KB',
-      updated: 'Jan 10, 2024',
-      status: 'Draft',
-      description: 'Template for tech job applications'
-    },
-    {
-      id: 3,
-      name: 'Bachelor Degree Certificate',
-      type: 'Diplomas/Degrees',
-      category: 'Academic Documents',
-      file: null,
-      size: '892 KB',
-      updated: 'Dec 28, 2023',
-      status: 'Verified',
-      description: 'Computer Science degree from University of California'
+  const [skills, setSkills] = useState([])
+
+  const [documents, setDocuments] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    fetchProfileData()
+  }, [])
+
+  // Watch for changes in user data and refresh profile data
+  useEffect(() => {
+    if (user) {
+      setProfileData(transformProfileData(user))
+      setExperience(transformExperienceData(user.experience || []))
+      setEducation(transformEducationData(user.education || []))
+      setCertificates(transformCertificatesData(user.certificates || []))
+      setSkills(transformSkillsData(user.skills || []))
+      setDocuments(transformDocumentsData(user.documents || []))
     }
-  ])
+  }, [user])
+
+  const transformProfileData = (apiProfile) => {
+    return {
+      name: `${apiProfile.first_name || ''} ${apiProfile.last_name || ''}`.trim() || '',
+      username: apiProfile.username || '',
+      email: apiProfile.email || '',
+      phone: apiProfile.phone || '',
+      location: apiProfile.location || '',
+      website: apiProfile.website || '',
+      bio: apiProfile.bio || '',
+      joinDate: apiProfile.created_at ? new Date(apiProfile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '',
+      jobTitle: apiProfile.current_job_title || '',
+      industry: apiProfile.industry || '',
+      yearsExperience: apiProfile.years_experience || '',
+      employmentStatus: apiProfile.employment_status || '',
+      maritalStatus: apiProfile.marital_status || '',
+      nationality: apiProfile.nationality || '',
+      countryOfResidence: apiProfile.country_of_residence || '',
+      dateOfBirth: apiProfile.date_of_birth || '',
+      gender: apiProfile.gender || '',
+      disabilityStatus: apiProfile.disability_status || '',
+      languages: apiProfile.languages || '',
+      linkedinProfile: apiProfile.linkedin_url || '',
+      profileLink1: { 
+        name: apiProfile.profile_link1_name || '', 
+        url: apiProfile.profile_link1_url || '' 
+      },
+      profileLink2: { 
+        name: apiProfile.profile_link2_name || '', 
+        url: apiProfile.profile_link2_url || '' 
+      },
+      profileLink3: { 
+        name: apiProfile.profile_link3_name || '', 
+        url: apiProfile.profile_link3_url || '' 
+      },
+      profileImage: apiProfile.profile_image || ''
+    }
+  }
+
+  const transformExperienceData = (apiExperience) => {
+    console.log('Raw experience data from API:', apiExperience)
+    return apiExperience.map(exp => {
+      const transformed = {
+      id: exp.id,
+        title: exp.title || exp.job_title || '',
+        company: exp.company || exp.organization || '',
+      location: exp.location || '',
+      period: exp.start_date && exp.end_date 
+        ? `${new Date(exp.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - ${exp.end_date === 'present' ? 'Present' : new Date(exp.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`
+          : exp.period || '',
+        type: exp.employment_type || exp.type || '',
+      description: exp.description || ''
+      }
+      console.log('Transformed experience item:', transformed)
+      return transformed
+    })
+  }
+
+  const transformEducationData = (apiEducation) => {
+    console.log('Raw education data from API:', apiEducation)
+    return apiEducation.map(edu => {
+      const transformed = {
+      id: edu.id,
+        level: edu.level || edu.degree_level || '',
+        program: edu.field_of_study || edu.program || '',
+        school: edu.institution || edu.school || '',
+      location: edu.location || '',
+      period: edu.start_date && edu.end_date 
+        ? `${new Date(edu.start_date).getFullYear()} - ${new Date(edu.end_date).getFullYear()}`
+          : edu.period || '',
+        gpa: edu.gpa || ''
+      }
+      console.log('Education item - Raw:', edu, 'Transformed:', transformed)
+      return transformed
+    })
+  }
+
+  const transformCertificatesData = (apiCertificates) => {
+    console.log('Transforming certificates data:', apiCertificates)
+    return apiCertificates.map(cert => {
+      const transformed = {
+      id: cert.id,
+      name: cert.name || '',
+      issuer: cert.issuing_organization || '',
+      issueDate: cert.issue_date ? new Date(cert.issue_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '',
+      expiryDate: cert.expiry_date ? new Date(cert.expiry_date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : null,
+      credentialId: cert.credential_id || '',
+      type: cert.certificate_type || '',
+      certificateFile: cert.certificate_file
+      }
+      console.log('Transformed certificate:', transformed)
+      return transformed
+    })
+  }
+
+  const transformSkillsData = (apiSkills) => {
+    console.log('Transforming skills data:', apiSkills)
+    return apiSkills.map(skill => ({
+      id: skill.id,
+      name: skill.name || '',
+      level: skill.level || '',
+      category: skill.category || '',
+      description: skill.description || ''
+    }))
+  }
+
+  const transformDocumentsData = (apiDocuments) => {
+    return apiDocuments.map(doc => ({
+      id: doc.id,
+      name: doc.name || '',
+      type: doc.document_type || '',
+      category: doc.category || '',
+      file: doc.file_path,
+      size: doc.file_size ? `${(doc.file_size / 1024).toFixed(0)} KB` : '',
+      updated: doc.updated_at ? new Date(doc.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
+      status: doc.status || '',
+      description: doc.description || ''
+    }))
+  }
+
+  const fetchProfileData = async () => {
+    try {
+      setLoading(true)
+      const response = await apiService.get('/auth/profile')
+      const profile = response.data?.user || response.user
+      
+      console.log('Full profile response:', response)
+      console.log('Profile data:', profile)
+      console.log('Education data:', profile?.education)
+      console.log('Experience data:', profile?.experience)
+      
+      if (profile) {
+        console.log('Raw profile data from API:', profile)
+        console.log('Employment status from API:', profile.employment_status)
+        const transformedData = transformProfileData(profile)
+        console.log('Transformed profile data:', transformedData)
+        console.log('Transformed employment status:', transformedData.employmentStatus)
+        setProfileData(transformedData)
+        setExperience(transformExperienceData(profile.experience || []))
+        setEducation(transformEducationData(profile.education || []))
+        setCertificates(transformCertificatesData(profile.certificates || []))
+        setSkills(transformSkillsData(profile.skills || []))
+        setDocuments(transformDocumentsData(profile.documents || []))
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error)
+      // Keep existing static data as fallback
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const [editData, setEditData] = useState({
     personal: profileData,
     experience: experience,
     education: education,
     certificates: certificates,
+    skills: skills,
     documents: documents
   })
 
@@ -157,18 +241,171 @@ const Profile = () => {
       experience: [...experience],
       education: [...education],
       certificates: [...certificates],
+      skills: [...skills],
       documents: [...documents]
     })
     setShowEditModal(true)
   }
 
-  const saveChanges = () => {
+  const saveChanges = async () => {
+    setSaving(true)
+    try {
+      // Helper function to validate and format date
+      const formatDate = (dateString) => {
+        if (!dateString || dateString === '') return null;
+        try {
+          const date = new Date(dateString);
+          if (isNaN(date.getTime())) return null;
+          return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        } catch (error) {
+          return null;
+        }
+      };
+
+      // Helper function to validate enum values
+      const validateEnum = (value, allowedValues) => {
+        if (!value || value === '') return null;
+        return allowedValues.includes(value) ? value : null;
+      };
+
+      // Prepare data for backend with proper field mapping and validation
+      const profileUpdateData = {
+        // Basic fields
+        first_name: editData.personal.name.split(' ')[0] || '',
+        last_name: editData.personal.name.split(' ').slice(1).join(' ') || '',
+        username: editData.personal.username,
+        email: editData.personal.email,
+        phone: editData.personal.phone,
+        location: editData.personal.location,
+        bio: editData.personal.bio,
+        
+        // Job-related fields
+        current_job_title: editData.personal.jobTitle || null,
+        industry: editData.personal.industry || null,
+        years_experience: editData.personal.yearsExperience || null,
+        employment_status: editData.personal.employmentStatus ? editData.personal.employmentStatus.toLowerCase() : null,
+        
+        // Personal information fields
+        marital_status: editData.personal.maritalStatus || null,
+        nationality: editData.personal.nationality || null,
+        country_of_residence: editData.personal.countryOfResidence || null,
+        date_of_birth: formatDate(editData.personal.dateOfBirth),
+        gender: editData.personal.gender || null,
+        disability_status: editData.personal.disabilityStatus || null,
+        languages: editData.personal.languages || null,
+        
+        // Profile links
+        linkedin_url: editData.personal.linkedinProfile || null,
+        profile_link1_name: editData.personal.profileLink1.name || null,
+        profile_link1_url: editData.personal.profileLink1.url || null,
+        profile_link2_name: editData.personal.profileLink2.name || null,
+        profile_link2_url: editData.personal.profileLink2.url || null,
+        profile_link3_name: editData.personal.profileLink3.name || null,
+        profile_link3_url: editData.personal.profileLink3.url || null,
+        
+        // Complex data fields
+        education: editData.education,
+        certificates: editData.certificates.map(cert => ({
+          id: cert.id,
+          name: cert.name,
+          issuing_organization: cert.issuer,
+          issue_date: cert.issueDate,
+          expiry_date: cert.expiryDate,
+          credential_id: cert.credentialId,
+          certificate_type: cert.type,
+          certificate_file: cert.certificateFile
+        })),
+        experience: editData.experience,
+        skills: editData.skills.map(skill => ({
+          id: skill.id,
+          name: skill.name,
+          level: skill.level,
+          category: skill.category,
+          description: skill.description
+        })),
+        documents: editData.documents
+      }
+
+      // Remove null/undefined values to avoid database issues
+      Object.keys(profileUpdateData).forEach(key => {
+        if (profileUpdateData[key] === null || profileUpdateData[key] === undefined || profileUpdateData[key] === '') {
+          delete profileUpdateData[key];
+        }
+      });
+      
+      // Save to backend first
+      console.log('Sending profile update data:', profileUpdateData)
+      console.log('Certificate data being sent:', profileUpdateData.certificates)
+      const result = await updateProfile(profileUpdateData)
+      if (result.success) {
+        console.log('Profile update successful, refreshing data...')
+        // Only update local state if backend save was successful
     setProfileData({...editData.personal})
     setExperience([...editData.experience])
     setEducation([...editData.education])
     setCertificates([...editData.certificates])
+    setSkills([...editData.skills])
     setDocuments([...editData.documents])
+        
+        // Refresh user data in AuthContext
+        await checkAuthStatus()
+        
+        // Fetch fresh profile data to ensure we have the latest from backend
+        await fetchProfileData()
+        
     setShowEditModal(false)
+        console.log('Profile updated successfully')
+      } else {
+        console.error('Failed to update profile:', result.message)
+        alert('Failed to update profile. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error)
+      alert('Error saving profile. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB')
+      return
+    }
+
+    // immediate preview
+    const localUrl = URL.createObjectURL(file)
+    setProfileData(prev => ({
+      ...prev,
+      profileImage: localUrl
+    }))
+
+    setUploadingImage(true)
+    try {
+      const result = await apiService.uploadProfileImage(file)
+      const img = result?.profile_image || result?.file_url || result?.data?.profile_image || result?.data?.file_url
+      const { resolveAssetUrl } = await import('../lib/api-service')
+      setProfileData(prev => ({
+        ...prev,
+        profileImage: resolveAssetUrl(img)
+      }))
+      if (typeof checkAuthStatus === 'function') {
+        await checkAuthStatus()
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert(error?.message || 'Failed to upload image. Please try again.')
+    } finally {
+      setUploadingImage(false)
+    }
   }
 
   return (
@@ -231,17 +468,32 @@ const Profile = () => {
                 width: '44px',
                 height: '44px',
                 borderRadius: '22px',
-                backgroundColor: '#16a34a',
+                backgroundColor: profileData.profileImage ? 'transparent' : '#16a34a',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '18px',
                 fontWeight: '600',
-                color: 'white'
+                color: 'white',
+                overflow: 'hidden'
               }}>
-                U
+                {profileData.profileImage ? (
+                  <img
+                    src={profileData.profileImage.startsWith('http') ? profileData.profileImage : `http://localhost:8000${profileData.profileImage}`}
+                    alt="Profile"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                    }}
+                  />
+                ) : (
+                  'U'
+                )}
               </div>
-              <button style={{
+              <button 
+                onClick={() => document.getElementById('profile-image-upload').click()}
+                disabled={uploadingImage}
+                style={{
                 position: 'absolute',
                 bottom: '0',
                 right: '0',
@@ -253,10 +505,18 @@ const Profile = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: 'pointer'
+                  cursor: uploadingImage ? 'not-allowed' : 'pointer',
+                  opacity: uploadingImage ? 0.6 : 1
               }}>
-                <Upload size={8} color="#64748b" />
+                <Upload size={8} color={uploadingImage ? "#9ca3af" : "#64748b"} />
               </button>
+              <input
+                id="profile-image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+              />
             </div>
             
             <div style={{ flex: 1 }}>
@@ -290,10 +550,13 @@ const Profile = () => {
                   {profileData.location}
                 </div>
                 <span>•</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                  <Calendar size={10} />
-                  Joined {profileData.joinDate}
+                {profileData.jobTitle && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '13px' }}>
+                    <Briefcase size={10} />
+                    {profileData.jobTitle}
                 </div>
+                )}
+
               </div>
             </div>
           </div>
@@ -302,7 +565,13 @@ const Profile = () => {
             fontSize: '14px',
             color: '#374151',
             margin: '0 0 6px 0',
-            lineHeight: '1.4'
+            lineHeight: '1.4',
+            maxHeight: '60px',
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            textOverflow: 'ellipsis'
           }}>
             {profileData.bio}
           </p>
@@ -323,11 +592,29 @@ const Profile = () => {
               <Phone size={10} />
               {profileData.phone}
             </div>
+            {profileData.linkedinProfile && (
+              <>
             <span>•</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
               <Globe size={10} />
-              {profileData.website}
+                  <a 
+                    href={profileData.linkedinProfile} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ 
+                      color: '#64748b', 
+                      textDecoration: 'none',
+                      fontSize: '14px'
+                    }}
+                    onMouseEnter={(e) => e.target.style.color = '#16a34a'}
+                    onMouseLeave={(e) => e.target.style.color = '#64748b'}
+                  >
+                    LinkedIn
+                  </a>
             </div>
+              </>
+            )}
+
           </div>
         </div>
 
@@ -431,6 +718,13 @@ const Profile = () => {
                 </div>
               </div>
               
+
+              
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '6px' 
+              }}>
               <div>
                 <label style={{
                   fontSize: '14px',
@@ -439,44 +733,18 @@ const Profile = () => {
                   marginBottom: '2px',
                   display: 'block'
                 }}>
-                  Bio
+                    Email
                 </label>
                 <p style={{
                   fontSize: '14px',
                   color: '#1a1a1a',
                   margin: 0,
-                  padding: '3px 0',
-                  lineHeight: '1.3'
+                    padding: '3px 0'
                 }}>
-                  {profileData.bio}
+                    {profileData.email}
                 </p>
               </div>
               
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: '1fr 1fr', 
-                gap: '6px' 
-              }}>
-                <div>
-                  <label style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#64748b',
-                    marginBottom: '2px',
-                    display: 'block'
-                  }}>
-                    Email
-                  </label>
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#1a1a1a',
-                    margin: 0,
-                    padding: '3px 0'
-                  }}>
-                    {profileData.email}
-                  </p>
-                </div>
-                
                 <div>
                   <label style={{
                     fontSize: '14px',
@@ -498,31 +766,31 @@ const Profile = () => {
                 </div>
               </div>
               
-              <div>
-                <label style={{
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#64748b',
-                  marginBottom: '2px',
-                  display: 'block'
-                }}>
-                  Current Position
-                </label>
-                <p style={{
-                  fontSize: '14px',
-                  color: '#1a1a1a',
-                  margin: 0,
-                  padding: '3px 0'
-                }}>
-                  {profileData.jobTitle}
-                </p>
-              </div>
-              
               <div style={{ 
                 display: 'grid', 
-                gridTemplateColumns: '1fr 1fr 1fr', 
+                gridTemplateColumns: '1fr 1fr', 
                 gap: '6px' 
               }}>
+                <div>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#64748b',
+                    marginBottom: '2px',
+                    display: 'block'
+                  }}>
+                    Employment Status
+                  </label>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#1a1a1a',
+                    margin: 0,
+                    padding: '3px 0'
+                  }}>
+                    {profileData.employmentStatus}
+                  </p>
+                </div>
+                
                 <div>
                   <label style={{
                     fontSize: '14px',
@@ -543,45 +811,9 @@ const Profile = () => {
                   </p>
                 </div>
                 
-                <div>
-                  <label style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#64748b',
-                    marginBottom: '2px',
-                    display: 'block'
-                  }}>
-                    Experience
-                  </label>
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#1a1a1a',
-                    margin: 0,
-                    padding: '3px 0'
-                  }}>
-                    {profileData.yearsExperience}
-                  </p>
-                </div>
 
-                <div>
-                  <label style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#64748b',
-                    marginBottom: '2px',
-                    display: 'block'
-                  }}>
-                    Status
-                  </label>
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#1a1a1a',
-                    margin: 0,
-                    padding: '3px 0'
-                  }}>
-                    {profileData.employmentStatus}
-                  </p>
-                </div>
+
+
               </div>
               
               <div style={{ 
@@ -589,6 +821,26 @@ const Profile = () => {
                 gridTemplateColumns: '1fr 1fr', 
                 gap: '6px' 
               }}>
+              <div>
+                <label style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#64748b',
+                  marginBottom: '2px',
+                  display: 'block'
+                }}>
+                    Nationality
+                </label>
+                <p style={{
+                  fontSize: '14px',
+                  color: '#1a1a1a',
+                  margin: 0,
+                  padding: '3px 0'
+                }}>
+                    {profileData.nationality || ''}
+                </p>
+              </div>
+              
                 <div>
                   <label style={{
                     fontSize: '14px',
@@ -597,7 +849,7 @@ const Profile = () => {
                     marginBottom: '2px',
                     display: 'block'
                   }}>
-                    LinkedIn
+                    Country of Residence
                   </label>
                   <p style={{
                     fontSize: '14px',
@@ -605,7 +857,7 @@ const Profile = () => {
                     margin: 0,
                     padding: '3px 0'
                   }}>
-                    {profileData.linkedinProfile}
+                    {profileData.countryOfResidence || ''}
                   </p>
                 </div>
                 
@@ -617,7 +869,7 @@ const Profile = () => {
                     marginBottom: '2px',
                     display: 'block'
                   }}>
-                    GitHub
+                    Date of Birth
                   </label>
                   <p style={{
                     fontSize: '14px',
@@ -625,9 +877,166 @@ const Profile = () => {
                     margin: 0,
                     padding: '3px 0'
                   }}>
-                    {profileData.githubProfile}
+                    {profileData.dateOfBirth || ''}
                   </p>
                 </div>
+
+                <div>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#64748b',
+                    marginBottom: '2px',
+                    display: 'block'
+                  }}>
+                    Gender
+                  </label>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#1a1a1a',
+                    margin: 0,
+                    padding: '3px 0'
+                  }}>
+                    {profileData.gender || ''}
+                  </p>
+              </div>
+              
+                <div>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#64748b',
+                    marginBottom: '2px',
+                    display: 'block'
+                  }}>
+                    Disability Status
+                  </label>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#1a1a1a',
+                    margin: 0,
+                    padding: '3px 0'
+                  }}>
+                    {profileData.disabilityStatus || ''}
+                  </p>
+                </div>
+                
+                <div>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#64748b',
+                    marginBottom: '2px',
+                    display: 'block'
+                  }}>
+                    Languages
+                  </label>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#1a1a1a',
+                    margin: 0,
+                    padding: '3px 0'
+                  }}>
+                    {profileData.languages || ''}
+                  </p>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {profileData.profileLink1.name && profileData.profileLink1.url && (
+              <div>
+                <label style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#64748b',
+                  marginBottom: '2px',
+                  display: 'block'
+                }}>
+                      {profileData.profileLink1.name}
+                </label>
+                    <a 
+                      href={profileData.profileLink1.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{
+                  fontSize: '14px',
+                        color: '#16a34a',
+                        textDecoration: 'none',
+                  margin: 0,
+                  padding: '3px 0'
+                      }}
+                    >
+                      {profileData.profileLink1.url}
+                    </a>
+                </div>
+                )}
+                
+                {profileData.profileLink2.name && profileData.profileLink2.url && (
+                <div>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#64748b',
+                    marginBottom: '2px',
+                    display: 'block'
+                  }}>
+                      {profileData.profileLink2.name}
+                  </label>
+                    <a 
+                      href={profileData.profileLink2.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{
+                    fontSize: '14px',
+                        color: '#16a34a',
+                        textDecoration: 'none',
+                    margin: 0,
+                    padding: '3px 0'
+                      }}
+                    >
+                      {profileData.profileLink2.url}
+                    </a>
+                </div>
+                )}
+              
+                {profileData.profileLink3.name && profileData.profileLink3.url && (
+              <div>
+                <label style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#64748b',
+                  marginBottom: '2px',
+                  display: 'block'
+                }}>
+                      {profileData.profileLink3.name}
+                </label>
+                    <a 
+                      href={profileData.profileLink3.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{
+                  fontSize: '14px',
+                        color: '#16a34a',
+                        textDecoration: 'none',
+                  margin: 0,
+                  padding: '3px 0'
+                      }}
+                    >
+                      {profileData.profileLink3.url}
+                    </a>
+                  </div>
+                )}
+                
+                {!profileData.profileLink1.name && !profileData.profileLink2.name && !profileData.profileLink3.name && (
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#64748b',
+                    fontStyle: 'italic',
+                    margin: 0
+                  }}>
+                    No profile links added
+                  </p>
+                )}
               </div>
               
               <div>
@@ -638,15 +1047,16 @@ const Profile = () => {
                   marginBottom: '2px',
                   display: 'block'
                 }}>
-                  Other Profiles
+                  Bio
                 </label>
                 <p style={{
                   fontSize: '14px',
                   color: '#1a1a1a',
                   margin: 0,
-                  padding: '3px 0'
+                  padding: '3px 0',
+                  lineHeight: '1.3'
                 }}>
-                  {profileData.otherProfiles}
+                  {profileData.bio}
                 </p>
               </div>
             </div>
@@ -719,7 +1129,10 @@ const Profile = () => {
             gridTemplateColumns: screenSize.isMobile ? '1fr' : screenSize.isTablet ? '1fr 1fr' : '1fr 1fr 1fr',
             gap: screenSize.isMobile ? '10px' : screenSize.isTablet ? '12px' : '16px'
           }}>
-            {certificates.map((cert) => (
+            {console.log('Rendering certificates:', certificates)}
+            {certificates.map((cert) => {
+              console.log('Rendering certificate:', cert)
+              return (
               <div key={cert.id} style={{
                 backgroundColor: 'white',
                 borderRadius: '12px',
@@ -843,7 +1256,8 @@ const Profile = () => {
                   </button>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
@@ -860,7 +1274,11 @@ const Profile = () => {
                 borderRadius: '12px',
                 padding: '16px',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                border: '1px solid #f0f0f0'
+                border: '1px solid #f0f0f0',
+                height: '200px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
                   <Briefcase size={20} color="#16a34a" />
@@ -901,16 +1319,127 @@ const Profile = () => {
                   {exp.period}
                 </div>
                 
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <p style={{
                   fontSize: '14px',
                   color: '#374151',
                   margin: 0,
-                  lineHeight: '1.4'
-                }}>
-                  {exp.description}
-                </p>
+                    lineHeight: '1.4',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    flex: 1
+                  }}>
+                    {exp.description && exp.description.length > 150 
+                      ? `${exp.description.substring(0, 150)}...` 
+                      : exp.description}
+                  </p>
+                </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Skills Tab */}
+        {activeTab === 'skills' && (
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: screenSize.isMobile ? '1fr' : screenSize.isTablet ? '1fr 1fr' : '1fr 1fr 1fr',
+            gap: screenSize.isMobile ? '10px' : screenSize.isTablet ? '12px' : '16px'
+          }}>
+            {skills.length === 0 ? (
+              <div style={{
+                gridColumn: '1 / -1',
+                textAlign: 'center',
+                padding: '40px 20px',
+                color: '#64748b',
+                fontSize: '14px'
+              }}>
+                No skills added yet. Click "Edit Profile" to add your skills.
+              </div>
+            ) : (
+              skills.map((skill) => (
+                <div key={skill.id} style={{
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  border: '1px solid #f0f0f0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      backgroundColor: '#f0fdf4',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Award size={16} color="#16a34a" />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 2px 0'
+                      }}>
+                        {skill.name}
+                      </h3>
+                      {skill.category && (
+                        <p style={{
+                          fontSize: '12px',
+                          color: '#16a34a',
+                          margin: '0 0 2px 0',
+                          fontWeight: '500'
+                        }}>
+                          {skill.category}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {skill.level && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '12px',
+                      color: '#64748b'
+                    }}>
+                      <span style={{ fontWeight: '500' }}>Level:</span>
+                      <span style={{
+                        backgroundColor: '#f8fafc',
+                        color: '#64748b',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: '500'
+                      }}>
+                        {skill.level}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {skill.description && (
+                    <p style={{
+                      fontSize: '13px',
+                      color: '#374151',
+                      margin: 0,
+                      lineHeight: '1.4'
+                    }}>
+                      {skill.description}
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         )}
 
@@ -1170,11 +1699,18 @@ const Profile = () => {
                     </label>
                     <textarea
                       value={editData.personal.bio}
-                      onChange={(e) => setEditData({
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        if (newValue.length <= 150) {
+                          setEditData({
                         ...editData,
-                        personal: {...editData.personal, bio: e.target.value}
-                      })}
+                            personal: {...editData.personal, bio: newValue}
+                          });
+                        }
+                      }}
                       rows={3}
+                      maxLength={150}
+                      placeholder="Tell us about yourself in a few words..."
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -1187,6 +1723,16 @@ const Profile = () => {
                       onFocus={(e) => e.target.style.borderColor = '#16a34a'}
                       onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                     />
+                    <div style={{
+                      fontSize: '11px',
+                      color: editData.personal.bio.length >= 150 ? '#dc2626' : editData.personal.bio.length > 120 ? '#f59e0b' : '#64748b',
+                      textAlign: 'right',
+                      marginTop: '4px',
+                      fontWeight: editData.personal.bio.length >= 150 ? '600' : 'normal'
+                    }}>
+                      {editData.personal.bio.length}/150 characters
+                      {editData.personal.bio.length >= 150 && ' (Limit reached)'}
+                    </div>
                   </div>
                   
                   <div style={{ 
@@ -1288,37 +1834,6 @@ const Profile = () => {
                          onFocus={(e) => e.target.style.borderColor = '#16a34a'}
                          onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                        />
-                     </div>
-                     
-                     <div>
-                       <label style={{
-                         fontSize: '12px',
-                         fontWeight: '500',
-                         color: '#64748b',
-                         marginBottom: '6px',
-                         display: 'block'
-                       }}>
-                         Website
-                       </label>
-                       <input
-                         type="url"
-                         value={editData.personal.website}
-                         onChange={(e) => setEditData({
-                           ...editData,
-                           personal: {...editData.personal, website: e.target.value}
-                         })}
-                         style={{
-                           width: '100%',
-                           padding: '10px 12px',
-                           border: '1px solid #e2e8f0',
-                           borderRadius: '6px',
-                           fontSize: '14px',
-                           outline: 'none'
-                         }}
-                         onFocus={(e) => e.target.style.borderColor = '#16a34a'}
-                         onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                       />
-                     </div>
                    </div>
                    
                    <div>
@@ -1350,6 +1865,7 @@ const Profile = () => {
                        onFocus={(e) => e.target.style.borderColor = '#16a34a'}
                        onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                      />
+                     </div>
                    </div>
                    
                    <div style={{ 
@@ -1435,6 +1951,11 @@ const Profile = () => {
                      </div>
                    </div>
                    
+                   <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                gap: '16px' 
+              }}>
                    <div>
                      <label style={{
                        fontSize: '12px',
@@ -1467,6 +1988,41 @@ const Profile = () => {
                        <option value="Self-Employed">Self-Employed</option>
                        <option value="Retired">Retired</option>
                      </select>
+                     </div>
+                     
+                     <div>
+                       <label style={{
+                         fontSize: '12px',
+                         fontWeight: '500',
+                         color: '#64748b',
+                         marginBottom: '6px',
+                         display: 'block'
+                       }}>
+                         Marital Status
+                       </label>
+                       <select
+                         value={editData.personal.maritalStatus || ''}
+                         onChange={(e) => setEditData({
+                           ...editData,
+                           personal: {...editData.personal, maritalStatus: e.target.value}
+                         })}
+                         style={{
+                           width: '100%',
+                           padding: '10px 12px',
+                           border: '1px solid #e2e8f0',
+                           borderRadius: '6px',
+                           fontSize: '14px',
+                           outline: 'none'
+                         }}
+                       >
+                         <option value="">Select marital status</option>
+                         <option value="Single">Single</option>
+                         <option value="Married">Married</option>
+                         <option value="Divorced">Divorced</option>
+                         <option value="Widowed">Widowed</option>
+                         <option value="Prefer not to say">Prefer not to say</option>
+                       </select>
+                     </div>
                    </div>
                    
                    <div style={{ 
@@ -1482,15 +2038,182 @@ const Profile = () => {
                          marginBottom: '6px',
                          display: 'block'
                        }}>
-                         LinkedIn Profile
+                         Nationality
                        </label>
-                       <input
-                         type="url"
-                         value={editData.personal.linkedinProfile}
-                         placeholder="e.g. linkedin.com/in/username"
+                       <select
+                         value={editData.personal.nationality || ''}
                          onChange={(e) => setEditData({
                            ...editData,
-                           personal: {...editData.personal, linkedinProfile: e.target.value}
+                           personal: {...editData.personal, nationality: e.target.value}
+                         })}
+                         style={{
+                           width: '100%',
+                           padding: '10px 12px',
+                           border: '1px solid #e2e8f0',
+                           borderRadius: '6px',
+                           fontSize: '14px',
+                           outline: 'none',
+                           backgroundColor: 'white'
+                         }}
+                         onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                         onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                       >
+                         <option value="">Select nationality</option>
+                         <option value="Afghanistan">Afghanistan</option>
+                         <option value="Albania">Albania</option>
+                         <option value="Algeria">Algeria</option>
+                         <option value="Argentina">Argentina</option>
+                         <option value="Australia">Australia</option>
+                         <option value="Austria">Austria</option>
+                         <option value="Bangladesh">Bangladesh</option>
+                         <option value="Belgium">Belgium</option>
+                         <option value="Brazil">Brazil</option>
+                         <option value="Canada">Canada</option>
+                         <option value="China">China</option>
+                         <option value="Denmark">Denmark</option>
+                         <option value="Egypt">Egypt</option>
+                         <option value="Ethiopia">Ethiopia</option>
+                         <option value="Finland">Finland</option>
+                         <option value="France">France</option>
+                         <option value="Germany">Germany</option>
+                         <option value="Ghana">Ghana</option>
+                         <option value="India">India</option>
+                         <option value="Indonesia">Indonesia</option>
+                         <option value="Ireland">Ireland</option>
+                         <option value="Italy">Italy</option>
+                         <option value="Japan">Japan</option>
+                         <option value="Kenya">Kenya</option>
+                         <option value="Malaysia">Malaysia</option>
+                         <option value="Mexico">Mexico</option>
+                         <option value="Netherlands">Netherlands</option>
+                         <option value="Nigeria">Nigeria</option>
+                         <option value="Norway">Norway</option>
+                         <option value="Pakistan">Pakistan</option>
+                         <option value="Philippines">Philippines</option>
+                         <option value="Poland">Poland</option>
+                         <option value="Portugal">Portugal</option>
+                         <option value="Russia">Russia</option>
+                         <option value="Rwanda">Rwanda</option>
+                         <option value="Singapore">Singapore</option>
+                         <option value="South Africa">South Africa</option>
+                         <option value="South Korea">South Korea</option>
+                         <option value="Spain">Spain</option>
+                         <option value="Sweden">Sweden</option>
+                         <option value="Switzerland">Switzerland</option>
+                         <option value="Tanzania">Tanzania</option>
+                         <option value="Thailand">Thailand</option>
+                         <option value="Turkey">Turkey</option>
+                         <option value="Uganda">Uganda</option>
+                         <option value="Ukraine">Ukraine</option>
+                         <option value="United Arab Emirates">United Arab Emirates</option>
+                         <option value="United Kingdom">United Kingdom</option>
+                         <option value="United States">United States</option>
+                         <option value="Vietnam">Vietnam</option>
+                         <option value="Zambia">Zambia</option>
+                         <option value="Zimbabwe">Zimbabwe</option>
+                       </select>
+                     </div>
+                     
+                     <div>
+                       <label style={{
+                         fontSize: '12px',
+                         fontWeight: '500',
+                         color: '#64748b',
+                         marginBottom: '6px',
+                         display: 'block'
+                       }}>
+                         Country of Residence
+                       </label>
+                       <select
+                         value={editData.personal.countryOfResidence || ''}
+                         onChange={(e) => setEditData({
+                           ...editData,
+                           personal: {...editData.personal, countryOfResidence: e.target.value}
+                         })}
+                         style={{
+                           width: '100%',
+                           padding: '10px 12px',
+                           border: '1px solid #e2e8f0',
+                           borderRadius: '6px',
+                           fontSize: '14px',
+                           outline: 'none',
+                           backgroundColor: 'white'
+                         }}
+                         onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                         onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                       >
+                         <option value="">Select country of residence</option>
+                         <option value="Afghanistan">Afghanistan</option>
+                         <option value="Albania">Albania</option>
+                         <option value="Algeria">Algeria</option>
+                         <option value="Argentina">Argentina</option>
+                         <option value="Australia">Australia</option>
+                         <option value="Austria">Austria</option>
+                         <option value="Bangladesh">Bangladesh</option>
+                         <option value="Belgium">Belgium</option>
+                         <option value="Brazil">Brazil</option>
+                         <option value="Canada">Canada</option>
+                         <option value="China">China</option>
+                         <option value="Denmark">Denmark</option>
+                         <option value="Egypt">Egypt</option>
+                         <option value="Ethiopia">Ethiopia</option>
+                         <option value="Finland">Finland</option>
+                         <option value="France">France</option>
+                         <option value="Germany">Germany</option>
+                         <option value="Ghana">Ghana</option>
+                         <option value="India">India</option>
+                         <option value="Indonesia">Indonesia</option>
+                         <option value="Ireland">Ireland</option>
+                         <option value="Italy">Italy</option>
+                         <option value="Japan">Japan</option>
+                         <option value="Kenya">Kenya</option>
+                         <option value="Malaysia">Malaysia</option>
+                         <option value="Mexico">Mexico</option>
+                         <option value="Netherlands">Netherlands</option>
+                         <option value="Nigeria">Nigeria</option>
+                         <option value="Norway">Norway</option>
+                         <option value="Pakistan">Pakistan</option>
+                         <option value="Philippines">Philippines</option>
+                         <option value="Poland">Poland</option>
+                         <option value="Portugal">Portugal</option>
+                         <option value="Russia">Russia</option>
+                         <option value="Rwanda">Rwanda</option>
+                         <option value="Singapore">Singapore</option>
+                         <option value="South Africa">South Africa</option>
+                         <option value="South Korea">South Korea</option>
+                         <option value="Spain">Spain</option>
+                         <option value="Sweden">Sweden</option>
+                         <option value="Switzerland">Switzerland</option>
+                         <option value="Tanzania">Tanzania</option>
+                         <option value="Thailand">Thailand</option>
+                         <option value="Turkey">Turkey</option>
+                         <option value="Uganda">Uganda</option>
+                         <option value="Ukraine">Ukraine</option>
+                         <option value="United Arab Emirates">United Arab Emirates</option>
+                         <option value="United Kingdom">United Kingdom</option>
+                         <option value="United States">United States</option>
+                         <option value="Vietnam">Vietnam</option>
+                         <option value="Zambia">Zambia</option>
+                         <option value="Zimbabwe">Zimbabwe</option>
+                       </select>
+                     </div>
+                     
+                     <div>
+                       <label style={{
+                         fontSize: '12px',
+                         fontWeight: '500',
+                         color: '#64748b',
+                         marginBottom: '6px',
+                         display: 'block'
+                       }}>
+                         Date of Birth
+                       </label>
+                       <input
+                         type="date"
+                         value={editData.personal.dateOfBirth || ''}
+                         onChange={(e) => setEditData({
+                           ...editData,
+                           personal: {...editData.personal, dateOfBirth: e.target.value}
                          })}
                          style={{
                            width: '100%',
@@ -1513,15 +2236,84 @@ const Profile = () => {
                          marginBottom: '6px',
                          display: 'block'
                        }}>
-                         GitHub Profile
+                         Gender
                        </label>
-                       <input
-                         type="url"
-                         value={editData.personal.githubProfile}
-                         placeholder="e.g. github.com/username"
+                       <select
+                         value={editData.personal.gender || ''}
                          onChange={(e) => setEditData({
                            ...editData,
-                           personal: {...editData.personal, githubProfile: e.target.value}
+                           personal: {...editData.personal, gender: e.target.value}
+                         })}
+                         style={{
+                           width: '100%',
+                           padding: '10px 12px',
+                           border: '1px solid #e2e8f0',
+                           borderRadius: '6px',
+                           fontSize: '14px',
+                           outline: 'none'
+                         }}
+                       >
+                         <option value="">Select gender</option>
+                         <option value="Male">Male</option>
+                         <option value="Female">Female</option>
+                         <option value="Prefer not to say">Prefer not to say</option>
+                       </select>
+                   </div>
+                   
+                   <div>
+                     <label style={{
+                       fontSize: '12px',
+                       fontWeight: '500',
+                       color: '#64748b',
+                       marginBottom: '6px',
+                       display: 'block'
+                     }}>
+                         Disability Status
+                       </label>
+                       <select
+                         value={editData.personal.disabilityStatus || ''}
+                         onChange={(e) => setEditData({
+                           ...editData,
+                           personal: {...editData.personal, disabilityStatus: e.target.value}
+                         })}
+                         style={{
+                           width: '100%',
+                           padding: '10px 12px',
+                           border: '1px solid #e2e8f0',
+                           borderRadius: '6px',
+                           fontSize: '14px',
+                           outline: 'none'
+                         }}
+                       >
+                         <option value="">Select disability status</option>
+                         <option value="No disability">No disability</option>
+                         <option value="Physical disability">Physical disability</option>
+                         <option value="Visual impairment">Visual impairment</option>
+                         <option value="Hearing impairment">Hearing impairment</option>
+                         <option value="Learning disability">Learning disability</option>
+                         <option value="Mental health condition">Mental health condition</option>
+                         <option value="Other">Other</option>
+                         <option value="Prefer not to say">Prefer not to say</option>
+                       </select>
+                     </div>
+                     
+                     <div>
+                       <label style={{
+                         fontSize: '12px',
+                         fontWeight: '500',
+                         color: '#64748b',
+                         marginBottom: '6px',
+                         display: 'block'
+                       }}>
+                         Languages
+                       </label>
+                       <input
+                       type="text"
+                         value={editData.personal.languages || ''}
+                         placeholder="e.g. English, Swahili, French"
+                         onChange={(e) => setEditData({
+                           ...editData,
+                           personal: {...editData.personal, languages: e.target.value}
                          })}
                          style={{
                            width: '100%',
@@ -1545,15 +2337,15 @@ const Profile = () => {
                        marginBottom: '6px',
                        display: 'block'
                      }}>
-                       Other Professional Profiles
+                       LinkedIn Profile *
                      </label>
                      <input
-                       type="text"
-                       value={editData.personal.otherProfiles}
-                       placeholder="e.g. behance.com/username, dribbble.com/username"
+                       type="url"
+                       value={editData.personal.linkedinProfile || ''}
+                       placeholder="e.g. linkedin.com/in/username"
                        onChange={(e) => setEditData({
                          ...editData,
-                         personal: {...editData.personal, otherProfiles: e.target.value}
+                         personal: {...editData.personal, linkedinProfile: e.target.value}
                        })}
                        style={{
                          width: '100%',
@@ -1566,6 +2358,202 @@ const Profile = () => {
                        onFocus={(e) => e.target.style.borderColor = '#16a34a'}
                        onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                      />
+                   </div>
+                   
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                     <div>
+                       <label style={{
+                         fontSize: '14px',
+                         fontWeight: '600',
+                         color: '#1a1a1a',
+                         marginBottom: '12px',
+                         display: 'block'
+                       }}>
+                         Additional Profile Links (Optional)
+                       </label>
+                       <p style={{
+                         fontSize: '12px',
+                         color: '#64748b',
+                         marginBottom: '16px',
+                         margin: '0 0 16px 0'
+                       }}>
+                         Add up to 3 additional professional or social profile links (e.g., GitHub, Portfolio, Canva, etc.)
+                       </p>
+                     </div>
+                     
+                     {/* Profile Link 1 */}
+                     <div style={{ display: 'flex', gap: '12px', alignItems: 'end' }}>
+                       <div style={{ flex: '0 0 120px' }}>
+                       <label style={{
+                         fontSize: '12px',
+                         fontWeight: '500',
+                         color: '#64748b',
+                         marginBottom: '6px',
+                         display: 'block'
+                       }}>
+                           Platform Name
+                     </label>
+                     <input
+                       type="text"
+                           value={editData.personal.profileLink1.name}
+                           placeholder="e.g. GitHub"
+                       onChange={(e) => setEditData({
+                         ...editData,
+                             personal: {
+                               ...editData.personal, 
+                               profileLink1: {...editData.personal.profileLink1, name: e.target.value}
+                             }
+                       })}
+                       style={{
+                         width: '100%',
+                         padding: '10px 12px',
+                         border: '1px solid #e2e8f0',
+                         borderRadius: '6px',
+                         fontSize: '14px',
+                         outline: 'none'
+                       }}
+                       onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                       onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                     />
+                     </div>
+                       <div style={{ flex: 1 }}>
+                     <label style={{
+                       fontSize: '12px',
+                       fontWeight: '500',
+                       color: '#64748b',
+                       marginBottom: '6px',
+                       display: 'block'
+                     }}>
+                           URL
+                     </label>
+                       <input
+                         type="url"
+                           value={editData.personal.profileLink1.url}
+                           placeholder="e.g. github.com/username"
+                           onChange={(e) => setEditData({
+                             ...editData,
+                             personal: {
+                               ...editData.personal, 
+                               profileLink1: {...editData.personal.profileLink1, url: e.target.value}
+                             }
+                           })}
+                           style={{
+                             width: '100%',
+                             padding: '10px 12px',
+                             border: '1px solid #e2e8f0',
+                             borderRadius: '6px',
+                             fontSize: '14px',
+                             outline: 'none'
+                           }}
+                           onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                           onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                         />
+                       </div>
+                     </div>
+                     
+                     {/* Profile Link 2 */}
+                     <div style={{ display: 'flex', gap: '12px', alignItems: 'end' }}>
+                       <div style={{ flex: '0 0 120px' }}>
+                     <input
+                       type="text"
+                           value={editData.personal.profileLink2.name}
+                           placeholder="e.g. Portfolio"
+                       onChange={(e) => setEditData({
+                         ...editData,
+                             personal: {
+                               ...editData.personal, 
+                               profileLink2: {...editData.personal.profileLink2, name: e.target.value}
+                             }
+                       })}
+                       style={{
+                         width: '100%',
+                         padding: '10px 12px',
+                         border: '1px solid #e2e8f0',
+                         borderRadius: '6px',
+                         fontSize: '14px',
+                         outline: 'none'
+                       }}
+                       onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                       onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                     />
+                       </div>
+                       <div style={{ flex: 1 }}>
+                         <input
+                           type="url"
+                           value={editData.personal.profileLink2.url}
+                         placeholder="e.g. yourname.com"
+                         onChange={(e) => setEditData({
+                           ...editData,
+                             personal: {
+                               ...editData.personal, 
+                               profileLink2: {...editData.personal.profileLink2, url: e.target.value}
+                             }
+                         })}
+                         style={{
+                           width: '100%',
+                           padding: '10px 12px',
+                           border: '1px solid #e2e8f0',
+                           borderRadius: '6px',
+                           fontSize: '14px',
+                           outline: 'none'
+                         }}
+                         onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                         onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                       />
+                     </div>
+                   </div>
+                   
+                     {/* Profile Link 3 */}
+                     <div style={{ display: 'flex', gap: '12px', alignItems: 'end' }}>
+                       <div style={{ flex: '0 0 120px' }}>
+                     <input
+                       type="text"
+                           value={editData.personal.profileLink3.name}
+                           placeholder="e.g. Canva"
+                       onChange={(e) => setEditData({
+                         ...editData,
+                             personal: {
+                               ...editData.personal, 
+                               profileLink3: {...editData.personal.profileLink3, name: e.target.value}
+                             }
+                       })}
+                       style={{
+                         width: '100%',
+                         padding: '10px 12px',
+                         border: '1px solid #e2e8f0',
+                         borderRadius: '6px',
+                         fontSize: '14px',
+                         outline: 'none'
+                       }}
+                       onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                       onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                     />
+                       </div>
+                       <div style={{ flex: 1 }}>
+                         <input
+                           type="url"
+                           value={editData.personal.profileLink3.url}
+                           placeholder="e.g. canva.com/username"
+                           onChange={(e) => setEditData({
+                             ...editData,
+                             personal: {
+                               ...editData.personal, 
+                               profileLink3: {...editData.personal.profileLink3, url: e.target.value}
+                             }
+                           })}
+                           style={{
+                             width: '100%',
+                             padding: '10px 12px',
+                             border: '1px solid #e2e8f0',
+                             borderRadius: '6px',
+                             fontSize: '14px',
+                             outline: 'none'
+                           }}
+                           onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                           onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                         />
+                       </div>
+                     </div>
                    </div>
                 </div>
               </div>
@@ -1591,7 +2579,7 @@ const Profile = () => {
                       ...editData,
                                              education: [...editData.education, {
                          id: Date.now(),
-                         level: 'High School Diploma/Certificate',
+                         level: 'High School',
                          program: '',
                          school: '',
                          location: '',
@@ -1653,12 +2641,12 @@ const Profile = () => {
                              outline: 'none'
                            }}
                          >
-                           <option value="High School Diploma/Certificate">High School Diploma/Certificate</option>
-                           <option value="Associate Degree (2-year)">Associate Degree (2-year)</option>
-                           <option value="Bachelor's Degree (4-year)">Bachelor's Degree (4-year)</option>
-                           <option value="Master's Degree">Master's Degree</option>
-                           <option value="Doctoral Degree (PhD)">Doctoral Degree (PhD)</option>
-                           <option value="Professional Degree (JD, MD, etc.)">Professional Degree (JD, MD, etc.)</option>
+                           <option value="Ordinary Level">Ordinary Level</option>
+                           <option value="High School">High School</option>
+                           <option value="Certificate/Diploma">Certificate/Diploma</option>
+                           <option value="Bachelor Degree">Bachelor Degree</option>
+                           <option value="Masters Degree">Masters Degree</option>
+                           <option value="Doctoral Degree(PhD)">Doctoral Degree(PhD)</option>
                          </select>
                        </div>
                        
@@ -1811,12 +2799,12 @@ const Profile = () => {
                           marginBottom: '4px',
                           display: 'block'
                         }}>
-                          GPA (optional)
+                          GPA/Division
                         </label>
                         <input
                           type="text"
                           value={edu.gpa || ''}
-                          placeholder="e.g. 3.8/4.0"
+                          placeholder="e.g. 3.8 or Division 1"
                           onChange={(e) => {
                             const newEdu = [...editData.education]
                             newEdu[index] = {...edu, gpa: e.target.value}
@@ -2133,6 +3121,7 @@ const Profile = () => {
                        </label>
                        <button
                          type="button"
+                         onClick={() => document.getElementById(`certificate-file-${index}`).click()}
                          style={{
                            backgroundColor: 'white',
                            color: '#64748b',
@@ -2147,12 +3136,32 @@ const Profile = () => {
                          }}
                        >
                          <Upload size={14} />
-                         Choose File
+                         {cert.fileName || 'Choose File'}
                        </button>
                        <input
+                         id={`certificate-file-${index}`}
                          type="file"
                          accept=".pdf,.jpg,.jpeg,.png"
                          style={{ display: 'none' }}
+                         onChange={async (e) => {
+                           const file = e.target.files[0]
+                           if (file) {
+                             try {
+                               const uploadResult = await apiService.uploadCertificateFile(file)
+                               const newCerts = [...editData.certificates]
+                               newCerts[index] = { 
+                                 ...cert, 
+                                 fileName: file.name, 
+                                 file: file,
+                                 certificateFile: uploadResult.file_url
+                               }
+                               setEditData({ ...editData, certificates: newCerts })
+                             } catch (error) {
+                               console.error('Failed to upload certificate file:', error)
+                               alert(`Failed to upload certificate file: ${error.message}`)
+                             }
+                           }
+                         }}
                        />
                      </div>
                      
@@ -2410,7 +3419,7 @@ const Profile = () => {
                          marginBottom: '4px',
                          display: 'block'
                        }}>
-                         Description
+                         Description ({exp.description?.length || 0}/200)
                        </label>
                        <textarea
                          value={exp.description}
@@ -2419,6 +3428,7 @@ const Profile = () => {
                            newExp[index] = {...exp, description: e.target.value}
                            setEditData({...editData, experience: newExp})
                          }}
+                         maxLength={200}
                          rows={2}
                          style={{
                            width: '100%',
@@ -2706,6 +3716,7 @@ const Profile = () => {
                        </label>
                        <button
                          type="button"
+                         onClick={() => document.getElementById(`document-file-${index}`).click()}
                          style={{
                            backgroundColor: 'white',
                            color: '#64748b',
@@ -2720,12 +3731,32 @@ const Profile = () => {
                          }}
                        >
                          <Upload size={14} />
-                         Choose File
+                         {doc.fileName || 'Choose File'}
                        </button>
                        <input
+                         id={`document-file-${index}`}
                          type="file"
                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                          style={{ display: 'none' }}
+                         onChange={async (e) => {
+                           const file = e.target.files[0]
+                           if (file) {
+                             try {
+                               const uploadResult = await apiService.uploadDocumentFile(file)
+                               const newDocs = [...editData.documents]
+                               newDocs[index] = { 
+                                 ...doc, 
+                                 fileName: file.name, 
+                                 file: file,
+                                 file_path: uploadResult.file_url
+                               }
+                               setEditData({ ...editData, documents: newDocs })
+                             } catch (error) {
+                               console.error('Failed to upload document file:', error)
+                               alert(`Failed to upload document file: ${error.message}`)
+                             }
+                           }
+                         }}
                        />
                      </div>
                      
@@ -2733,6 +3764,223 @@ const Profile = () => {
                        onClick={() => setEditData({
                          ...editData,
                          documents: editData.documents.filter((_, i) => i !== index)
+                       })}
+                       style={{
+                         backgroundColor: '#fee2e2',
+                         color: '#ef4444',
+                         border: 'none',
+                         borderRadius: '4px',
+                         padding: '6px 10px',
+                         fontSize: '12px',
+                         fontWeight: '500',
+                         cursor: 'pointer'
+                       }}
+                     >
+                       Remove
+                     </button>
+                   </div>
+                 ))}
+               </div>
+
+               {/* Skills Section */}
+               <div style={{ marginBottom: '32px' }}>
+                 <div style={{
+                   display: 'flex',
+                   justifyContent: 'space-between',
+                   alignItems: 'center',
+                   marginBottom: '16px'
+                 }}>
+                   <h3 style={{
+                     fontSize: '16px',
+                     fontWeight: '600',
+                     color: '#1a1a1a',
+                     margin: 0
+                   }}>
+                     Skills
+                   </h3>
+                   <button
+                     onClick={() => setEditData({
+                       ...editData,
+                       skills: [...editData.skills, {
+                         id: Date.now(),
+                         name: '',
+                         level: '',
+                         category: '',
+                         description: ''
+                       }]
+                     })}
+                     style={{
+                       backgroundColor: '#16a34a',
+                       color: 'white',
+                       border: 'none',
+                       borderRadius: '6px',
+                       padding: '8px 12px',
+                       fontSize: '12px',
+                       fontWeight: '500',
+                       cursor: 'pointer',
+                       display: 'flex',
+                       alignItems: 'center',
+                       gap: '4px'
+                     }}
+                   >
+                     <Award size={14} />
+                     Add Skill
+                   </button>
+                 </div>
+                 
+                 {editData.skills.map((skill, index) => (
+                   <div key={skill.id} style={{
+                     border: '1px solid #e2e8f0',
+                     borderRadius: '8px',
+                     padding: '16px',
+                     marginBottom: '12px'
+                   }}>
+                     <div style={{ marginBottom: '12px' }}>
+                       <label style={{
+                         fontSize: '12px',
+                         fontWeight: '500',
+                         color: '#64748b',
+                         marginBottom: '4px',
+                         display: 'block'
+                       }}>
+                         Skill Name
+                       </label>
+                       <input
+                         type="text"
+                         value={skill.name}
+                         placeholder="e.g. JavaScript, Project Management, Data Analysis"
+                         onChange={(e) => {
+                           const newSkills = [...editData.skills]
+                           newSkills[index] = {...skill, name: e.target.value}
+                           setEditData({...editData, skills: newSkills})
+                         }}
+                         style={{
+                           width: '100%',
+                           padding: '8px 10px',
+                           border: '1px solid #e2e8f0',
+                           borderRadius: '4px',
+                           fontSize: '14px',
+                           outline: 'none'
+                         }}
+                         onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                         onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                       />
+                     </div>
+                     
+                     <div style={{ 
+                       display: 'grid', 
+                       gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                       gap: '12px', 
+                       marginBottom: '12px' 
+                     }}>
+                       <div>
+                         <label style={{
+                           fontSize: '12px',
+                           fontWeight: '500',
+                           color: '#64748b',
+                           marginBottom: '4px',
+                           display: 'block'
+                         }}>
+                           Skill Level
+                         </label>
+                         <select
+                           value={skill.level}
+                           onChange={(e) => {
+                             const newSkills = [...editData.skills]
+                             newSkills[index] = {...skill, level: e.target.value}
+                             setEditData({...editData, skills: newSkills})
+                           }}
+                           style={{
+                             width: '100%',
+                             padding: '8px 10px',
+                             border: '1px solid #e2e8f0',
+                             borderRadius: '4px',
+                             fontSize: '14px',
+                             outline: 'none'
+                           }}
+                         >
+                           <option value="">Select Level</option>
+                           <option value="Beginner">Beginner</option>
+                           <option value="Intermediate">Intermediate</option>
+                           <option value="Advanced">Advanced</option>
+                           <option value="Expert">Expert</option>
+                         </select>
+                       </div>
+                       
+                       <div>
+                         <label style={{
+                           fontSize: '12px',
+                           fontWeight: '500',
+                           color: '#64748b',
+                           marginBottom: '4px',
+                           display: 'block'
+                         }}>
+                           Category
+                         </label>
+                         <select
+                           value={skill.category}
+                           onChange={(e) => {
+                             const newSkills = [...editData.skills]
+                             newSkills[index] = {...skill, category: e.target.value}
+                             setEditData({...editData, skills: newSkills})
+                           }}
+                           style={{
+                             width: '100%',
+                             padding: '8px 10px',
+                             border: '1px solid #e2e8f0',
+                             borderRadius: '4px',
+                             fontSize: '14px',
+                             outline: 'none'
+                           }}
+                         >
+                           <option value="">Select Category</option>
+                           <option value="Technical">Technical</option>
+                           <option value="Soft Skills">Soft Skills</option>
+                           <option value="Languages">Languages</option>
+                           <option value="Tools & Software">Tools & Software</option>
+                           <option value="Industry Knowledge">Industry Knowledge</option>
+                           <option value="Certifications">Certifications</option>
+                         </select>
+                       </div>
+                     </div>
+                     
+                     <div style={{ marginBottom: '12px' }}>
+                       <label style={{
+                         fontSize: '12px',
+                         fontWeight: '500',
+                         color: '#64748b',
+                         marginBottom: '4px',
+                         display: 'block'
+                       }}>
+                         Description (Optional)
+                       </label>
+                       <textarea
+                         value={skill.description}
+                         placeholder="Brief description of your experience with this skill"
+                         onChange={(e) => {
+                           const newSkills = [...editData.skills]
+                           newSkills[index] = {...skill, description: e.target.value}
+                           setEditData({...editData, skills: newSkills})
+                         }}
+                         rows={2}
+                         style={{
+                           width: '100%',
+                           padding: '8px 10px',
+                           border: '1px solid #e2e8f0',
+                           borderRadius: '4px',
+                           fontSize: '14px',
+                           outline: 'none',
+                           resize: 'vertical'
+                         }}
+                         onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                         onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                       />
+                     </div>
+                     
+                     <button
+                       onClick={() => setEditData({
+                         ...editData,
+                         skills: editData.skills.filter((_, i) => i !== index)
                        })}
                        style={{
                          backgroundColor: '#fee2e2',
@@ -2776,22 +4024,24 @@ const Profile = () => {
                 </button>
                 <button
                   onClick={saveChanges}
+                  disabled={saving}
                   style={{
-                    backgroundColor: '#16a34a',
+                    backgroundColor: saving ? '#9ca3af' : '#16a34a',
                     color: 'white',
                     border: 'none',
                     borderRadius: '6px',
                     padding: '10px 16px',
                     fontSize: '14px',
                     fontWeight: '500',
-                    cursor: 'pointer',
+                    cursor: saving ? 'not-allowed' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '6px',
+                    opacity: saving ? 0.7 : 1
                   }}
                 >
                   <Save size={16} />
-                  Save All Changes
+                  {saving ? 'Saving...' : 'Save All Changes'}
                 </button>
               </div>
             </div>

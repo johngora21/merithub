@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { FileText, Download, Upload, Edit3, Eye, Plus } from 'lucide-react'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
+import { apiService } from '../lib/api-service'
 
 const CareerTools = () => {
   const screenSize = useResponsive()
@@ -12,18 +13,62 @@ const CareerTools = () => {
     { id: 'my-documents', name: 'My Documents' }
   ]
 
-  const cvTemplates = [
-    { id: 1, name: 'Professional Modern', category: 'Business' },
-    { id: 2, name: 'Creative Designer', category: 'Creative' },
-    { id: 3, name: 'Tech Professional', category: 'Technology' },
-    { id: 4, name: 'Academic Researcher', category: 'Academic' }
-  ]
+  const [cvTemplates, setCvTemplates] = useState([])
+  const [myDocuments, setMyDocuments] = useState([])
+  const [loading, setLoading] = useState(false)
 
-  const myDocuments = [
-    { id: 1, name: 'Software Engineer Resume', type: 'CV', updated: 'Jan 15', status: 'Complete' },
-    { id: 2, name: 'Cover Letter Template', type: 'Cover Letter', updated: 'Jan 10', status: 'Draft' },
-    { id: 3, name: 'Portfolio Summary', type: 'Portfolio', updated: 'Jan 8', status: 'Complete' }
-  ]
+  useEffect(() => {
+    fetchCareerData()
+  }, [])
+
+  const fetchCareerData = async () => {
+    try {
+      setLoading(true)
+      // Fetch CV templates from user's documents
+      const documentsResponse = await apiService.get('/auth/profile')
+      const userDocuments = documentsResponse.data.user.documents || []
+      
+      // Filter documents by type
+      const cvDocs = userDocuments.filter(doc => doc.type === 'CV' || doc.type === 'Resume')
+      const coverLetterDocs = userDocuments.filter(doc => doc.type === 'Cover Letter')
+      const portfolioDocs = userDocuments.filter(doc => doc.type === 'Portfolio')
+      
+      // Transform to template format
+      const templates = [
+        ...cvDocs.map((doc, index) => ({
+          id: `cv-${index}`,
+          name: doc.name || 'CV Template',
+          category: 'Business'
+        })),
+        ...coverLetterDocs.map((doc, index) => ({
+          id: `cover-${index}`,
+          name: doc.name || 'Cover Letter Template',
+          category: 'Business'
+        })),
+        ...portfolioDocs.map((doc, index) => ({
+          id: `portfolio-${index}`,
+          name: doc.name || 'Portfolio Template',
+          category: 'Creative'
+        }))
+      ]
+      
+      setCvTemplates(templates)
+      setMyDocuments(userDocuments.map((doc, index) => ({
+        id: index + 1,
+        name: doc.name || 'Document',
+        type: doc.type || 'Document',
+        updated: doc.updated_at ? new Date(doc.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Recently',
+        status: doc.status || 'Complete'
+      })))
+    } catch (error) {
+      console.error('Error fetching career data:', error)
+      // Keep empty arrays as fallback
+      setCvTemplates([])
+      setMyDocuments([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div style={{ backgroundColor: '#f8f9fa' }}>

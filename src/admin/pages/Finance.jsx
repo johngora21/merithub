@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   TrendingUp,
   TrendingDown,
@@ -33,6 +33,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
+import { apiService } from '../../lib/api-service'
 
 const Finance = () => {
   // Simple responsive detection
@@ -105,7 +106,7 @@ const Finance = () => {
     return categoryMap[account] || []
   }
 
-  const financialData = {
+  const [financialData, setFinancialData] = useState({
     revenue: 0,
     expenses: 0,
     profit: 0,
@@ -114,9 +115,30 @@ const Finance = () => {
     expensesGrowth: 0,
     accountsReceivable: 0,
     accountsPayable: 0
-  }
-
+  })
   const currentData = financialData
+
+  useEffect(() => {
+    const loadFinance = async () => {
+      try {
+        const resp = await apiService.get('/admin/finance')
+        const data = resp?.data || resp || {}
+        setFinancialData({
+          revenue: data.revenue ?? 0,
+          expenses: data.expenses ?? 0,
+          profit: data.profit ?? 0,
+          cashFlow: data.cash_flow ?? data.cashFlow ?? 0,
+          growth: data.growth ?? 0,
+          expensesGrowth: data.expenses_growth ?? data.expensesGrowth ?? 0,
+          accountsReceivable: data.accounts_receivable ?? data.accountsReceivable ?? 0,
+          accountsPayable: data.accounts_payable ?? data.accountsPayable ?? 0
+        })
+      } catch (e) {
+        console.error('Failed to load finance data:', e)
+      }
+    }
+    loadFinance()
+  }, [])
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {

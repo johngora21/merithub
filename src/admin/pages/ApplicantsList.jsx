@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ArrowLeft, Users, MapPin, Mail, Phone, Calendar, Download, Search, Filter, Check, X, MessageSquare } from 'lucide-react'
+import { apiService } from '../../lib/api-service'
 
 const ApplicantsList = ({ selectedItem, onBack }) => {
   const [searchQuery, setSearchQuery] = useState('')
@@ -11,61 +12,9 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
   const [contactMessage, setContactMessage] = useState('')
   const [contactSubject, setContactSubject] = useState('')
 
-  // Sample applicants data
-  const applicantsData = [
-    {
-      id: 1,
-      name: 'John Smith',
-      email: 'john.smith@email.com',
-      phone: '+254 700 123 456',
-      location: 'Nairobi, Kenya',
-      appliedDate: '2024-01-15',
-      status: 'Under Review',
-      experience: '5+ years',
-      skills: ['React', 'TypeScript', 'Node.js', 'AWS'],
-      profileCompletion: 95,
-      avatar: 'https://via.placeholder.com/40x40/3b82f6/ffffff?text=JS'
-    },
-    {
-      id: 2,
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@email.com',
-      phone: '+254 700 234 567',
-      location: 'Mombasa, Kenya',
-      appliedDate: '2024-01-14',
-      status: 'Shortlisted',
-      experience: '3-5 years',
-      skills: ['Python', 'Django', 'PostgreSQL', 'Docker'],
-      profileCompletion: 87,
-      avatar: 'https://via.placeholder.com/40x40/16a34a/ffffff?text=SJ'
-    },
-    {
-      id: 3,
-      name: 'Michael Chen',
-      email: 'michael.chen@email.com',
-      phone: '+254 700 345 678',
-      location: 'Kisumu, Kenya',
-      appliedDate: '2024-01-13',
-      status: 'Rejected',
-      experience: '1-3 years',
-      skills: ['JavaScript', 'React', 'CSS', 'HTML'],
-      profileCompletion: 72,
-      avatar: 'https://via.placeholder.com/40x40/8b5cf6/ffffff?text=MC'
-    },
-    {
-      id: 4,
-      name: 'Emily Davis',
-      email: 'emily.davis@email.com',
-      phone: '+254 700 456 789',
-      location: 'Eldoret, Kenya',
-      appliedDate: '2024-01-12',
-      status: 'Hired',
-      experience: '7+ years',
-      skills: ['Java', 'Spring Boot', 'Microservices', 'Kubernetes'],
-      profileCompletion: 98,
-      avatar: 'https://via.placeholder.com/40x40/ea580c/ffffff?text=ED'
-    }
-  ]
+  const [applicantsData, setApplicantsData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const statusOptions = ['All Status', 'Under Review', 'Shortlisted', 'Rejected', 'Hired', 'Withdrawn']
 
@@ -107,12 +56,35 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
     return true
   })
 
-  const handleStatusChange = (applicantId, newStatus) => {
-    // In a real app, this would update the database
-    console.log(`Changing status of applicant ${applicantId} to ${newStatus}`)
-    // For demo purposes, we'll just show an alert
-    alert(`Status changed to ${newStatus}`)
+  const handleStatusChange = async (applicationId, newStatus) => {
+    try {
+      await apiService.put(`/admin/applications/${applicationId}/status`, { status: newStatus.toLowerCase().replace(' ', '-') })
+      setApplicantsData(prev => prev.map(a => a.applicationId === applicationId ? { ...a, status: newStatus } : a))
+    } catch (e) {
+      alert('Failed to update status')
+      console.error(e)
+    }
   }
+  useEffect(() => {
+    const loadApplicants = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const type = selectedItem.__type || 'jobs'
+        const normalized = type === 'jobs' ? 'job' : (type === 'tenders' ? 'tender' : 'opportunity')
+        const resp = await apiService.get(`/admin/applications/applicants?type=${normalized}&id=${selectedItem.id}`)
+        const payload = resp?.data || resp || {}
+        setApplicantsData(Array.isArray(payload.applicants) ? payload.applicants : [])
+      } catch (e) {
+        console.error('Failed to load applicants', e)
+        setError(e?.message || 'Failed to load applicants')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadApplicants()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItem?.id])
 
   const handleContact = (applicant) => {
     setSelectedApplicant(applicant)

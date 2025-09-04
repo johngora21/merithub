@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { 
   Wrench,
   FileText,
@@ -7,11 +7,18 @@ import {
   Briefcase,
   BookOpen,
   Hammer,
-  Gavel
+  Gavel,
+  User
 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, isDesktop }) => {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, isAuthenticated, logout } = useAuth()
+  const profileImageUrl = user && user.profile_image
+    ? (user.profile_image.startsWith('http') ? user.profile_image : `http://localhost:8000${user.profile_image}`)
+    : null
 
   // Main navigation items for desktop
   const mainNavigation = [
@@ -67,7 +74,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, isDesktop }) => {
             borderBottom: '1px solid #e5e7eb'
           }}>
             <Link
-              to="/profile"
+              to={isAuthenticated ? "/profile" : "/login"}
               onClick={() => !isDesktop && setSidebarOpen(false)}
               style={{
                 display: 'flex',
@@ -93,26 +100,28 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, isDesktop }) => {
                 overflow: 'hidden',
                 border: '2px solid #e5e7eb'
               }}>
-                <img 
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face&auto=format&q=80"
-                  alt="Profile"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
-                  onError={(e) => {
-                    e.target.style.display = 'none'
-                    e.target.nextSibling.style.display = 'flex'
-                  }}
-                />
+                {profileImageUrl ? (
+                  <img 
+                    src={profileImageUrl}
+                    alt="Profile"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                      e.target.nextSibling.style.display = 'flex'
+                    }}
+                  />
+                ) : null}
                 <span style={{
                   fontSize: '20px',
                   fontWeight: '600',
                   color: '#6b7280',
-                  display: 'none'
+                  display: profileImageUrl ? 'none' : 'flex'
                 }}>
-                  AM
+                  {user && user.first_name ? user.first_name.charAt(0).toUpperCase() : <User size={20} />}
                 </span>
               </div>
               <div style={{ flex: 1 }}>
@@ -122,13 +131,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, isDesktop }) => {
                   color: '#1a1a1a',
                   marginBottom: '2px'
                 }}>
-                  Alex Morgan
+                  {user && user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Login'}
                 </div>
                 <div style={{
                   fontSize: '14px',
                   color: '#6b7280'
                 }}>
-                  @alexmorgan
+                  {user && user.username ? `@${user.username}` : (user && user.first_name ? `@${user.first_name.toLowerCase()}${user.last_name ? user.last_name.toLowerCase() : ''}` : 'Sign in to your account')}
                 </div>
               </div>
             </Link>
@@ -240,7 +249,36 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, isDesktop }) => {
             </div>
           </div>
 
-
+          {/* Logout button */}
+          {isAuthenticated && (
+            <div style={{ padding: '12px', borderTop: '1px solid #e5e7eb', marginTop: 'auto' }}>
+              <button
+                onClick={() => {
+                  logout()
+                  if (!isDesktop) setSidebarOpen(false)
+                  navigate('/login')
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '10px 12px',
+                  backgroundColor: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  color: '#ef4444',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          )}
+          
         </div>
       </div>
     </>

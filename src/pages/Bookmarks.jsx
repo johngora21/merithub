@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useResponsive } from '../hooks/useResponsive'
+import { apiService } from '../lib/api-service'
 
 import { 
   Bookmark, 
@@ -20,77 +21,100 @@ import {
 const Bookmarks = () => {
   const screenSize = useResponsive()
   const [selectedFilter, setSelectedFilter] = useState('all')
-  const [bookmarks, setBookmarks] = useState([
-    {
-      id: 1,
-      type: 'job',
-      title: 'Senior Software Engineer',
-      company: 'TechCorp Inc.',
-      location: 'San Francisco, CA',
-      salary: '$120K - $180K',
-      posted: '2 days ago',
-      saved: '1 day ago',
-      description: 'We are looking for a senior software engineer to join our team...',
-      featured: true
-    },
-    {
-      id: 2,
-      type: 'job',
-      title: 'Full Stack Developer',
-      company: 'StartupFlow',
-      location: 'Remote',
-      salary: '$90K - $130K',
-      posted: '5 days ago',
-      saved: '3 days ago',
-      description: 'Join our fast-growing startup as a full stack developer...',
-      featured: false
-    },
-    {
-      id: 3,
-      type: 'opportunity',
-      title: 'Google Summer of Code 2024',
-      organization: 'Google',
-      location: 'Remote',
-      deadline: 'April 15, 2024',
-      saved: '1 week ago',
-      description: 'Contribute to open source projects with Google mentorship...',
-      featured: true
-    },
-    {
-      id: 4,
-      type: 'tender',
-      title: 'City Infrastructure Development',
-      organization: 'City of San Francisco',
-      value: '$2.5M - $5.2M',
-      deadline: 'March 20, 2024',
-      saved: '5 days ago',
-      description: 'Major infrastructure project for city modernization...',
-      featured: false
-    },
-    {
-      id: 5,
-      type: 'course',
-      title: 'Advanced React Development',
-      provider: 'TechLearn Academy',
-      duration: '8 weeks',
-      price: '$299',
-      saved: '2 days ago',
-      description: 'Master advanced React concepts including hooks, context...',
-      featured: true
-    },
-    {
-      id: 6,
-      type: 'job',
-      title: 'Data Scientist',
-      company: 'DataFlow Analytics',
-      location: 'New York, NY',
-      salary: '$130K - $200K',
-      posted: '1 week ago',
-      saved: '4 days ago',
-      description: 'Lead data science initiatives and machine learning projects...',
-      featured: false
+  const [bookmarks, setBookmarks] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    fetchBookmarks()
+  }, [])
+
+  const transformBookmarkData = (apiBookmark) => {
+    const baseData = {
+      id: apiBookmark.id,
+      saved: apiBookmark.created_at ? new Date(apiBookmark.created_at).toLocaleDateString() : 'Recently',
+      featured: apiBookmark.is_featured || false
     }
-  ])
+
+    if (apiBookmark.job) {
+      return {
+        ...baseData,
+        type: 'job',
+        title: apiBookmark.job.title,
+        company: apiBookmark.job.company,
+        location: apiBookmark.job.location,
+        salary: (function() {
+          const j = apiBookmark.job
+          const min = j?.salary_min != null ? Number(j.salary_min) : undefined
+          const max = j?.salary_max != null ? Number(j.salary_max) : undefined
+          const fmt = (n) => typeof n === 'number' && !Number.isNaN(n) ? n.toLocaleString() : ''
+          if (min != null && max != null) return min === max ? `${j.currency} ${fmt(min)}` : `${j.currency} ${fmt(min)} - ${j.currency} ${fmt(max)}`
+          if (min != null) return `${j.currency} ${fmt(min)}`
+          if (max != null) return `${j.currency} ${fmt(max)}`
+          return 'Salary not specified'
+        })(),
+        posted: apiBookmark.job.created_at ? new Date(apiBookmark.job.created_at).toLocaleDateString() : 'Recently',
+        description: apiBookmark.job.description
+      }
+    } else if (apiBookmark.opportunity) {
+      return {
+        ...baseData,
+        type: 'opportunity',
+        title: apiBookmark.opportunity.title,
+        company: apiBookmark.opportunity.organization,
+        location: apiBookmark.opportunity.location || 'Global',
+        salary: apiBookmark.opportunity.amount_min 
+          ? `${apiBookmark.opportunity.currency} ${apiBookmark.opportunity.amount_min}`
+          : 'Amount not specified',
+        posted: apiBookmark.opportunity.created_at ? new Date(apiBookmark.opportunity.created_at).toLocaleDateString() : 'Recently',
+        description: apiBookmark.opportunity.description,
+        deadline: apiBookmark.opportunity.deadline
+      }
+    } else if (apiBookmark.tender) {
+      return {
+        ...baseData,
+        type: 'tender',
+        title: apiBookmark.tender.title,
+        company: apiBookmark.tender.organization,
+        location: apiBookmark.tender.location,
+        salary: apiBookmark.tender.contract_value_min 
+          ? `${apiBookmark.tender.currency} ${(apiBookmark.tender.contract_value_min / 1000000).toFixed(1)}M`
+          : 'Value not specified',
+        posted: apiBookmark.tender.created_at ? new Date(apiBookmark.tender.created_at).toLocaleDateString() : 'Recently',
+        description: apiBookmark.tender.description,
+        deadline: apiBookmark.tender.deadline
+      }
+    } else if (apiBookmark.course) {
+      return {
+        ...baseData,
+        type: 'course',
+        title: apiBookmark.course.title,
+        company: apiBookmark.course.instructor || apiBookmark.course.author || 'Unknown',
+        location: 'Online',
+        salary: apiBookmark.course.is_pro ? 'Pro Content' : 'Free',
+        posted: apiBookmark.course.created_at ? new Date(apiBookmark.course.created_at).toLocaleDateString() : 'Recently',
+        description: apiBookmark.course.description
+      }
+    }
+
+    return baseData
+  }
+
+  const fetchBookmarks = async () => {
+    try {
+      setLoading(true)
+      const response = await apiService.get('/saved-items')
+      const transformedBookmarks = (response.data.items || []).map(transformBookmarkData)
+      setBookmarks(transformedBookmarks)
+    } catch (error) {
+      console.error('Error fetching bookmarks:', error)
+      // Keep existing static data as fallback
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Static bookmarks data as fallback
+  const staticBookmarks = []
 
   const filters = [
     { id: 'all', name: 'All', count: bookmarks.length, icon: Bookmark },
@@ -216,7 +240,13 @@ const Bookmarks = () => {
         gridTemplateColumns: screenSize.isMobile ? '1fr' : screenSize.isTablet ? '1fr 1fr' : '1fr 1fr 1fr',
         gap: screenSize.isMobile ? '12px' : screenSize.isTablet ? '16px' : '20px'
       }}>
-        {filteredBookmarks.length === 0 ? (
+        {(() => {
+          const currentBookmarks = bookmarks.length > 0 ? bookmarks : staticBookmarks
+          const filteredBookmarks = selectedFilter === 'all' 
+            ? currentBookmarks 
+            : currentBookmarks.filter(bookmark => bookmark.type === selectedFilter)
+          
+          return filteredBookmarks.length === 0 ? (
           <div style={{
             gridColumn: '1 / -1',
             backgroundColor: 'white',
@@ -454,7 +484,8 @@ const Bookmarks = () => {
               </div>
             )
           })
-        )}
+        )
+        })()}
       </div>
     </div>
   )

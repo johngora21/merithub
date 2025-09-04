@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Download, Eye, CheckCircle, FileText, Users } from 'lucide-react'
+import { apiService } from '../../lib/api-service'
 
 const Reports = () => {
   // Simple responsive detection
@@ -7,6 +8,29 @@ const Reports = () => {
     isMobile: window.innerWidth < 768,
     isDesktop: window.innerWidth >= 1024
   }
+
+  const [reportStats, setReportStats] = useState({
+    userGrowth: 0,
+    contentPerformance: 0,
+    applicationSuccess: 0
+  })
+
+  useEffect(() => {
+    const loadReports = async () => {
+      try {
+        const resp = await apiService.get('/admin/reports')
+        const data = resp?.data || resp || {}
+        setReportStats({
+          userGrowth: data.user_growth ?? 0,
+          contentPerformance: data.content_performance ?? 0,
+          applicationSuccess: data.application_success ?? 0
+        })
+      } catch (e) {
+        console.error('Failed to load reports data:', e)
+      }
+    }
+    loadReports()
+  }, [])
 
   return (
     <div className="animate-fadeIn">
@@ -156,7 +180,7 @@ const Reports = () => {
               fontWeight: '700',
               color: '#0f172a'
             }}>
-              15,847
+              {reportStats.userGrowth}
             </span>
             <span style={{
               fontSize: '14px',
@@ -243,7 +267,7 @@ const Reports = () => {
               fontWeight: '700',
               color: '#0f172a'
             }}>
-              6,285
+              {reportStats.contentPerformance}
             </span>
             <span style={{
               fontSize: '14px',
@@ -330,7 +354,7 @@ const Reports = () => {
               fontWeight: '700',
               color: '#0f172a'
             }}>
-              12,847
+              {reportStats.applicationSuccess}
             </span>
             <span style={{
               fontSize: '14px',

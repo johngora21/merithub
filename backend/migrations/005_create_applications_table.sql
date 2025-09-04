@@ -1,0 +1,31 @@
+-- Create applications table
+CREATE TABLE IF NOT EXISTS applications (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    application_type ENUM('job', 'tender', 'opportunity') NOT NULL,
+    job_id INT,
+    tender_id INT,
+    opportunity_id INT,
+    status ENUM('pending', 'under-review', 'shortlisted', 'rejected', 'accepted', 'withdrawn') DEFAULT 'pending',
+    cover_letter TEXT,
+    application_data JSON,
+    documents JSON,
+    notes TEXT,
+    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at TIMESTAMP NULL,
+    reviewed_by INT,
+    review_notes TEXT,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE,
+    FOREIGN KEY (tender_id) REFERENCES tenders(id) ON DELETE CASCADE,
+    FOREIGN KEY (opportunity_id) REFERENCES opportunities(id) ON DELETE CASCADE,
+    FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_user_id (user_id),
+    INDEX idx_application_type (application_type),
+    INDEX idx_status (status),
+    INDEX idx_applied_at (applied_at),
+    UNIQUE KEY unique_job_application (user_id, job_id),
+    UNIQUE KEY unique_tender_application (user_id, tender_id),
+    UNIQUE KEY unique_opportunity_application (user_id, opportunity_id)
+);

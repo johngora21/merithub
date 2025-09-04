@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { 
   Users, 
   FileText, 
@@ -43,9 +43,10 @@ import CRM from './CRM'
 import Finance from './Finance'
 import Content from './Content'
 import Reports from './Reports'
+import { apiService } from '../../lib/api-service'
 import Applications from './Applications'
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ user, onLogout }) => {
   // Simple responsive detection
   const [screenSize] = useState({
     isMobile: window.innerWidth < 768,
@@ -53,62 +54,58 @@ const AdminDashboard = () => {
   })
   const [activeModule, setActiveModule] = useState('overview')
 
-  // Chart data - Merit platform specific
-  const chartData = {
-    monthlySubscriptions: [
-      { month: 'Jan', subscriptions: 1200, applications: 12000 },
-      { month: 'Feb', subscriptions: 1350, applications: 13200 },
-      { month: 'Mar', subscriptions: 1250, applications: 12800 },
-      { month: 'Apr', subscriptions: 1450, applications: 14100 },
-      { month: 'May', subscriptions: 1550, applications: 15200 },
-      { month: 'Jun', subscriptions: 1680, applications: 16100 },
-      { month: 'Jul', subscriptions: 1750, applications: 16800 },
-      { month: 'Aug', subscriptions: 1650, applications: 16400 },
-      { month: 'Sep', subscriptions: 1800, applications: 17200 },
-      { month: 'Oct', subscriptions: 1950, applications: 18100 },
-      { month: 'Nov', subscriptions: 2050, applications: 18900 },
-      { month: 'Dec', subscriptions: 2150, applications: 19500 }
-    ],
-    contentDistribution: [
-      { name: 'Jobs', value: 3547, color: '#3b82f6' },
-      { name: 'Tenders', value: 892, color: '#16a34a' },
-      { name: 'Opportunities', value: 1456, color: '#8b5cf6' },
-      { name: 'Courses', value: 234, color: '#ea580c' },
-      { name: 'Business Plans', value: 156, color: '#0891b2' }
-    ],
-    userActivity: [
-      { status: 'Active Users', count: 12634, color: '#16a34a' },
-      { status: 'Pending Approval', count: 1247, color: '#f59e0b' },
-      { status: 'Inactive', count: 3966, color: '#ef4444' }
-    ],
-    dailyStats: [
-      { day: 'Mon', jobs: 245, tenders: 32, opportunities: 89 },
-      { day: 'Tue', jobs: 278, tenders: 28, opportunities: 95 },
-      { day: 'Wed', jobs: 312, tenders: 35, opportunities: 102 },
-      { day: 'Thu', jobs: 289, tenders: 41, opportunities: 87 },
-      { day: 'Fri', jobs: 334, tenders: 38, opportunities: 115 },
-      { day: 'Sat', jobs: 198, tenders: 22, opportunities: 76 },
-      { day: 'Sun', jobs: 156, tenders: 18, opportunities: 64 }
-    ],
-    jobsStatusDistribution: [
-      { name: 'Active', value: 2847, color: '#16a34a' },
-      { name: 'Expired', value: 456, color: '#ef4444' },
-      { name: 'Rejected', value: 189, color: '#dc2626' },
-      { name: 'Pending', value: 55, color: '#f59e0b' }
-    ],
-    tendersStatusDistribution: [
-      { name: 'Active', value: 623, color: '#16a34a' },
-      { name: 'Expired', value: 156, color: '#ef4444' },
-      { name: 'Rejected', value: 78, color: '#dc2626' },
-      { name: 'Pending', value: 35, color: '#f59e0b' }
-    ],
-    opportunitiesStatusDistribution: [
-      { name: 'Active', value: 1023, color: '#16a34a' },
-      { name: 'Expired', value: 234, color: '#ef4444' },
-      { name: 'Rejected', value: 145, color: '#dc2626' },
-      { name: 'Pending', value: 54, color: '#f59e0b' }
-    ]
-  }
+  const [chartData, setChartData] = useState({
+    monthlySubscriptions: [],
+    contentDistribution: [],
+    userActivity: [],
+    dailyStats: [],
+    jobsStatusDistribution: [],
+    tendersStatusDistribution: [],
+    opportunitiesStatusDistribution: []
+  })
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalContent: 0,
+    totalApplications: 0,
+    totalRevenue: 0,
+    breakdown: { free: 0, premium: 0, enterprise: 0 }
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const resp = await apiService.get('/admin/dashboard')
+        const data = resp?.data || resp || {}
+        setChartData({
+          monthlySubscriptions: data.monthlySubscriptions || [],
+          contentDistribution: data.contentDistribution || [],
+          userActivity: data.userActivity || [],
+          dailyStats: data.dailyStats || [],
+          jobsStatusDistribution: data.jobsStatusDistribution || [],
+          tendersStatusDistribution: data.tendersStatusDistribution || [],
+          opportunitiesStatusDistribution: data.opportunitiesStatusDistribution || []
+        })
+        const s = data.stats || {}
+        setStats({
+          totalUsers: s.totalUsers || 0,
+          totalContent: (s.totalJobs || 0) + (s.totalTenders || 0) + (s.totalOpportunities || 0) + (s.totalCourses || 0),
+          totalApplications: s.totalApplications || 0,
+          totalRevenue: s.totalRevenue || 0,
+          breakdown: { free: s.totalUsers ? s.totalUsers - (s.activeUsers || 0) : 0, premium: 0, enterprise: 0 }
+        })
+      } catch (e) {
+        console.error('Failed to load dashboard', e)
+        setError(e?.message || 'Failed to load dashboard')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadDashboard()
+  }, [])
 
   const modules = [
     { id: 'overview', name: 'Overview', icon: BarChart3 },
@@ -190,7 +187,7 @@ const AdminDashboard = () => {
                 margin: 0,
                 color: '#0f172a'
               }}>
-                15,847
+                {stats.totalUsers.toLocaleString()}
               </p>
             </div>
             <Users style={{ height: '32px', width: '32px', color: '#3b82f6' }} />
@@ -217,7 +214,7 @@ const AdminDashboard = () => {
                 }}></div>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Free Users</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>12,600</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{stats.breakdown.free.toLocaleString()}</span>
             </div>
             
             <div style={{
@@ -235,7 +232,7 @@ const AdminDashboard = () => {
                 }}></div>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Premium</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>2,847</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{stats.breakdown.premium.toLocaleString()}</span>
             </div>
             
             <div style={{
@@ -253,7 +250,7 @@ const AdminDashboard = () => {
                 }}></div>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Enterprise</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>400</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{stats.breakdown.enterprise.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -288,7 +285,7 @@ const AdminDashboard = () => {
                 margin: 0,
                 color: '#0f172a'
               }}>
-                6,285
+                {stats.totalContent.toLocaleString()}
               </p>
             </div>
             <FileText style={{ height: '32px', width: '32px', color: '#8b5cf6' }} />
@@ -315,7 +312,7 @@ const AdminDashboard = () => {
                 }}></div>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Jobs</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>3,547</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(chartData.contentDistribution.find(c => c.name === 'Jobs')?.value || 0).toLocaleString()}</span>
             </div>
             
             <div style={{
@@ -333,7 +330,7 @@ const AdminDashboard = () => {
                 }}></div>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Tenders</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>892</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(chartData.contentDistribution.find(c => c.name === 'Tenders')?.value || 0).toLocaleString()}</span>
             </div>
             
             <div style={{
@@ -351,7 +348,7 @@ const AdminDashboard = () => {
                 }}></div>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Opportunities</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>1,456</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(chartData.contentDistribution.find(c => c.name === 'Opportunities')?.value || 0).toLocaleString()}</span>
             </div>
             
 
@@ -388,7 +385,7 @@ const AdminDashboard = () => {
                 margin: 0,
                 color: '#0f172a'
               }}>
-                12,847
+                {stats.totalApplications.toLocaleString()}
               </p>
             </div>
             <CheckCircle style={{ height: '32px', width: '32px', color: '#10b981' }} />
@@ -415,7 +412,7 @@ const AdminDashboard = () => {
                 }}></div>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Active</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>8,234</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(stats.totalApplications * 0.65).toFixed(0)}</span>
             </div>
             
 
@@ -488,7 +485,7 @@ const AdminDashboard = () => {
                 margin: 0,
                 color: '#0f172a'
               }}>
-                $847K
+                ${stats.totalRevenue.toLocaleString()}
               </p>
             </div>
             <DollarSign style={{ height: '32px', width: '32px', color: '#f97316' }} />
@@ -1200,11 +1197,13 @@ const AdminDashboard = () => {
   return (
     <div style={{
       height: '100vh',
-      width: '100vw',
+      width: '100%',
+      maxWidth: '100%',
       margin: 0,
       padding: 0,
-      display: 'flex',
       overflow: 'hidden',
+      boxSizing: 'border-box',
+      display: 'flex',
       background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
       fontFamily: 'var(--font-poppins)'
     }}>
@@ -1219,7 +1218,8 @@ const AdminDashboard = () => {
         left: 0,
         top: 0,
         bottom: 0,
-        zIndex: 1000
+        zIndex: 1000,
+        overflowY: 'auto'
       }}>
         {/* Logo */}
         <div style={{
@@ -1281,8 +1281,9 @@ const AdminDashboard = () => {
         </nav>
 
         {/* Logout */}
-        <div style={{ padding: '12px' }}>
+        <div style={{ padding: '12px', marginTop: 'auto' }}>
           <button
+            onClick={onLogout}
             style={{
               width: '100%',
               display: 'flex',
@@ -1359,7 +1360,7 @@ const AdminDashboard = () => {
               fontWeight: '500',
               color: '#64748b'
             }}>
-              Admin User
+              {user ? (user.username ? `@${user.username}` : `${user.first_name} ${user.last_name}`) : 'Admin User'}
             </span>
             <div style={{
               width: '40px',
@@ -1373,7 +1374,7 @@ const AdminDashboard = () => {
               fontSize: '16px',
               fontWeight: '600'
             }}>
-              A
+              {user && user.first_name ? user.first_name.charAt(0).toUpperCase() : 'A'}
             </div>
           </div>
         </div>

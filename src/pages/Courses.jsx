@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
+import { apiService } from '../lib/api-service'
 
 import { 
   BookOpen, 
@@ -53,297 +54,95 @@ const Courses = () => {
     { id: 'business-plans', label: 'Business Plans', icon: FileText }
   ]
 
-  const videos = [
-    {
-      id: '1',
-      title: 'Complete React Development Course',
-      instructor: 'Sarah Wilson',
-      thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=240&fit=crop',
-      duration: '12 hours',
-      lessons: 45,
-      students: 2847,
-      rating: 4.9,
-      isPro: false,
-      level: 'Beginner',
-      description: 'Learn React from scratch with hands-on projects and real-world applications.',
-      tags: ['React', 'JavaScript', 'Frontend'],
-      curriculum: [
-        'React Fundamentals and JSX syntax',
-        'Component creation and props management',
-        'State management with hooks (useState, useEffect)',
-        'Event handling and form validation',
-        'API integration and data fetching',
-        'Routing with React Router',
-        'Context API for global state',
-        'Testing components with Jest',
-        'Building and deploying production apps'
-      ],
-      whatYouLearn: [
-        'Build modern React applications from scratch',
-        'Master component-based architecture',
-        'Handle complex state management',
-        'Create responsive and interactive UIs',
-        'Integrate with REST APIs and databases'
-      ]
-    },
-    {
-      id: '2',
-      title: 'Digital Marketing Mastery',
-      instructor: 'Michael Chen',
-      thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=240&fit=crop',
-      duration: '8 hours',
-      lessons: 28,
-      students: 1923,
-      rating: 4.7,
-      isPro: true,
-      level: 'Intermediate',
-      description: 'Master digital marketing strategies, SEO, social media, and analytics.',
-      tags: ['Marketing', 'SEO', 'Social Media'],
-      curriculum: [
-        'Digital marketing strategy fundamentals',
-        'Search Engine Optimization (SEO) techniques',
-        'Google Ads and PPC campaign management',
-        'Social media marketing across platforms',
-        'Content marketing and copywriting',
-        'Email marketing automation',
-        'Analytics and performance tracking',
-        'Conversion rate optimization'
-      ],
-      whatYouLearn: [
-        'Create comprehensive digital marketing campaigns',
-        'Optimize websites for search engines',
-        'Build engaged social media communities',
-        'Track and analyze marketing performance',
-        'Generate qualified leads and conversions'
-      ]
-    },
-    {
-      id: '3',
-      title: 'Python for Data Science',
-      instructor: 'Dr. Emily Rodriguez',
-      thumbnail: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&h=240&fit=crop',
-      duration: '15 hours',
-      lessons: 52,
-      students: 3456,
-      rating: 4.8,
-      isPro: true,
-      level: 'Advanced',
-      description: 'Comprehensive Python course focused on data analysis and machine learning.',
-      tags: ['Python', 'Data Science', 'Machine Learning'],
-      curriculum: [
-        'Python programming fundamentals review',
-        'NumPy for numerical computing',
-        'Pandas for data manipulation and analysis',
-        'Data visualization with Matplotlib and Seaborn',
-        'Statistical analysis and hypothesis testing',
-        'Machine learning with Scikit-learn',
-        'Deep learning introduction with TensorFlow',
-        'Real-world data science projects'
-      ],
-      whatYouLearn: [
-        'Analyze complex datasets using Python',
-        'Build predictive machine learning models',
-        'Create compelling data visualizations',
-        'Perform statistical analysis and testing',
-        'Deploy data science solutions'
-      ]
-    }
-  ]
+  const [courses, setCourses] = useState({ videos: [], books: [], businessPlans: [] })
+  const [loading, setLoading] = useState(false)
 
-  const books = [
-    {
-      id: '1',
-      title: 'The Lean Startup Methodology',
-      author: 'Eric Ries',
-      cover: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=240&fit=crop',
-      pages: 336,
-      category: 'Business',
-      rating: 4.6,
-      isPro: false,
-      format: 'PDF',
-      description: 'Learn how to build a sustainable business through continuous innovation.',
-      tags: ['Startup', 'Business', 'Innovation'],
-      tableOfContents: [
-        'Chapter 1: The Lean Startup Methodology',
-        'Chapter 2: Build-Measure-Learn Feedback Loop',
-        'Chapter 3: Minimum Viable Product (MVP)',
-        'Chapter 4: Validated Learning and Testing',
-        'Chapter 5: Innovation Accounting',
-        'Chapter 6: Pivot or Persevere Decisions',
-        'Chapter 7: Scaling and Growth Strategies',
-        'Chapter 8: Organizational Learning'
-      ],
-      keyTopics: [
-        'Customer development process',
-        'Rapid prototyping and testing',
-        'Lean analytics and metrics',
-        'Product-market fit validation',
-        'Sustainable business model design'
-      ]
-    },
-    {
-      id: '2',
-      title: 'Design Thinking for Innovation',
-      author: 'Tim Brown',
-      cover: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=240&fit=crop',
-      pages: 264,
-      category: 'Design',
-      rating: 4.5,
-      isPro: true,
-      format: 'EPUB',
-      description: 'Master the design thinking process to drive innovation in your organization.',
-      tags: ['Design', 'Innovation', 'Strategy'],
-      tableOfContents: [
-        'Part I: The Design Thinking Mindset',
-        'Part II: Empathy and Human-Centered Design',
-        'Part III: Define and Problem Framing',
-        'Part IV: Ideation and Creative Thinking',
-        'Part V: Prototyping and Testing',
-        'Part VI: Implementation and Scaling',
-        'Part VII: Building Design Culture'
-      ],
-      keyTopics: [
-        'Human-centered design principles',
-        'Empathy mapping and user research',
-        'Creative problem-solving techniques',
-        'Rapid prototyping methods',
-        'Innovation culture development'
-      ]
-    },
-    {
-      id: '3',
-      title: 'Financial Management Essentials',
-      author: 'Robert Johnson',
-      cover: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400&h=240&fit=crop',
-      pages: 428,
-      category: 'Finance',
-      rating: 4.7,
-      isPro: true,
-      format: 'PDF',
-      description: 'Complete guide to financial planning, budgeting, and investment strategies.',
-      tags: ['Finance', 'Budgeting', 'Investment'],
-      tableOfContents: [
-        'Chapter 1: Financial Planning Fundamentals',
-        'Chapter 2: Budgeting and Cash Flow Management',
-        'Chapter 3: Investment Principles and Strategies',
-        'Chapter 4: Risk Management and Insurance',
-        'Chapter 5: Retirement Planning',
-        'Chapter 6: Tax Planning and Optimization',
-        'Chapter 7: Estate Planning Basics',
-        'Chapter 8: Financial Analysis and Ratios'
-      ],
-      keyTopics: [
-        'Personal and business budgeting',
-        'Investment portfolio diversification',
-        'Financial risk assessment',
-        'Tax-efficient strategies',
-        'Long-term wealth building'
-      ]
-    }
-  ]
+  useEffect(() => {
+    fetchCourses()
+  }, [])
 
-  const businessPlans = [
-    {
-      id: '1',
-      title: 'Technology Startup Business Plan Template',
-      category: 'Technology',
-      preview: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=240&fit=crop',
-      pages: 45,
-      sections: 12,
-      downloads: 1247,
-      isPro: false,
-      format: 'DOCX',
-      description: 'Comprehensive business plan template specifically designed for tech startups.',
-      tags: ['Startup', 'Technology', 'Template'],
-      planSections: [
-        'Executive Summary',
-        'Company Description and Vision',
-        'Market Analysis and Target Audience',
-        'Competitive Analysis',
-        'Technology Architecture and Development',
-        'Product Roadmap and Features',
-        'Marketing and Sales Strategy',
-        'Management Team and Organization',
-        'Financial Projections and Funding',
-        'Risk Analysis and Mitigation',
-        'Implementation Timeline',
-        'Appendices and Supporting Documents'
-      ],
-      includes: [
-        'Pre-filled technology startup examples',
-        'Financial projection templates',
-        'Market research frameworks',
-        'Investor presentation slides',
-        'Legal checklist and requirements'
-      ]
-    },
-    {
-      id: '2',
-      title: 'Restaurant Business Plan Guide',
-      category: 'Food & Beverage',
-      preview: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=240&fit=crop',
-      pages: 38,
-      sections: 10,
-      downloads: 892,
-      isPro: true,
-      format: 'PDF + DOCX',
-      description: 'Complete business plan template for restaurant and food service businesses.',
-      tags: ['Restaurant', 'Food Service', 'Business Plan'],
-      planSections: [
-        'Executive Summary',
-        'Restaurant Concept and Cuisine',
-        'Market Analysis and Location Study',
-        'Menu Development and Pricing',
-        'Kitchen Layout and Equipment',
-        'Staffing and Operations Plan',
-        'Marketing and Customer Acquisition',
-        'Financial Projections and Costs',
-        'Permits and Legal Requirements',
-        'Growth and Expansion Strategy'
-      ],
-      includes: [
-        'Sample restaurant financial models',
-        'Menu costing spreadsheets',
-        'Location analysis templates',
-        'Staff training checklists',
-        'Marketing campaign examples'
-      ]
-    },
-    {
-      id: '3',
-      title: 'E-commerce Business Plan Template',
-      category: 'E-commerce',
-      preview: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=240&fit=crop',
-      pages: 52,
-      sections: 15,
-      downloads: 2134,
-      isPro: true,
-      format: 'DOCX + Excel',
-      description: 'Professional business plan template for online retail and e-commerce ventures.',
-      tags: ['E-commerce', 'Online Business', 'Retail'],
-      planSections: [
-        'Executive Summary',
-        'E-commerce Business Model',
-        'Product Catalog and Sourcing',
-        'Target Market and Customer Personas',
-        'Platform and Technology Stack',
-        'Digital Marketing Strategy',
-        'Supply Chain and Logistics',
-        'Customer Service and Support',
-        'Financial Projections and Metrics',
-        'Legal and Compliance Requirements',
-        'Growth and Scaling Strategy',
-        'Exit Strategy and Valuation'
-      ],
-      includes: [
-        'E-commerce financial model with KPIs',
-        'Product sourcing and vendor templates',
-        'Digital marketing budget calculator',
-        'Customer acquisition cost analysis',
-        'Inventory management templates'
-      ]
+  const transformCourseData = (apiCourse) => {
+    const baseCourse = {
+      id: apiCourse.id.toString(),
+      title: apiCourse.title,
+      description: apiCourse.description,
+      tags: apiCourse.tags || [],
+      isPro: apiCourse.is_pro || false,
+      rating: apiCourse.rating || 4.5,
+      students: apiCourse.students_count || 0,
+      postedTime: apiCourse.created_at ? new Date(apiCourse.created_at).toLocaleDateString() : 'Recently'
     }
-  ]
+
+    // Transform based on course type
+    if (apiCourse.type === 'video') {
+      return {
+        ...baseCourse,
+        instructor: apiCourse.instructor || 'Unknown Instructor',
+        thumbnail: apiCourse.thumbnail || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=240&fit=crop',
+        duration: apiCourse.duration || 'Not specified',
+        lessons: apiCourse.lessons_count || 0,
+        level: apiCourse.level || 'Beginner',
+        curriculum: apiCourse.curriculum || [],
+        prerequisites: apiCourse.prerequisites || [],
+        whatYouWillLearn: apiCourse.learning_outcomes || []
+      }
+    } else if (apiCourse.type === 'book') {
+      return {
+        ...baseCourse,
+        author: apiCourse.author || 'Unknown Author',
+        cover: apiCourse.cover_image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=240&fit=crop',
+        pages: apiCourse.pages || 0,
+        format: apiCourse.format || 'PDF',
+        language: apiCourse.language || 'English',
+        chapters: apiCourse.chapters || [],
+        keyTopics: apiCourse.key_topics || [],
+        targetAudience: apiCourse.target_audience || []
+      }
+    } else if (apiCourse.type === 'business-plan') {
+      return {
+        ...baseCourse,
+        category: apiCourse.category || 'Business',
+        preview: apiCourse.preview_image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=240&fit=crop',
+        pages: apiCourse.pages || 0,
+        sections: apiCourse.sections_count || 0,
+        downloads: apiCourse.downloads_count || 0,
+        format: apiCourse.format || 'DOCX',
+        planSections: apiCourse.plan_sections || [],
+        includes: apiCourse.includes || []
+      }
+    }
+
+    return baseCourse
+  }
+
+  const fetchCourses = async () => {
+    try {
+      setLoading(true)
+      const response = await apiService.get('/courses')
+      const apiCourses = response.data.courses || []
+      
+      // Transform and categorize courses
+      const transformedCourses = {
+        videos: apiCourses.filter(course => course.type === 'video').map(transformCourseData),
+        books: apiCourses.filter(course => course.type === 'book').map(transformCourseData),
+        businessPlans: apiCourses.filter(course => course.type === 'business-plan').map(transformCourseData)
+      }
+      
+      setCourses(transformedCourses)
+    } catch (error) {
+      console.error('Error fetching courses:', error)
+      // Keep existing static data as fallback
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Static courses data as fallback
+  const staticVideos = []
+  const staticBooks = []
+  const staticBusinessPlans = []
+
+
 
   const filterOptions = {
     videos: {
@@ -1003,15 +802,17 @@ const Courses = () => {
   )
 
   const getCurrentData = () => {
+    const currentCourses = courses.videos.length > 0 || courses.books.length > 0 || courses.businessPlans.length > 0 ? courses : { videos: staticVideos, books: staticBooks, businessPlans: staticBusinessPlans }
+    
     switch (activeTab) {
       case 'videos':
-        return videos
+        return currentCourses.videos
       case 'books':
-        return books
+        return currentCourses.books
       case 'business-plans':
-        return businessPlans
+        return currentCourses.businessPlans
       default:
-        return videos
+        return currentCourses.videos
     }
   }
 
