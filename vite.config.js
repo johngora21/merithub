@@ -25,27 +25,3 @@ export default defineConfig(({ command, mode }) => {
     }
   }
 })
-
-      open: isAdmin ? '/admin.html' : '/'
-    },
-    preview: {
-      port: 3000
-    }
-  }
-})
-
-      open: isAdmin ? '/admin.html' : '/'
-    },
-    preview: {
-      port: 3000
-    }
-  }
-})
-
-      open: isAdmin ? '/admin.html' : '/'
-    },
-    preview: {
-      port: 3000
-    }
-  }
-})

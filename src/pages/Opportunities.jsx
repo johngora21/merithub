@@ -97,9 +97,8 @@ const Opportunities = () => {
         amount: (o.amount_min || o.amount_max) ? `${o.currency || 'USD'} ${o.amount_min || o.amount_max}` : 'Varies',
         tags: Array.isArray(o.benefits) ? o.benefits : [],
         organization_logo: o.organization_logo ? (o.organization_logo.startsWith('http') ? o.organization_logo : `http://localhost:8000${o.organization_logo.startsWith('/') ? '' : '/'}${o.organization_logo}`) : undefined,
-        applicants: o.applications_count || 0,
         externalUrl: o.external_url || undefined,
-        price: undefined
+        price: o.price || 'Free'
       }))
       setOpportunities(mapped)
     } catch (e) {
@@ -726,16 +725,19 @@ const Opportunities = () => {
                     paddingTop: '12px',
                     borderTop: '1px solid #f1f5f9'
                   }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      fontSize: '12px',
-                      color: '#64748b'
+                    {/* FREE/PRO Badge */}
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: opportunity.price === 'Pro' ? '#3b82f6' : '#16a34a',
+                      backgroundColor: opportunity.price === 'Pro' ? '#dbeafe' : '#dcfce7',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      border: `1px solid ${opportunity.price === 'Pro' ? '#93c5fd' : '#bbf7d0'}`,
+                      letterSpacing: '0.5px'
                     }}>
-                      <Users size={12} />
-                      {opportunity.applicants} applicants
-                    </div>
+                      {opportunity.price || 'FREE'}
+                    </span>
 
                     <button
                       onClick={(e) => {
@@ -1381,10 +1383,6 @@ const Opportunities = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <MapPin size={14} />
                       {selectedOpportunity.location}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Users size={14} />
-                      {selectedOpportunity.applicants} applicants
                     </div>
                   </div>
                 </div>

@@ -140,6 +140,31 @@ const Tender = sequelize.define('Tender', {
       model: 'users',
       key: 'id'
     }
+  },
+  approval_status: {
+    type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+    defaultValue: 'pending'
+  },
+  approved_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  approved_at: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  rejection_reason: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  price: {
+    type: DataTypes.ENUM('Free', 'Pro'),
+    defaultValue: 'Free',
+    allowNull: false
   }
 }, {
   tableName: 'tenders',
@@ -150,7 +175,8 @@ const Tender = sequelize.define('Tender', {
     { fields: ['location'] },
     { fields: ['deadline'] },
     { fields: ['status'] },
-    { fields: ['created_at'] }
+    { fields: ['created_at'] },
+    { fields: ['approval_status'] }
   ]
 });
 

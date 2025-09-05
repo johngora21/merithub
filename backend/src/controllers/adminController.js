@@ -6,6 +6,14 @@ const Course = require('../models/Course');
 const Application = require('../models/Application');
 const AdminLog = require('../models/AdminLog');
 const { validationResult } = require('express-validator');
+
+// Helper function to resolve asset URLs
+const resolveAssetUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  const baseUrl = process.env.API_BASE_URL || 'http://localhost:8000';
+  return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+};
 // Create user (admin)
 const createUser = async (req, res) => {
   try {
@@ -30,11 +38,11 @@ const createUser = async (req, res) => {
     await user.save();
 
     await AdminLog.create({
-      admin: req.user.id,
+      admin_id: req.user.id,
       action: 'CREATE_USER',
-      targetType: 'User',
-      targetId: user._id?.toString?.() || user.id,
-      details: `Created user: ${email}`
+      resource_type: 'user',
+      resource_id: user._id?.toString?.() || user.id,
+      description: `Created user: ${email}`
     });
 
     res.json({ user });
@@ -318,12 +326,12 @@ const updateUser = async (req, res) => {
 
     // Log admin action
     await AdminLog.create({
-      admin: req.user.id,
+      admin_id: req.user.id,
       action: 'UPDATE_USER',
-      targetType: 'User',
-      targetId: req.params.id,
-      details: `Updated user: ${user.email}`,
-      changes: req.body
+      resource_type: 'user',
+      resource_id: req.params.id,
+      description: `Updated user: ${user.email}`,
+      new_values: req.body
     });
 
     await user.update(req.body);
@@ -345,11 +353,11 @@ const deleteUser = async (req, res) => {
 
     // Log admin action
     await AdminLog.create({
-      admin: req.user.id,
+      admin_id: req.user.id,
       action: 'DELETE_USER',
-      targetType: 'User',
-      targetId: req.params.id,
-      details: `Deleted user: ${user.email}`
+      resource_type: 'user',
+      resource_id: req.params.id,
+      description: `Deleted user: ${user.email}`
     });
 
     await user.destroy();
@@ -392,7 +400,21 @@ const getAllContent = async (req, res) => {
       where: whereClause,
       order,
       limit: parseInt(limit),
-      offset: (page - 1) * limit
+      offset: (page - 1) * limit,
+      include: [
+        {
+          model: User,
+          as: 'creator',
+          attributes: ['id', 'first_name', 'last_name', 'email'],
+          required: false
+        },
+        {
+          model: User,
+          as: 'approver',
+          attributes: ['id', 'first_name', 'last_name', 'email'],
+          required: false
+        }
+      ]
     });
 
     // Transform content to match mock data structure
@@ -401,9 +423,13 @@ const getAllContent = async (req, res) => {
         id: item.id,
         title: item.title || 'Unknown Title',
         status: item.status || 'active',
+        approval_status: item.approval_status || 'pending',
         createdAt: item.created_at,
         updatedAt: item.updated_at,
-        postedBy: 'Unknown',
+        postedBy: item.creator ? `${item.creator.first_name || ''} ${item.creator.last_name || ''}`.trim() || item.creator.email : 'Unknown',
+        approvedBy: item.approver ? `${item.approver.first_name || ''} ${item.approver.last_name || ''}`.trim() || item.approver.email : null,
+        approvedAt: item.approved_at,
+        rejectionReason: item.rejection_reason,
         views: item.views_count || 0,
         applications: item.applications_count || 0
       };
@@ -420,9 +446,20 @@ const getAllContent = async (req, res) => {
                   `${item.currency} ${item.salary_min} - ${item.currency} ${item.salary_max}` : 
                   'Salary not specified',
           industry: item.industry || 'Unknown',
-          logo: item.company_logo || 'https://via.placeholder.com/44x44/3b82f6/ffffff?text=TC',
+          logo: resolveAssetUrl(item.company_logo) || 'https://via.placeholder.com/44x44/3b82f6/ffffff?text=TC',
           urgentHiring: item.is_urgent || false,
-          isRemote: item.work_type === 'remote'
+          isRemote: item.work_type === 'remote',
+          description: item.description || '',
+          skills: item.skills || [],
+                  salary_min: item.salary_min,
+        salary_max: item.salary_max,
+        currency: item.currency || 'USD',
+        job_type: item.job_type,
+        experience_level: item.experience_level,
+        work_type: item.work_type,
+        is_urgent: item.is_urgent,
+        company_logo: item.company_logo,
+        price: item.price || 'Free'
         };
       } else if (type === 'tenders') {
         return {
@@ -436,7 +473,11 @@ const getAllContent = async (req, res) => {
                         'Value not specified',
           duration: item.duration || 'Not specified',
           deadline: item.deadline,
-          submissions: item.submissions_count || 0
+          submissions: item.submissions_count || 0,
+          coverImage: resolveAssetUrl(item.cover_image) || null,
+          description: item.description || '',
+          tags: item.tags || [],
+          price: item.price || 'Free'
         };
       } else if (type === 'opportunities') {
         return {
@@ -450,7 +491,31 @@ const getAllContent = async (req, res) => {
                   'Amount not specified',
           duration: item.duration || 'Not specified',
           deadline: item.deadline,
-          poster: item.organization_logo || 'https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?w=400&h=240&fit=crop'
+          poster: (() => {
+            // First try to find cover image from documents
+            const coverDoc = Array.isArray(item.documents) ? item.documents.find(d => d && d.type === 'cover') : null
+            if (coverDoc?.url) {
+              return resolveAssetUrl(coverDoc.url)
+            }
+            // Opportunities don't have organization logos in the form, so skip that fallback
+            // Final fallback
+            return 'https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?w=400&h=240&fit=crop'
+          })(),
+          description: item.description || '',
+          detailed_description: item.detailed_description || '',
+          eligibility: item.eligibility_criteria || [],
+          applicationProcess: item.application_process || [],
+          benefits: item.benefits || [],
+          requirements: item.requirements || [],
+          tags: item.tags || [],
+          amount_min: item.amount_min,
+          amount_max: item.amount_max,
+          currency: item.currency || 'USD',
+          organization_logo: item.organization_logo,
+          external_url: item.external_url,
+          contact_email: item.contact_email,
+          documents: item.documents || [],
+          price: item.price || 'Free'
         };
       } else if (type === 'courses') {
         return {
@@ -462,7 +527,8 @@ const getAllContent = async (req, res) => {
           rating: item.rating || 4.5,
           students: item.studentsCount || Math.floor(Math.random() * 1000),
           thumbnail: item.thumbnail || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=240&fit=crop',
-          isPro: item.isPro || false
+          isPro: item.isPro || false,
+          price: item.price || 'Free'
         };
       }
 
@@ -512,12 +578,12 @@ const updateContentStatus = async (req, res) => {
 
     // Log admin action
     await AdminLog.create({
-      admin: req.user.id,
+      admin_id: req.user.id,
       action: 'UPDATE_CONTENT_STATUS',
-      targetType: type,
-      targetId: id,
-      details: `Updated ${type} status to ${status}`,
-      changes: { status }
+      resource_type: type,
+      resource_id: id,
+      description: `Updated ${type} status to ${status}`,
+      new_values: { status }
     });
 
     content.status = status;
@@ -560,11 +626,11 @@ const deleteContent = async (req, res) => {
 
     // Log admin action
     await AdminLog.create({
-      admin: req.user.id,
+      admin_id: req.user.id,
       action: 'DELETE_CONTENT',
-      targetType: type,
-      targetId: id,
-      details: `Deleted ${type}: ${content.title || content.name}`
+      resource_type: type,
+      resource_id: id,
+      description: `Deleted ${type}: ${content.title || content.name}`
     });
 
     await content.destroy();
@@ -572,6 +638,159 @@ const deleteContent = async (req, res) => {
   } catch (error) {
     console.error('Error deleting content:', error);
     res.status(500).json({ message: 'Error deleting content', error: error.message });
+  }
+};
+
+// Approve content
+const approveContent = async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    const { rejection_reason } = req.body;
+
+    let Model;
+    switch (type) {
+      case 'jobs':
+        Model = Job;
+        break;
+      case 'tenders':
+        Model = Tender;
+        break;
+      case 'opportunities':
+        Model = Opportunity;
+        break;
+      case 'courses':
+        Model = Course;
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid content type' });
+    }
+
+    const content = await Model.findByPk(id);
+    if (!content) {
+      return res.status(404).json({ message: 'Content not found' });
+    }
+
+    await content.update({
+      approval_status: 'approved',
+      approved_by: req.user.id,
+      approved_at: new Date(),
+      rejection_reason: null
+    });
+
+    await AdminLog.create({
+      admin_id: req.user.id,
+      action: 'APPROVE_CONTENT',
+      resource_type: type,
+      resource_id: id,
+      description: `Approved ${type}: ${content.title}`
+    });
+
+    res.json({ message: 'Content approved successfully', content });
+  } catch (error) {
+    console.error('Error approving content:', error);
+    res.status(500).json({ message: 'Error approving content', error: error.message });
+  }
+};
+
+// Reject content
+const rejectContent = async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    const { rejection_reason } = req.body;
+
+    if (!rejection_reason || rejection_reason.trim() === '') {
+      return res.status(400).json({ message: 'Rejection reason is required' });
+    }
+
+    let Model;
+    switch (type) {
+      case 'jobs':
+        Model = Job;
+        break;
+      case 'tenders':
+        Model = Tender;
+        break;
+      case 'opportunities':
+        Model = Opportunity;
+        break;
+      case 'courses':
+        Model = Course;
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid content type' });
+    }
+
+    const content = await Model.findByPk(id);
+    if (!content) {
+      return res.status(404).json({ message: 'Content not found' });
+    }
+
+    await content.update({
+      approval_status: 'rejected',
+      approved_by: req.user.id,
+      approved_at: new Date(),
+      rejection_reason: rejection_reason.trim()
+    });
+
+    await AdminLog.create({
+      admin_id: req.user.id,
+      action: 'REJECT_CONTENT',
+      resource_type: type,
+      resource_id: id,
+      description: `Rejected ${type}: ${content.title} - Reason: ${rejection_reason}`
+    });
+
+    res.json({ message: 'Content rejected successfully', content });
+  } catch (error) {
+    console.error('Error rejecting content:', error);
+    res.status(500).json({ message: 'Error rejecting content', error: error.message });
+  }
+};
+
+// Update content price
+const updateContentPrice = async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    const { price } = req.body;
+
+    let Model;
+    switch (type) {
+      case 'jobs':
+        Model = Job;
+        break;
+      case 'tenders':
+        Model = Tender;
+        break;
+      case 'opportunities':
+        Model = Opportunity;
+        break;
+      case 'courses':
+        Model = Course;
+        break;
+      default:
+        return res.status(400).json({ message: 'Invalid content type' });
+    }
+
+    const content = await Model.findByPk(id);
+    if (!content) {
+      return res.status(404).json({ message: 'Content not found' });
+    }
+
+    await content.update({ price });
+
+    await AdminLog.create({
+      admin_id: req.user.id,
+      action: 'UPDATE_CONTENT_PRICE',
+      resource_type: type,
+      resource_id: id,
+      description: `Updated ${type} price to ${price}`,
+      new_values: { price }
+    });
+
+    res.json({ message: 'Content price updated successfully', content });
+  } catch (error) {
+    console.error('Error updating content price:', error);
+    res.status(500).json({ message: 'Error updating content price', error: error.message });
   }
 };
 
@@ -620,7 +839,7 @@ const getAllApplications = async (req, res) => {
 
     const { count: total, rows: applications } = await Application.findAndCountAll({
       where: query,
-      order: [[sortBy === 'createdAt' ? 'created_at' : 'created_at', sortOrder === 'desc' ? 'DESC' : 'ASC']],
+      order: [[sortBy === 'createdAt' ? 'applied_at' : 'applied_at', sortOrder === 'desc' ? 'DESC' : 'ASC']],
       limit: parseInt(limit),
       offset: (page - 1) * limit,
       include: [
@@ -733,7 +952,7 @@ const getApplicationsOverview = async (req, res) => {
       applicants: j.applications_count || 0,
       description: j.description || '',
       skills: Array.isArray(j.skills) ? j.skills : [],
-      logo: j.company_logo || '',
+      logo: resolveAssetUrl(j.company_logo),
       urgentHiring: !!j.is_urgent,
       isRemote: j.work_type === 'remote',
       postedBy: j.posted_by,
@@ -752,7 +971,8 @@ const getApplicationsOverview = async (req, res) => {
       applicants: t.submissions_count || 0,
       description: t.description || '',
       requirements: Array.isArray(t.requirements) ? t.requirements : [],
-      logo: t.organization_logo || '',
+      logo: resolveAssetUrl(t.organization_logo),
+      coverImage: resolveAssetUrl(t.cover_image),
       postedBy: 'government',
       status: t.status && t.status.charAt(0).toUpperCase() + t.status.slice(1)
     });
@@ -848,12 +1068,12 @@ const updateApplicantStatus = async (req, res) => {
     await app.save();
 
     await AdminLog.create({
-      admin: req.user.id,
+      admin_id: req.user.id,
       action: 'UPDATE_APPLICATION_STATUS',
-      targetType: 'Application',
-      targetId: applicationId,
-      details: `Status ${oldStatus} -> ${status}`,
-      changes: { status }
+      resource_type: 'application',
+      resource_id: applicationId,
+      description: `Status ${oldStatus} -> ${status}`,
+      new_values: { status }
     });
 
     res.json({ message: 'Application status updated' });
@@ -988,6 +1208,9 @@ module.exports = {
   getAllContent,
   updateContentStatus,
   deleteContent,
+  approveContent,
+  rejectContent,
+  updateContentPrice,
   getAdminLogs,
   getAllApplications,
   getFinanceData,

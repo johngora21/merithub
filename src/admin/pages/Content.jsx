@@ -27,7 +27,7 @@ import {
   X
 } from 'lucide-react'
 import Post from '../../pages/Post'
-import { apiService } from '../../lib/api-service'
+import { apiService, jobsAPI, tendersAPI, opportunitiesAPI } from '../../lib/api-service'
 
 const Content = () => {
   // Simple responsive detection
@@ -92,110 +92,79 @@ const Content = () => {
     documents: []
   })
 
-  // Replace mock content with API data while preserving UI structure
+  // Load content from admin API
   useEffect(() => {
-    const mapJob = (j) => ({
-      id: String(j.id || j.job_id || ''),
-      company: j.company || j.company_name || '',
-      industry: j.industry || j.category || '',
-      title: j.title || j.position || '',
-      location: j.location || j.country || '',
-      salary: j.salary || j.salary_range || '',
-      type: j.type || j.employment_type || '',
-      experience: j.experience || j.experience_level || '',
-      skills: Array.isArray(j.skills) ? j.skills : [],
-      description: j.description || '',
-      postedTime: j.posted_time || j.created_at || '',
-      applicants: j.applicants_count || 0,
-      status: j.status || 'Active',
-      logo: j.logo || j.company_logo || ''
-    })
-
-    const mapTender = (t) => ({
-      id: String(t.id || t.tender_id || ''),
-      company: t.organization || t.company || '',
-      industry: t.industry || 'Government',
-      title: t.title || '',
-      location: t.location || t.country || '',
-      salary: t.budget || t.price_range || '',
-      type: t.type || 'Tender',
-      experience: t.experience || '',
-      skills: Array.isArray(t.requirements) ? t.requirements : [],
-      description: t.description || '',
-      postedTime: t.posted_time || t.created_at || '',
-      applicants: t.applicants_count || 0,
-      status: t.status || 'Active',
-      logo: t.logo || t.organization_logo || ''
-    })
-
-    const mapOpportunity = (o) => ({
-      id: String(o.id || o.opportunity_id || ''),
-      company: o.organization || o.company || '',
-      industry: o.industry || o.category || '',
-      title: o.title || '',
-      location: o.location || o.country || 'Remote',
-      salary: o.stipend || o.compensation || '',
-      type: 'Opportunity',
-      experience: o.experience || '',
-      skills: Array.isArray(o.benefits) ? o.benefits : [],
-      description: o.description || '',
-      postedTime: o.posted_time || o.created_at || '',
-      applicants: o.applicants_count || 0,
-      status: o.status || 'Active',
-      logo: o.logo || o.organization_logo || ''
-    })
-
-    const mapCourse = (c) => ({
-      id: String(c.id || c.course_id || ''),
-      type: c.type || c.format || 'video',
-      title: c.title || '',
-      description: c.description || '',
-      instructor: c.instructor || '',
-      author: c.author || '',
-      authorType: c.author_type || '',
-      companyName: c.company_name || '',
-      duration: c.duration || '',
-      language: c.language || 'English',
-      category: c.category || '',
-      level: c.level || 'Beginner',
-      format: c.format || '',
-      price: c.price || 'Free',
-      rating: c.rating ?? 5,
-      enrolledStudents: c.enrolled_students ?? 0,
-      thumbnailUrl: c.thumbnail || c.thumbnail_url || '',
-      videoUrl: c.video_url || '',
-      downloadUrl: c.download_url || '',
-      tags: Array.isArray(c.tags) ? c.tags : [],
-      businessType: c.business_type || '',
-      industrySector: c.industry_sector || '',
-      stage: c.stage || '',
-      pageCount: c.page_count || '',
-      fileSize: c.file_size || '',
-      targetAudience: c.target_audience || '',
-      documents: Array.isArray(c.documents) ? c.documents : []
-    })
-
     const loadContent = async () => {
       try {
+        console.log('Loading admin content using admin APIs...')
         const [jobs, tenders, opportunities, courses, applications] = await Promise.all([
-          apiService.get('/admin/content', { type: 'jobs', limit: 50 }).catch(() => ({ content: [] })),
-          apiService.get('/admin/content', { type: 'tenders', limit: 50 }).catch(() => ({ content: [] })),
-          apiService.get('/admin/content', { type: 'opportunities', limit: 50 }).catch(() => ({ content: [] })),
-          apiService.get('/admin/content', { type: 'courses', limit: 50 }).catch(() => ({ content: [] })),
-          apiService.get('/admin/applications', { limit: 50 }).catch(() => ({ applications: [] }))
+          apiService.get('/admin/content', { type: 'jobs', limit: 50 }).catch((err) => {
+            console.log('Jobs API error:', err)
+            return { content: [] }
+          }),
+          apiService.get('/admin/content', { type: 'tenders', limit: 50 }).catch((err) => {
+            console.log('Tenders API error:', err)
+            return { content: [] }
+          }),
+          apiService.get('/admin/content', { type: 'opportunities', limit: 50 }).catch((err) => {
+            console.log('Opportunities API error:', err)
+            return { content: [] }
+          }),
+          apiService.get('/admin/content', { type: 'courses', limit: 50 }).catch((err) => {
+            console.log('Courses API error:', err)
+            return { content: [] }
+          }),
+          apiService.get('/admin/applications', { limit: 50 }).catch((err) => {
+            console.log('Applications API error:', err)
+            return { applications: [] }
+          })
         ])
+        
+        console.log('API responses:', { jobs, tenders, opportunities, courses, applications })
+        
+        // Transform and sort by approval status (pending first for moderation)
         const jobsArr = (jobs?.content || [])
+          .map(transformJobAdminItem)
+          .sort((a, b) => {
+            if (a.approval_status === 'pending' && b.approval_status !== 'pending') return -1
+            if (a.approval_status !== 'pending' && b.approval_status === 'pending') return 1
+            return 0
+          })
+        
         const tendersArr = (tenders?.content || [])
+          .map(transformTenderAdminItem)
+          .sort((a, b) => {
+            if (a.approval_status === 'pending' && b.approval_status !== 'pending') return -1
+            if (a.approval_status !== 'pending' && b.approval_status === 'pending') return 1
+            return 0
+          })
+        
         const oppArr = (opportunities?.content || [])
+          .map(transformOpportunityAdminItem)
+          .sort((a, b) => {
+            if (a.approval_status === 'pending' && b.approval_status !== 'pending') return -1
+            if (a.approval_status !== 'pending' && b.approval_status === 'pending') return 1
+            return 0
+          })
+        
         const coursesArr = (courses?.content || [])
         const appsArr = (applications?.applications || [])
 
+        console.log('Raw data arrays:', { jobsArr, tendersArr, oppArr, coursesArr, appsArr })
+
         // Set real data into state used by the UI
-        setJobsData(jobsArr.map(mapJob))
-        setTendersData(tendersArr.map(mapTender))
-        setOpportunitiesData(oppArr.map(mapOpportunity))
-        setCoursesData(Array.isArray(coursesArr) ? coursesArr.map(mapCourse) : [])
+        setJobsData(jobsArr)
+        setTendersData(tendersArr)
+        setOpportunitiesData(oppArr)
+        setCoursesData(coursesArr)
         setApplicationsData(appsArr)
+        
+        console.log('Loaded data:', {
+          jobs: jobsArr.length,
+          tenders: tendersArr.length,
+          opportunities: oppArr.length,
+          courses: coursesArr.length
+        })
       } catch (e) {
         console.error('Failed to load admin content:', e)
         // Leave arrays as-is if API fails
@@ -205,694 +174,7 @@ const Content = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Sample data - in real app this would come from API
-  const contentData = {
-    jobs: [
-      {
-        id: '1',
-        company: 'TechCorp Solutions',
-        industry: 'Technology',
-        title: 'Senior Frontend Developer',
-        location: 'San Francisco, CA',
-        salary: '$120,000 - $160,000',
-        type: 'Full-time',
-        experience: '5+ years',
-        skills: ['React', 'TypeScript', 'Node.js', 'AWS'],
-        description: 'We are looking for an experienced Frontend Developer to join our growing team. You will be responsible for building scalable web applications using modern technologies.',
-        postedTime: '2 hours ago',
-        applicants: 23,
-        status: 'Active',
-        logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
-        responsibilities: [
-          'Develop and maintain responsive web applications using React and TypeScript',
-          'Collaborate with UX/UI designers to implement pixel-perfect designs',
-          'Build reusable components and maintain component libraries',
-          'Optimize applications for maximum speed and scalability',
-          'Work with backend developers to integrate APIs and services',
-          'Participate in code reviews and maintain coding standards',
-          'Debug and troubleshoot technical issues across browsers',
-          'Mentor junior developers and contribute to technical documentation'
-        ],
-        requirements: [
-          '5+ years of experience with React and modern JavaScript',
-          'Strong proficiency in TypeScript and ES6+',
-          'Experience with state management (Redux, Context API)',
-          'Knowledge of build tools (Webpack, Vite) and testing frameworks',
-          'Familiarity with Node.js and RESTful API integration',
-          'Experience with AWS services and cloud deployment',
-          'Strong understanding of responsive design and CSS',
-          'Excellent problem-solving and communication skills'
-        ],
-        companyInfo: {
-          size: '200-500 employees',
-          founded: '2018',
-          funding: 'Series B',
-          mission: 'Building innovative technology solutions that transform businesses'
-        },
-        benefits: ['Health Insurance', 'Remote Work', '401k Match', 'Stock Options']
-      },
-      {
-        id: '2',
-        company: 'InnovateTech',
-        industry: 'Technology',
-        title: 'Product Manager',
-        location: 'New York, NY',
-        salary: '$130,000 - $180,000',
-        type: 'Full-time',
-        experience: '7+ years',
-        skills: ['Product Strategy', 'Agile', 'Data Analysis', 'User Research'],
-        description: 'Lead product development and strategy for our flagship platform. Drive innovation and user experience across all product lines.',
-        postedTime: '1 day ago',
-        applicants: 45,
-        status: 'Active',
-        logo: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=80&h=80&fit=crop',
-        responsibilities: [
-          'Define product vision, strategy, and roadmap',
-          'Lead cross-functional teams in product development',
-          'Conduct market research and competitive analysis',
-          'Gather and prioritize product requirements',
-          'Work closely with engineering, design, and marketing teams',
-          'Analyze product metrics and user feedback',
-          'Drive product launches and go-to-market strategies',
-          'Manage stakeholder relationships and expectations'
-        ],
-        requirements: [
-          '7+ years of product management experience',
-          'Strong analytical and problem-solving skills',
-          'Experience with Agile methodologies and tools',
-          'Proven track record of successful product launches',
-          'Excellent communication and leadership skills',
-          'Experience with data analysis and user research',
-          'Technical background or understanding preferred',
-          'MBA or relevant advanced degree preferred'
-        ],
-        companyInfo: {
-          size: '500-1000 employees',
-          founded: '2015',
-          funding: 'Series C',
-          mission: 'Empowering businesses through innovative technology solutions'
-        },
-        benefits: ['Health Insurance', 'Stock Options', 'Flexible PTO', 'Professional Development']
-      },
-      {
-        id: '3',
-        company: 'Global Solutions Inc',
-        industry: 'Consulting',
-        title: 'Senior Consultant',
-        location: 'Chicago, IL',
-        salary: '$110,000 - $150,000',
-        type: 'Full-time',
-        experience: '6+ years',
-        skills: ['Strategy', 'Business Analysis', 'Client Management', 'Project Management'],
-        description: 'Provide strategic consulting services to Fortune 500 companies. Help organizations transform and achieve their business objectives.',
-        postedTime: '3 days ago',
-        applicants: 32,
-        status: 'Active',
-        logo: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=80&h=80&fit=crop',
-        responsibilities: [
-          'Lead client engagements and project delivery',
-          'Develop strategic recommendations and implementation plans',
-          'Conduct business analysis and process improvement',
-          'Manage client relationships and stakeholder communication',
-          'Mentor junior consultants and contribute to team development',
-          'Develop thought leadership content and presentations',
-          'Participate in business development and proposal writing',
-          'Ensure high-quality deliverables and client satisfaction'
-        ],
-        requirements: [
-          '6+ years of consulting experience with Fortune 500 clients',
-          'Strong analytical and strategic thinking skills',
-          'Excellent client relationship management abilities',
-          'Experience in business transformation and change management',
-          'Proven project management and team leadership skills',
-          'Strong presentation and communication abilities',
-          'MBA or relevant advanced degree required',
-          'Willingness to travel up to 80%'
-        ],
-        companyInfo: {
-          size: '1000-5000 employees',
-          founded: '2010',
-          funding: 'Private Equity',
-          mission: 'Delivering exceptional value through strategic consulting and transformation services'
-        },
-        benefits: ['Health Insurance', 'Performance Bonus', 'Travel Allowance', 'Professional Development']
-      },
-      {
-        id: '4',
-        company: 'StartupXYZ',
-        industry: 'Technology',
-        title: 'Full Stack Developer',
-        location: 'Austin, TX',
-        salary: '$90,000 - $130,000',
-        type: 'Full-time',
-        experience: '3+ years',
-        skills: ['JavaScript', 'Python', 'React', 'Node.js'],
-        description: 'Join our fast-growing startup and build amazing products. Be part of a team that\'s changing the world through technology.',
-        postedTime: '1 week ago',
-        applicants: 67,
-        status: 'Active',
-        logo: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=80&h=80&fit=crop',
-        responsibilities: [
-          'Develop and maintain full-stack web applications',
-          'Collaborate with product and design teams',
-          'Write clean, maintainable, and scalable code',
-          'Participate in code reviews and technical discussions',
-          'Debug and fix issues across the application stack',
-          'Contribute to technical architecture decisions',
-          'Mentor junior developers and share knowledge',
-          'Stay updated with latest technologies and best practices'
-        ],
-        requirements: [
-          '3+ years of full-stack development experience',
-          'Proficiency in JavaScript, Python, and modern frameworks',
-          'Experience with React, Node.js, and database technologies',
-          'Strong understanding of web technologies and APIs',
-          'Experience with version control and deployment processes',
-          'Knowledge of cloud platforms (AWS, GCP, or Azure)',
-          'Strong problem-solving and debugging skills',
-          'Ability to work in a fast-paced startup environment'
-        ],
-        companyInfo: {
-          size: '50-200 employees',
-          founded: '2020',
-          funding: 'Series A',
-          mission: 'Building innovative solutions that solve real-world problems'
-        },
-        benefits: ['Health Insurance', 'Stock Options', 'Remote Work', 'Flexible Hours']
-      },
-      {
-        id: '5',
-        company: 'Enterprise Corp',
-        industry: 'Finance',
-        title: 'Financial Analyst',
-        location: 'Boston, MA',
-        salary: '$85,000 - $120,000',
-        type: 'Full-time',
-        experience: '4+ years',
-        skills: ['Financial Modeling', 'Excel', 'SQL', 'Risk Analysis'],
-        description: 'Analyze financial data and provide insights for business decisions. Support strategic planning and investment analysis.',
-        postedTime: '2 weeks ago',
-        applicants: 28,
-        status: 'Closed',
-        logo: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=80&h=80&fit=crop',
-        responsibilities: [
-          'Develop and maintain financial models and forecasts',
-          'Analyze financial performance and key metrics',
-          'Prepare financial reports and presentations for stakeholders',
-          'Conduct market research and competitive analysis',
-          'Support budgeting and planning processes',
-          'Perform risk assessment and scenario analysis',
-          'Collaborate with cross-functional teams on financial projects',
-          'Ensure compliance with financial regulations and standards'
-        ],
-        requirements: [
-          '4+ years of financial analysis experience',
-          'Strong proficiency in Excel, SQL, and financial modeling',
-          'Experience with financial analysis and reporting tools',
-          'Knowledge of accounting principles and financial statements',
-          'Strong analytical and quantitative skills',
-          'Experience in investment analysis or corporate finance',
-          'CFA or CPA certification preferred',
-          'Excellent communication and presentation skills'
-        ],
-        companyInfo: {
-          size: '5000+ employees',
-          founded: '1995',
-          funding: 'Public Company',
-          mission: 'Providing comprehensive financial services and solutions'
-        },
-        benefits: ['Health Insurance', '401k Match', 'Performance Bonus', 'Professional Development']
-      }
-    ],
-    tenders: [
-      {
-        id: '1',
-        organization: 'Government Procurement Agency',
-        title: 'IT Infrastructure Upgrade Project',
-        location: 'Nairobi, Kenya',
-        value: '$500,000',
-        deadline: '2024-02-15',
-        category: 'Technology',
-        description: 'Comprehensive IT infrastructure upgrade for government offices across multiple departments.',
-        status: 'Open',
-        postedTime: '3 days ago',
-        logo: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=80&h=80&fit=crop',
-        requirements: [
-          'Proven experience in large-scale IT infrastructure projects',
-          'Certified network and system administration expertise',
-          'Experience with government procurement processes',
-          'Strong project management and team leadership skills',
-          'Knowledge of cybersecurity best practices',
-          'Experience with cloud migration and hybrid solutions',
-          'Excellent documentation and reporting abilities',
-          'Local presence and understanding of government regulations'
-        ],
-        deliverables: [
-          'Complete network infrastructure upgrade',
-          'Server and storage system modernization',
-          'Security system implementation',
-          'User training and documentation',
-          '24/7 support and maintenance plan',
-          'Compliance and audit documentation'
-        ],
-        evaluationCriteria: [
-          'Technical expertise and experience (40%)',
-          'Project management approach (25%)',
-          'Cost-effectiveness (20%)',
-          'Timeline and delivery capability (15%)'
-        ],
-        contactInfo: {
-          name: 'Procurement Officer',
-          email: 'procurement@gov.ke',
-          phone: '+254-20-1234567'
-        }
-      },
-      {
-        id: '2',
-        organization: 'Ministry of Education',
-        title: 'Digital Learning Platform Development',
-        location: 'Mombasa, Kenya',
-        value: '$300,000',
-        deadline: '2024-03-01',
-        category: 'Education',
-        description: 'Development of a comprehensive digital learning platform for primary and secondary schools.',
-        status: 'Open',
-        postedTime: '1 week ago',
-        logo: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=80&h=80&fit=crop',
-        requirements: [
-          'Experience in educational technology development',
-          'Proficiency in modern web development frameworks',
-          'Understanding of learning management systems',
-          'Experience with mobile app development',
-          'Knowledge of accessibility standards',
-          'Experience with multi-language platform development',
-          'Strong UI/UX design capabilities',
-          'Experience with government education systems'
-        ],
-        deliverables: [
-          'Web-based learning management system',
-          'Mobile applications for iOS and Android',
-          'Content management system for educators',
-          'Student progress tracking and analytics',
-          'Parent communication portal',
-          'Administrative dashboard and reporting tools'
-        ],
-        evaluationCriteria: [
-          'Technical solution quality (35%)',
-          'Educational content integration (25%)',
-          'User experience and accessibility (20%)',
-          'Implementation timeline (20%)'
-        ],
-        contactInfo: {
-          name: 'Education Technology Director',
-          email: 'edutech@education.go.ke',
-          phone: '+254-41-9876543'
-        }
-      },
-      {
-        id: '3',
-        organization: 'Kenya Power and Lighting Company',
-        title: 'Smart Grid Implementation Project',
-        location: 'Nairobi, Kenya',
-        value: '$2,500,000',
-        deadline: '2024-04-15',
-        category: 'Energy',
-        description: 'Implementation of smart grid technology for improved power distribution and monitoring.',
-        status: 'Open',
-        postedTime: '2 weeks ago',
-        logo: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=80&h=80&fit=crop',
-        requirements: [
-          'Extensive experience in smart grid technology',
-          'Certified electrical engineering expertise',
-          'Experience with IoT and sensor networks',
-          'Knowledge of power distribution systems',
-          'Experience with real-time monitoring systems',
-          'Understanding of energy management software',
-          'Project management certification preferred',
-          'Experience in developing countries preferred'
-        ],
-        deliverables: [
-          'Smart meter installation and integration',
-          'Real-time monitoring and control systems',
-          'Data analytics and reporting platform',
-          'Customer portal for usage tracking',
-          'Staff training and capacity building',
-          'System maintenance and support plan'
-        ],
-        evaluationCriteria: [
-          'Technical expertise and innovation (40%)',
-          'Cost-effectiveness and ROI (30%)',
-          'Implementation timeline (20%)',
-          'Local capacity building (10%)'
-        ],
-        contactInfo: {
-          name: 'Technical Procurement Manager',
-          email: 'procurement@kplc.co.ke',
-          phone: '+254-20-7654321'
-        }
-      }
-    ],
-    opportunities: [
-      {
-        id: '1',
-        organization: 'African Development Bank',
-        title: 'Youth Entrepreneurship Fellowship',
-        location: 'Pan-African',
-        type: 'Fellowship',
-        duration: '12 months',
-        value: '$25,000',
-        description: 'Supporting young entrepreneurs across Africa with funding, mentorship, and business development resources.',
-        deadline: '2024-02-28',
-        status: 'Open',
-        postedTime: '5 days ago',
-        logo: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=80&h=80&fit=crop',
-        eligibility: [
-          'Age 18-35 years old',
-          'Citizen of an African country',
-          'Demonstrated entrepreneurial spirit',
-          'Business idea or existing startup',
-          'Commitment to social impact',
-          'English or French proficiency',
-          'No previous major funding received',
-          'Willingness to participate in mentorship program'
-        ],
-        benefits: [
-          '$25,000 seed funding',
-          '12-month mentorship program',
-          'Business development training',
-          'Access to investor network',
-          'Technical support and resources',
-          'Regional networking opportunities',
-          'Market access support',
-          'Follow-up funding opportunities'
-        ],
-        applicationProcess: [
-          'Online application submission',
-          'Business plan development',
-          'Video pitch submission',
-          'Panel interview',
-          'Final selection and onboarding'
-        ],
-        selectionCriteria: [
-          'Innovation and creativity (30%)',
-          'Market potential and scalability (25%)',
-          'Social impact potential (20%)',
-          'Team capabilities and commitment (15%)',
-          'Financial sustainability (10%)'
-        ]
-      },
-      {
-        id: '2',
-        organization: 'Google Africa',
-        title: 'Google Developer Scholarship',
-        location: 'Online',
-        type: 'Scholarship',
-        duration: '6 months',
-        value: 'Full Tuition',
-        description: 'Comprehensive training program for aspiring developers with hands-on projects and industry mentorship.',
-        deadline: '2024-03-15',
-        status: 'Open',
-        postedTime: '2 weeks ago',
-        logo: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=80&h=80&fit=crop',
-        eligibility: [
-          'Age 18+ years old',
-          'Resident of an African country',
-          'Basic computer literacy',
-          'Interest in software development',
-          'Commitment to complete 6-month program',
-          'Access to stable internet connection',
-          'No prior professional development experience required',
-          'Willingness to learn and collaborate'
-        ],
-        benefits: [
-          'Full tuition coverage',
-          'Access to Google Cloud Platform credits',
-          'Industry mentor assignment',
-          'Project-based learning experience',
-          'Career development workshops',
-          'Networking with Google engineers',
-          'Certificate upon completion',
-          'Job placement assistance'
-        ],
-        curriculum: [
-          'Programming fundamentals',
-          'Web development (HTML, CSS, JavaScript)',
-          'Backend development (Python, Node.js)',
-          'Database design and management',
-          'Cloud computing and deployment',
-          'Mobile app development',
-          'Software testing and debugging',
-          'Professional development skills'
-        ],
-        selectionCriteria: [
-          'Motivation and commitment (40%)',
-          'Problem-solving abilities (30%)',
-          'Communication skills (20%)',
-          'Diversity and inclusion factors (10%)'
-        ]
-      },
-      {
-        id: '3',
-        organization: 'Mastercard Foundation',
-        title: 'Young Africa Works Innovation Fund',
-        location: 'East Africa',
-        type: 'Grant',
-        duration: '18 months',
-        value: '$50,000',
-        description: 'Supporting innovative solutions that address youth employment challenges in East Africa.',
-        deadline: '2024-04-30',
-        status: 'Open',
-        postedTime: '3 weeks ago',
-        logo: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=80&h=80&fit=crop',
-        eligibility: [
-          'Youth-led organizations (18-35 years)',
-          'Registered in East African countries',
-          'Innovative solution for youth employment',
-          'Demonstrated social impact',
-          'Sustainable business model',
-          'Team of at least 3 members',
-          'Clear implementation plan',
-          'Commitment to monitoring and evaluation'
-        ],
-        benefits: [
-          '$50,000 grant funding',
-          'Technical assistance and capacity building',
-          'Mentorship from industry experts',
-          'Access to Mastercard network',
-          'Monitoring and evaluation support',
-          'Knowledge sharing opportunities',
-          'Scaling support for successful projects',
-          'Recognition and visibility'
-        ],
-        focusAreas: [
-          'Digital skills training and employment',
-          'Agricultural innovation and value chains',
-          'Creative industries and entrepreneurship',
-          'Green economy and sustainability',
-          'Healthcare and wellness solutions',
-          'Education technology and access'
-        ],
-        selectionCriteria: [
-          'Innovation and creativity (35%)',
-          'Youth employment impact potential (30%)',
-          'Sustainability and scalability (20%)',
-          'Team capacity and commitment (15%)'
-        ]
-      }
-    ],
-    courses: [
-      {
-        id: '1',
-        title: 'Complete React Developer Course',
-        instructor: 'John Doe',
-        type: 'video',
-        duration: '15h 30m',
-        level: 'Beginner',
-        category: 'Programming',
-        rating: 4.8,
-        students: 1250,
-        price: 'Free',
-        description: 'Learn React from scratch with hands-on projects and real-world applications.',
-        status: 'Published',
-        postedTime: '1 week ago',
-        thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=80&h=80&fit=crop',
-        language: 'English',
-        format: 'Course',
-        tags: ['React', 'JavaScript', 'Frontend', 'Web Development'],
-        chapters: [
-          'Introduction to React and JSX',
-          'Components and Props',
-          'State and Lifecycle',
-          'Event Handling',
-          'Conditional Rendering',
-          'Lists and Keys',
-          'Forms and Controlled Components',
-          'Hooks (useState, useEffect)',
-          'Context API',
-          'Routing with React Router',
-          'State Management with Redux',
-          'Testing React Applications',
-          'Deployment and Optimization'
-        ],
-        learningOutcomes: [
-          'Build complete React applications from scratch',
-          'Understand modern React patterns and best practices',
-          'Implement state management solutions',
-          'Deploy React applications to production',
-          'Write tests for React components',
-          'Optimize React applications for performance'
-        ],
-        prerequisites: [
-          'Basic JavaScript knowledge',
-          'Understanding of HTML and CSS',
-          'Familiarity with ES6+ syntax',
-          'Basic understanding of web development concepts'
-        ],
-        resources: [
-          '15+ hours of video content',
-          'Downloadable source code',
-          'Practice exercises and projects',
-          'Certificate of completion',
-          'Lifetime access to updates'
-        ]
-      },
-      {
-        id: '2',
-        title: 'Business Strategy Masterclass',
-        author: 'Jane Smith',
-        type: 'book',
-        duration: '200 pages',
-        level: 'Advanced',
-        category: 'Business',
-        rating: 4.6,
-        students: 890,
-        price: 'Pro',
-        description: 'Comprehensive guide to business strategy and planning for executives and entrepreneurs.',
-        status: 'Published',
-        postedTime: '2 weeks ago',
-        thumbnail: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=80&h=80&fit=crop',
-        language: 'English',
-        format: 'PDF',
-        authorType: 'Industry Expert',
-        tags: ['Strategy', 'Business', 'Leadership', 'Management'],
-        chapters: [
-          'Strategic Thinking and Analysis',
-          'Market Research and Competitive Intelligence',
-          'Business Model Innovation',
-          'Strategic Planning and Execution',
-          'Organizational Design and Structure',
-          'Change Management and Transformation',
-          'Risk Management and Contingency Planning',
-          'Performance Measurement and KPIs',
-          'Strategic Communication and Stakeholder Management',
-          'Future Trends and Strategic Adaptation'
-        ],
-        keyInsights: [
-          'Framework for strategic decision-making',
-          'Tools for competitive analysis',
-          'Methods for business model innovation',
-          'Approaches to organizational transformation',
-          'Techniques for strategic communication',
-          'Best practices for execution excellence'
-        ],
-        targetAudience: [
-          'Senior executives and C-suite leaders',
-          'Entrepreneurs and business owners',
-          'Strategy consultants and advisors',
-          'MBA students and business professionals',
-          'Anyone interested in strategic management'
-        ],
-        resources: [
-          '200-page comprehensive guide',
-          'Strategic planning templates',
-          'Case studies and examples',
-          'Interactive exercises',
-          'Executive summary and key takeaways'
-        ]
-      },
-      {
-        id: '3',
-        title: 'E-commerce Startup Business Plan',
-        author: 'Tech Ventures Inc',
-        type: 'business-plan',
-        duration: '50 pages',
-        level: 'Intermediate',
-        category: 'Business',
-        rating: 4.7,
-        students: 450,
-        price: 'Pro',
-        description: 'Complete business plan template for launching a successful e-commerce startup.',
-        status: 'Published',
-        postedTime: '3 weeks ago',
-        thumbnail: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=80&h=80&fit=crop',
-        language: 'English',
-        format: 'PDF',
-        businessType: 'E-commerce',
-        industrySector: 'Retail',
-        stage: 'Startup',
-        tags: ['E-commerce', 'Business Plan', 'Startup', 'Retail'],
-        sections: [
-          'Executive Summary',
-          'Market Analysis and Research',
-          'Business Model and Revenue Streams',
-          'Marketing and Sales Strategy',
-          'Operations and Supply Chain',
-          'Financial Projections and Funding',
-          'Risk Analysis and Mitigation',
-          'Implementation Timeline',
-          'Appendices and Supporting Documents'
-        ],
-        financialProjections: [
-          '3-year revenue forecasts',
-          'Break-even analysis',
-          'Cash flow projections',
-          'Funding requirements',
-          'ROI calculations',
-          'Sensitivity analysis'
-        ],
-        marketResearch: [
-          'Target market segmentation',
-          'Competitive landscape analysis',
-          'Customer behavior insights',
-          'Market size and growth potential',
-          'Pricing strategy recommendations',
-          'Distribution channel analysis'
-        ],
-        implementationGuide: [
-          'Step-by-step launch checklist',
-          'Resource requirements and timeline',
-          'Key performance indicators',
-          'Risk management strategies',
-          'Success metrics and milestones',
-          'Scaling and growth plans'
-        ]
-      }
-    ],
-    applications: [
-      {
-        id: '1',
-        applicant: 'John Smith',
-        appliedFor: 'Senior Frontend Developer',
-        type: 'Job',
-        company: 'TechCorp Solutions',
-        appliedDate: '2024-01-15',
-        status: 'Under Review',
-        email: 'john.smith@email.com'
-      },
-      {
-        id: '2',
-        applicant: 'Sarah Johnson',
-        appliedFor: 'Youth Entrepreneurship Fellowship',
-        type: 'Opportunity',
-        company: 'African Development Bank',
-        appliedDate: '2024-01-14',
-        status: 'Shortlisted',
-        email: 'sarah.johnson@email.com'
-      }
-    ]
-  }
 
-  // Show the course form with a slight delay for animation
   useEffect(() => {
     if (showCourseForm) {
       const timer = setTimeout(() => setShowForm(true), 100)
@@ -1030,7 +312,10 @@ const Content = () => {
   }
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
+    if (!date) return 'N/A'
+    const dateObj = new Date(date)
+    if (isNaN(dateObj.getTime())) return 'N/A'
+    return dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -1056,17 +341,113 @@ const Content = () => {
     }
   }
 
-  const handleStatusChange = async (item, type, nextStatus) => {
+  const handleApprove = async (item, type) => {
+    // Update UI immediately
+      const updateItem = (prev) => prev.map(x => 
+        x.id === item.id ? { ...x, approval_status: 'approved' } : x
+      )
+      if (type === 'jobs') setJobsData(updateItem)
+      if (type === 'tenders') setTendersData(updateItem)
+      if (type === 'opportunities') setOpportunitiesData(updateItem)
+      if (type === 'courses') setCoursesData(updateItem)
+    
+    // Then make API call
     try {
-      await apiService.put(`/admin/content/${type}/${item.id}/status`, { status: nextStatus })
+      await apiService.put(`/admin/content/${type}/${item.id}/approve`)
+    } catch (e) {
+      console.error('Approve failed', e)
+      // Revert on error
+      const revert = (prev) => prev.map(x => 
+        x.id === item.id ? { ...x, approval_status: item.approval_status } : x
+      )
+      if (type === 'jobs') setJobsData(revert)
+      if (type === 'tenders') setTendersData(revert)
+      if (type === 'opportunities') setOpportunitiesData(revert)
+      if (type === 'courses') setCoursesData(revert)
+      alert(e.message || 'Approve failed')
+    }
+  }
+
+  const handleReject = async (item, type) => {
+    const rejectionReason = prompt('Please provide a reason for rejection:')
+    if (!rejectionReason || rejectionReason.trim() === '') {
+      alert('Rejection reason is required')
+      return
+    }
+    
+    // Update UI immediately
+      const updateItem = (prev) => prev.map(x => 
+        x.id === item.id ? { ...x, approval_status: 'rejected', rejection_reason: rejectionReason.trim() } : x
+      )
+      if (type === 'jobs') setJobsData(updateItem)
+      if (type === 'tenders') setTendersData(updateItem)
+      if (type === 'opportunities') setOpportunitiesData(updateItem)
+      if (type === 'courses') setCoursesData(updateItem)
+    
+    // Then make API call
+    try {
+      await apiService.put(`/admin/content/${type}/${item.id}/reject`, {
+        rejection_reason: rejectionReason.trim()
+      })
+    } catch (e) {
+      console.error('Reject failed', e)
+      // Revert on error
+      const revert = (prev) => prev.map(x => 
+        x.id === item.id ? { ...x, approval_status: item.approval_status, rejection_reason: item.rejection_reason } : x
+      )
+      if (type === 'jobs') setJobsData(revert)
+      if (type === 'tenders') setTendersData(revert)
+      if (type === 'opportunities') setOpportunitiesData(revert)
+      if (type === 'courses') setCoursesData(revert)
+      alert(e.message || 'Reject failed')
+    }
+  }
+
+  const handleStatusChange = async (item, type, nextStatus) => {
+    // Update UI immediately
       const update = (arr) => arr.map(x => x.id === item.id ? { ...x, status: nextStatus } : x)
       if (type === 'jobs') setJobsData(update)
       if (type === 'tenders') setTendersData(update)
       if (type === 'opportunities') setOpportunitiesData(update)
       if (type === 'courses') setCoursesData(update)
+    
+    // Then make API call
+    try {
+      await apiService.put(`/admin/content/${type}/${item.id}/status`, { status: nextStatus })
     } catch (e) {
       console.error('Status update failed', e)
+      // Revert on error
+      const revert = (arr) => arr.map(x => x.id === item.id ? { ...x, status: item.status } : x)
+      if (type === 'jobs') setJobsData(revert)
+      if (type === 'tenders') setTendersData(revert)
+      if (type === 'opportunities') setOpportunitiesData(revert)
+      if (type === 'courses') setCoursesData(revert)
       alert(e.message || 'Status update failed')
+    }
+  }
+
+  const handlePriceToggle = async (item, type) => {
+    const newPrice = item.price === 'Free' ? 'Pro' : 'Free'
+    
+    // Update UI immediately
+    const update = (arr) => arr.map(x => x.id === item.id ? { ...x, price: newPrice } : x)
+    if (type === 'jobs') setJobsData(update)
+    if (type === 'tenders') setTendersData(update)
+    if (type === 'opportunities') setOpportunitiesData(update)
+    if (type === 'courses') setCoursesData(update)
+    
+    // Then make API call
+    try {
+      await apiService.put(`/admin/content/${type}/${item.id}/price`, { price: newPrice })
+    } catch (e) {
+      console.error('Price update failed', e)
+      // Revert on error
+      const revert = (arr) => arr.map(x => x.id === item.id ? { ...x, price: item.price } : x)
+      if (type === 'jobs') setJobsData(revert)
+      if (type === 'tenders') setTendersData(revert)
+      if (type === 'opportunities') setOpportunitiesData(revert)
+      if (type === 'courses') setCoursesData(revert)
+      alert(e.message || 'Price update failed')
     }
   }
 
@@ -1102,6 +483,12 @@ const Content = () => {
           color: '#991b1b',
           borderColor: '#fecaca'
         }
+      case 'approved':
+        return {
+          backgroundColor: '#dcfce7',
+          color: '#166534',
+          borderColor: '#bbf7d0'
+        }
       default:
         return {
           backgroundColor: '#f3f4f6',
@@ -1129,6 +516,1356 @@ const Content = () => {
       {children}
     </button>
   )
+
+  // Helper functions for different card types
+  const getSectorIcon = (sector) => {
+    const iconMap = {
+      'Technology': Building,
+      'Healthcare': Building,
+      'Education': Building,
+      'Infrastructure': Building,
+      'default': Building
+    }
+    return iconMap[sector] || iconMap.default
+  }
+
+  const getSectorColor = (sector) => {
+    const colorMap = {
+      'Technology': '#3b82f6',
+      'Healthcare': '#16a34a',
+      'Education': '#8b5cf6',
+      'Infrastructure': '#f59e0b',
+      'default': '#64748b'
+    }
+    return colorMap[sector] || colorMap.default
+  }
+
+  const getTypeColor = (type) => {
+    const colorMap = {
+      'Scholarship': '#8b5cf6',
+      'Fellowship': '#3b82f6',
+      'Grant': '#16a34a',
+      'Competition': '#f59e0b',
+      'Volunteer': '#ef4444',
+      'default': '#64748b'
+    }
+    return colorMap[type] || colorMap.default
+  }
+
+  const getDaysUntilDeadline = (deadline) => {
+    if (!deadline) return 0
+    const today = new Date()
+    const deadlineDate = new Date(deadline)
+    const diffTime = deadlineDate - today
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  }
+
+  // Normalize price badges to match merit app cards
+  const isProBadge = (item) => {
+    const price = item?.price
+    return price === 'Pro' || item?.postedBy === 'platform' || item?.posted_by === 'platform' || item?.is_featured === true
+  }
+
+  const isFreeBadge = (item) => {
+    const price = item?.price
+    return price === 'Free' || price === 0 || item?.is_free === true
+  }
+
+  // Formatting helpers adapted from app
+  const formatNumber = (n) => {
+    const num = Number(n)
+    return Number.isFinite(num) ? num.toLocaleString() : ''
+  }
+
+  const titleCaseDash = (val) => {
+    if (!val) return ''
+    return String(val)
+      .split('-')
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join('-')
+  }
+
+  const capitalizeFirst = (val) => {
+    if (!val) return ''
+    const s = String(val)
+    return s.charAt(0).toUpperCase() + s.slice(1)
+  }
+
+  // Match merit app card data for jobs
+  const transformJobAdminItem = (apiJob) => {
+    const min = apiJob?.salary_min != null ? Number(apiJob.salary_min) : undefined
+    const max = apiJob?.salary_max != null ? Number(apiJob.salary_max) : undefined
+    const fmt = (n) => typeof n === 'number' && !Number.isNaN(n) ? n.toLocaleString() : ''
+    let salary
+    if (min != null && max != null) {
+      salary = min === max
+        ? `${apiJob.currency} ${fmt(min)}`
+        : `${apiJob.currency} ${fmt(min)} - ${apiJob.currency} ${fmt(max)}`
+    } else if (min != null) {
+      salary = `${apiJob.currency} ${fmt(min)}`
+    } else if (max != null) {
+      salary = `${apiJob.currency} ${fmt(max)}`
+            } else {
+      salary = 'Salary not specified'
+    }
+    return {
+      ...apiJob,
+      salary,
+      type: apiJob?.job_type ? apiJob.job_type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('-') : 'Not specified',
+      experience: apiJob?.experience_level ? apiJob.experience_level.charAt(0).toUpperCase() + apiJob.experience_level.slice(1) + ' level' : 'Not specified',
+      postedTime: apiJob?.created_at ? new Date(apiJob.created_at).toLocaleDateString() : 'Recently',
+      skills: apiJob.skills || [],
+      description: apiJob.description
+    }
+  }
+
+  // Normalize tenders to show contract value like salary and keep labels
+  const transformTenderAdminItem = (apiTender) => {
+    const min = apiTender?.contract_value_min != null ? Number(apiTender.contract_value_min) : undefined
+    const max = apiTender?.contract_value_max != null ? Number(apiTender.contract_value_max) : undefined
+    let amount
+    if (min != null && max != null) {
+      amount = min === max
+        ? `${apiTender.currency} ${formatNumber(min)}`
+        : `${apiTender.currency} ${formatNumber(min)} - ${apiTender.currency} ${formatNumber(max)}`
+    } else if (min != null) {
+      amount = `${apiTender.currency} ${formatNumber(min)}`
+    } else if (max != null) {
+      amount = `${apiTender.currency} ${formatNumber(max)}`
+    } else {
+      amount = 'Value not specified'
+    }
+    return {
+      ...apiTender,
+      amount,
+      postedTime: apiTender?.created_at ? new Date(apiTender.created_at).toLocaleDateString() : 'Recently',
+      description: apiTender?.description || apiTender?.tender_description || '',
+      tags: Array.isArray(apiTender?.tags) ? apiTender.tags : []
+    }
+  }
+
+  // Normalize opportunities for amount and type casing
+  const transformOpportunityAdminItem = (apiOpp) => {
+    const min = apiOpp?.amount_min != null ? Number(apiOpp.amount_min) : undefined
+    const max = apiOpp?.amount_max != null ? Number(apiOpp.amount_max) : undefined
+    let amount
+    if (min != null && max != null) {
+      amount = min === max
+        ? `${apiOpp.currency} ${formatNumber(min)}`
+        : `${apiOpp.currency} ${formatNumber(min)} - ${apiOpp.currency} ${formatNumber(max)}`
+    } else if (min != null) {
+      amount = `${apiOpp.currency} ${formatNumber(min)}`
+    } else if (max != null) {
+      amount = `${apiOpp.currency} ${formatNumber(max)}`
+    } else {
+      amount = 'Amount not specified'
+    }
+    return {
+      ...apiOpp,
+      amount,
+      type: apiOpp?.type ? titleCaseDash(apiOpp.type) : apiOpp?.type,
+      postedTime: apiOpp?.created_at ? new Date(apiOpp.created_at).toLocaleDateString() : 'Recently',
+      description: apiOpp?.description || apiOpp?.opportunity_description || '',
+      detailed_description: apiOpp?.detailed_description || '',
+      eligibility: apiOpp?.eligibility || [],
+      applicationProcess: apiOpp?.applicationProcess || [],
+      benefits: apiOpp?.benefits || [],
+      requirements: apiOpp?.requirements || [],
+      tags: Array.isArray(apiOpp?.tags) ? apiOpp.tags : [],
+      poster: apiOpp?.poster, // Include the poster field from backend
+      external_url: apiOpp?.external_url,
+      contact_email: apiOpp?.contact_email,
+      documents: apiOpp?.documents || []
+    }
+  }
+
+  // Filter data based on status filter
+  const filterDataByStatus = (data, statusFilter) => {
+    if (statusFilter === 'all') return data
+    return data.filter(item => {
+      if (statusFilter === 'pending') return item.approval_status === 'pending'
+      if (statusFilter === 'active') return item.approval_status === 'approved' || item.status === 'active'
+      if (statusFilter === 'expired') return item.status === 'expired'
+      if (statusFilter === 'rejected') return item.approval_status === 'rejected'
+      return true
+    })
+  }
+
+  // Card component for individual items - renders different designs based on type
+  const ContentCard = ({ item, type, columns }) => {
+
+    // Admin Actions component
+    const AdminActions = () => (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px'
+      }}>
+        <button 
+          onClick={(e) => {
+            e.stopPropagation()
+            handleViewDetails(item, type)
+          }}
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: '#6b7280',
+            cursor: 'pointer',
+            padding: '4px',
+            borderRadius: '4px',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = '#f3f4f6'
+            e.target.style.color = '#16a34a'
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'transparent'
+            e.target.style.color = '#6b7280'
+          }}
+        >
+          <Eye size={14} />
+        </button>
+        {item.approval_status === 'pending' && (
+          <>
+        <button 
+          onClick={(e) => {
+            e.stopPropagation()
+                handleApprove(item, type)
+          }}
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+                color: '#16a34a',
+            cursor: 'pointer',
+            padding: '4px',
+            borderRadius: '4px',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#dcfce7'
+                e.target.style.color = '#15803d'
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'transparent'
+                e.target.style.color = '#16a34a'
+          }}
+        >
+              <CheckCircle size={14} />
+        </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation()
+                handleReject(item, type)
+              }}
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: '#dc2626',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: '4px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#fee2e2'
+                e.target.style.color = '#b91c1c'
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'transparent'
+                e.target.style.color = '#dc2626'
+              }}
+            >
+              <XCircle size={14} />
+            </button>
+          </>
+        )}
+        {item.approval_status === 'rejected' && (
+        <button 
+          onClick={(e) => {
+            e.stopPropagation()
+            handleDelete(item, type)
+          }}
+          style={{
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: '#dc2626',
+            cursor: 'pointer',
+            padding: '4px',
+            borderRadius: '4px',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = '#fee2e2'
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'transparent'
+          }}
+        >
+          <Trash2 size={14} />
+        </button>
+        )}
+      </div>
+    )
+
+    // Render different card types
+    if (type === 'tenders') {
+      const SectorIcon = getSectorIcon(item.sector || item.industry)
+      const sectorColor = getSectorColor(item.sector || item.industry)
+      const daysUntilDeadline = getDaysUntilDeadline(item.deadline)
+      const isDeadlineUrgent = daysUntilDeadline <= 7
+
+      return (
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          border: '1px solid #f0f0f0',
+          position: 'relative',
+          transition: 'all 0.2s ease-in-out',
+          cursor: 'pointer',
+          height: '480px',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+        onClick={() => handleViewDetails(item, type)}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+          e.currentTarget.style.transform = 'translateY(-2px)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+          e.currentTarget.style.transform = 'translateY(0)'
+        }}>
+          
+          
+
+          {/* Cover Image */}
+          <div style={{ position: 'relative' }}>
+            {item.coverImage ? (
+              <img 
+                src={item.coverImage} 
+                alt={item.title}
+                style={{
+                  width: '100%',
+                  height: '200px',
+                  objectFit: 'cover'
+                }}
+              />
+            ) : (
+              <div style={{
+                width: '100%',
+                height: '200px',
+                backgroundColor: '#f8f9fa',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#64748b'
+              }}>
+                <SectorIcon size={48} color={sectorColor} />
+              </div>
+            )}
+            
+            {/* Overlay badges */}
+            <div style={{
+              position: 'absolute',
+              top: '12px',
+              left: '12px',
+              right: '12px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start'
+            }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{
+                  fontSize: '12px',
+                  color: 'white',
+                  backgroundColor: sectorColor,
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  fontWeight: '600',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  {item.sector}
+                </span>
+                {item.isUrgent && (
+                  <span style={{
+                    fontSize: '10px',
+                    color: 'white',
+                    backgroundColor: '#3b82f6',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    fontWeight: '700',
+                    letterSpacing: '0.5px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: '20px',
+                    lineHeight: '1'
+                  }}>
+                    URGENT
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* Title */}
+            <h2 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#1a1a1a',
+              margin: '0 0 12px 0',
+              lineHeight: '1.3'
+            }}>
+              {item.title}
+            </h2>
+
+            {/* Organization */}
+            <div style={{
+              fontSize: '13px',
+              color: '#64748b',
+              marginBottom: '12px',
+              fontWeight: '500'
+            }}>
+              {item.organization}
+            </div>
+
+            {/* Location and Deadline */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              marginBottom: '12px',
+              flexWrap: 'wrap',
+              flexShrink: 0
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                color: '#64748b'
+              }}>
+                <MapPin size={14} />
+                {item.location}
+              </div>
+              <span style={{ color: '#e2e8f0' }}>•</span>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                color: isDeadlineUrgent ? '#dc2626' : '#64748b',
+                fontWeight: isDeadlineUrgent ? '600' : '500'
+              }}>
+                <Calendar size={12} />
+                Due: {new Date(item.deadline).toLocaleDateString()} ({daysUntilDeadline} days)
+              </div>
+            </div>
+
+            {/* Description */}
+            <p style={{
+              fontSize: '14px',
+              color: '#475569',
+              lineHeight: '1.5',
+              margin: '0 0 12px 0',
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              flex: 1
+            }}>
+              {item.description}
+            </p>
+
+            {/* Tags */}
+            <div style={{ marginBottom: '16px', flexShrink: 0 }}>
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '6px'
+              }}>
+                {item.tags.slice(0, 3).map((tag, index) => (
+                  <span key={index} style={{
+                    backgroundColor: '#f1f5f9',
+                    color: '#475569',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '500'
+                  }}>
+                    {tag}
+                  </span>
+                ))}
+                {item.tags.length > 3 && (
+                  <span style={{
+                    color: '#64748b',
+                    fontSize: '12px',
+                    padding: '4px 8px',
+                    fontWeight: '500'
+                  }}>
+                    +{item.tags.length - 3} more
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingTop: '12px',
+              borderTop: '1px solid #f1f5f9',
+              marginTop: 'auto',
+              flexShrink: 0
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span style={{
+                fontSize: '12px',
+                  fontWeight: '600',
+                  color: item.price === 'Pro' ? '#3b82f6' : '#16a34a',
+                  backgroundColor: item.price === 'Pro' ? '#dbeafe' : '#dcfce7',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  border: `1px solid ${item.price === 'Pro' ? '#93c5fd' : '#bbf7d0'}`
+                }}>
+                  {item.price || 'Free'}
+                </span>
+                
+                {/* Switch Toggle */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handlePriceToggle(item, type)
+                  }}
+                  style={{
+                    position: 'relative',
+                    width: '44px',
+                    height: '24px',
+                    backgroundColor: item.price === 'Pro' ? '#3b82f6' : '#d1d5db',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '2px'
+                  }}
+                >
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    backgroundColor: 'white',
+                    borderRadius: '50%',
+                    transition: 'transform 0.3s ease',
+                    transform: item.price === 'Pro' ? 'translateX(20px)' : 'translateX(0)',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                  }} />
+                </div>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    // handleDownloadDocs(item.id)
+                  }}
+                  style={{
+                    backgroundColor: 'white',
+                    color: '#64748b',
+                    border: '1px solid #e2e8f0',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#f8f9fa'
+                    e.target.style.borderColor = '#16a34a'
+                    e.target.style.color = '#16a34a'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = 'white'
+                    e.target.style.borderColor = '#e2e8f0'
+                    e.target.style.color = '#64748b'
+                  }}
+                >
+                  <Download size={12} />
+                  Docs
+                </button>
+
+
+                {item.approval_status === 'pending' ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                        handleApprove(item, type)
+                  }}
+                  style={{
+                    backgroundColor: '#16a34a',
+                    color: 'white',
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                        transition: 'all 0.2s ease-in-out'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#15803d'
+                    e.target.style.transform = 'translateY(-1px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#16a34a'
+                    e.target.style.transform = 'translateY(0)'
+                  }}
+                >
+                      Approve
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleReject(item, type)
+                      }}
+                      style={{
+                        backgroundColor: '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease-in-out'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = '#dc2626'
+                        e.target.style.transform = 'translateY(-1px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = '#ef4444'
+                        e.target.style.transform = 'translateY(0)'
+                      }}
+                    >
+                      Reject
+                </button>
+              </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      backgroundColor: item.approval_status === 'approved' ? '#dcfce7' : '#fee2e2',
+                      color: item.approval_status === 'approved' ? '#15803d' : '#b91c1c',
+                      border: '1px solid',
+                      borderColor: item.approval_status === 'approved' ? '#bbf7d0' : '#fecaca',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>
+                      {item.approval_status === 'approved' ? 'Approved' : 'Rejected'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if (type === 'opportunities') {
+      const typeColor = getTypeColor(item.type)
+
+      return (
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          border: '1px solid #f0f0f0',
+          position: 'relative',
+          transition: 'all 0.2s ease-in-out',
+          cursor: 'pointer'
+        }}
+        onClick={() => handleViewDetails(item, type)}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+          e.currentTarget.style.transform = 'translateY(-2px)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+          e.currentTarget.style.transform = 'translateY(0)'
+        }}>
+
+          {/* Poster Image */}
+          <div style={{ position: 'relative' }}>
+            <img 
+              src={item.poster} 
+              alt={item.title}
+              style={{
+                width: '100%',
+                height: '200px',
+                objectFit: 'cover'
+              }}
+            />
+            
+            {/* Overlay badges */}
+            <div style={{
+              position: 'absolute',
+              top: '12px',
+              left: '12px',
+              right: '12px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start'
+            }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <span style={{
+                  fontSize: '12px',
+                  color: 'white',
+                  backgroundColor: typeColor,
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  fontWeight: '600',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  {item.type}
+                </span>
+                {/* Urgent badge intentionally not shown for opportunities */}
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div style={{ padding: '20px' }}>
+            {/* Title */}
+            <h2 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#1a1a1a',
+              margin: '0 0 12px 0',
+              lineHeight: '1.3'
+            }}>
+              {item.title}
+            </h2>
+
+            {/* Organization (fallback to category) */}
+            <div style={{
+              fontSize: '13px',
+              color: '#64748b',
+              marginBottom: '12px',
+              fontWeight: '500'
+            }}>
+              {item.organization || item.category}
+            </div>
+
+            {/* Key Info Row */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              marginBottom: '12px',
+              flexWrap: 'wrap'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                color: '#16a34a',
+                fontWeight: '600'
+              }}>
+                <DollarSign size={14} />
+                {item.amount || item.salary}
+              </div>
+              <span style={{ color: '#e2e8f0' }}>•</span>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                color: '#64748b'
+              }}>
+                <Clock size={14} />
+                {item.duration}
+              </div>
+              <span style={{ color: '#e2e8f0' }}>•</span>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                color: '#64748b'
+              }}>
+                <MapPin size={14} />
+                {item.location}
+              </div>
+            </div>
+
+            {/* Deadline */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '13px',
+              color: '#dc2626',
+              marginBottom: '12px',
+              fontWeight: '600'
+            }}>
+              <Calendar size={12} />
+              Deadline: {new Date(item.deadline).toLocaleDateString()}
+            </div>
+
+            {/* Description */}
+            <p style={{
+              fontSize: '14px',
+              color: '#475569',
+              lineHeight: '1.5',
+              margin: '0 0 12px 0',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden'
+            }}>
+              {item.detailedDescription || item.description}
+            </p>
+
+            {/* Tags */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '6px'
+              }}>
+                {item.tags.slice(0, 3).map((tag, index) => (
+                  <span key={index} style={{
+                    backgroundColor: '#f1f5f9',
+                    color: '#475569',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '500'
+                  }}>
+                    {tag}
+                  </span>
+                ))}
+                {item.tags.length > 3 && (
+                  <span style={{
+                    color: '#64748b',
+                    fontSize: '12px',
+                    padding: '4px 8px',
+                    fontWeight: '500'
+                  }}>
+                    +{item.tags.length - 3} more
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingTop: '12px',
+              borderTop: '1px solid #f1f5f9'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span style={{
+                fontSize: '12px',
+                  fontWeight: '600',
+                  color: item.price === 'Pro' ? '#3b82f6' : '#16a34a',
+                  backgroundColor: item.price === 'Pro' ? '#dbeafe' : '#dcfce7',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  border: `1px solid ${item.price === 'Pro' ? '#93c5fd' : '#bbf7d0'}`
+                }}>
+                  {item.price || 'Free'}
+                </span>
+                
+                {/* Switch Toggle */}
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handlePriceToggle(item, type)
+                  }}
+                  style={{
+                    position: 'relative',
+                    width: '44px',
+                    height: '24px',
+                    backgroundColor: item.price === 'Pro' ? '#3b82f6' : '#d1d5db',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '2px'
+                  }}
+                >
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    backgroundColor: 'white',
+                    borderRadius: '50%',
+                    transition: 'transform 0.3s ease',
+                    transform: item.price === 'Pro' ? 'translateX(20px)' : 'translateX(0)',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                  }} />
+                </div>
+              </div>
+
+              {item.approval_status === 'pending' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                      handleApprove(item, type)
+                }}
+                style={{
+                  backgroundColor: '#16a34a',
+                  color: 'white',
+                  border: 'none',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                      transition: 'all 0.2s ease-in-out'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#15803d'
+                  e.target.style.transform = 'translateY(-1px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#16a34a'
+                  e.target.style.transform = 'translateY(0)'
+                }}
+                onMouseDown={(e) => {
+                  e.target.style.transform = 'translateY(1px) scale(0.95)'
+                }}
+                onMouseUp={(e) => {
+                  e.target.style.transform = 'translateY(-1px) scale(1)'
+                }}
+              >
+                    Approve
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleReject(item, type)
+                    }}
+                    style={{
+                      backgroundColor: '#ef4444',
+                      color: 'white',
+                      border: 'none',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease-in-out'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#dc2626'
+                      e.target.style.transform = 'translateY(-1px)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#ef4444'
+                      e.target.style.transform = 'translateY(0)'
+                    }}
+                    onMouseDown={(e) => {
+                      e.target.style.transform = 'translateY(1px) scale(0.95)'
+                    }}
+                    onMouseUp={(e) => {
+                      e.target.style.transform = 'translateY(-1px) scale(1)'
+                    }}
+                  >
+                    Reject
+              </button>
+            </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    backgroundColor: item.approval_status === 'approved' ? '#dcfce7' : '#fee2e2',
+                    color: item.approval_status === 'approved' ? '#15803d' : '#b91c1c',
+                    border: '1px solid',
+                    borderColor: item.approval_status === 'approved' ? '#bbf7d0' : '#fecaca',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '600'
+                  }}>
+                    {item.approval_status === 'approved' ? 'Approved' : 'Rejected'}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // Default job card design - EXACT copy from merit app
+    return (
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        padding: '16px 12px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        border: '1px solid #f0f0f0',
+        position: 'relative',
+        transition: 'all 0.2s ease-in-out',
+        cursor: 'pointer'
+      }}
+      onClick={() => handleViewDetails(item, type)}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+        e.currentTarget.style.transform = 'translateY(-2px)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+        e.currentTarget.style.transform = 'translateY(0)'
+      }}>
+        
+        
+
+        {/* Company Profile Header */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          marginBottom: '10px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+            <img 
+              src={item.logo || item.company_logo || 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop'} 
+              alt={item.company}
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '22px',
+                objectFit: 'cover',
+                border: '2px solid #f8f9fa'
+              }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3 style={{
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#1a1a1a',
+                margin: '0 0 1px 0',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {item.company}
+              </h3>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  color: '#64748b'
+                }}>
+                  {item.industry}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Job Title */}
+        <h2 style={{
+          fontSize: '16px',
+          fontWeight: '600',
+          color: '#1a1a1a',
+          margin: '0 0 8px 0',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px'
+        }}>
+          {item.title}
+          {item.urgentHiring && (
+            <Star size={14} color="#3b82f6" fill="#3b82f6" />
+          )}
+        </h2>
+
+        {/* Job Location and Status */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          marginBottom: '8px',
+          fontSize: '12px',
+          color: '#666',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+            <MapPin size={11} />
+            {item.location}
+          </div>
+          <span>•</span>
+          <span>{item.postedTime}</span>
+          {item.isRemote && (
+            <>
+              <span>•</span>
+              <span style={{
+                color: '#16a34a',
+                fontSize: '11px',
+                fontWeight: '500'
+              }}>
+                Remote
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* Quick Info */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '8px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '3px',
+            fontSize: '12px',
+            color: '#16a34a',
+            fontWeight: '600'
+          }}>
+            <DollarSign size={12} />
+            {item.salary}
+          </div>
+          <span style={{ color: '#e2e8f0' }}>•</span>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '3px',
+            fontSize: '12px',
+            color: '#64748b'
+          }}>
+            <Briefcase size={12} />
+            {item.type}
+          </div>
+          <span style={{ color: '#e2e8f0' }}>•</span>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '3px',
+            fontSize: '12px',
+            color: '#64748b'
+          }}>
+            <Clock size={12} />
+            {item.experience}
+          </div>
+        </div>
+
+        {/* Description */}
+        <p style={{
+          fontSize: '13px',
+          color: '#475569',
+          lineHeight: '1.4',
+          margin: '0 0 8px 0',
+          display: '-webkit-box',
+          WebkitLineClamp: 1,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden'
+        }}>
+          {item.description}
+        </p>
+
+        {/* Skills */}
+        <div style={{ marginBottom: '10px' }}>
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '4px'
+          }}>
+            {item.skills.slice(0, 4).map((skill, index) => (
+              <span key={index} style={{
+                backgroundColor: '#f1f5f9',
+                color: '#475569',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: '500'
+              }}>
+                {skill}
+              </span>
+            ))}
+            {item.skills.length > 4 && (
+              <span style={{
+                color: '#64748b',
+                fontSize: '11px',
+                padding: '2px 6px',
+                fontWeight: '500'
+              }}>
+                +{item.skills.length - 4} more
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingTop: '8px',
+          borderTop: '1px solid #f1f5f9'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: item.price === 'Pro' ? '#3b82f6' : '#16a34a',
+              backgroundColor: item.price === 'Pro' ? '#dbeafe' : '#dcfce7',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              border: `1px solid ${item.price === 'Pro' ? '#93c5fd' : '#bbf7d0'}`
+            }}>
+              {item.price || 'Free'}
+            </span>
+            
+            {/* Switch Toggle */}
+            <div
+              onClick={(e) => {
+                e.stopPropagation()
+                handlePriceToggle(item, type)
+              }}
+              style={{
+                position: 'relative',
+                width: '44px',
+                height: '24px',
+                backgroundColor: item.price === 'Pro' ? '#3b82f6' : '#d1d5db',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '2px'
+              }}
+            >
+              <div style={{
+                width: '20px',
+                height: '20px',
+                backgroundColor: 'white',
+                borderRadius: '50%',
+                transition: 'transform 0.3s ease',
+                transform: item.price === 'Pro' ? 'translateX(20px)' : 'translateX(0)',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+              }} />
+            </div>
+          </div>
+
+          {item.approval_status === 'pending' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+                  handleApprove(item, type)
+            }}
+            style={{
+              backgroundColor: '#16a34a',
+              color: 'white',
+              border: 'none',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease-in-out'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#15803d'
+              e.target.style.transform = 'translateY(-1px)'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = '#16a34a'
+              e.target.style.transform = 'translateY(0)'
+            }}
+          >
+                Approve
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleReject(item, type)
+                }}
+                style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#dc2626'
+                  e.target.style.transform = 'translateY(-1px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#ef4444'
+                  e.target.style.transform = 'translateY(0)'
+                }}
+              >
+                Reject
+          </button>
+            </div>
+          ) : (
+            <span style={{
+              backgroundColor: item.approval_status === 'approved' ? '#dcfce7' : '#fee2e2',
+              color: item.approval_status === 'approved' ? '#15803d' : '#b91c1c',
+              border: '1px solid',
+              borderColor: item.approval_status === 'approved' ? '#bbf7d0' : '#fecaca',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: '600'
+            }}>
+              {item.approval_status === 'approved' ? 'Approved' : 'Rejected'}
+            </span>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   const ContentTable = ({ type, data, columns }) => (
     <div style={{
@@ -1251,148 +1988,36 @@ const Content = () => {
         </div>
       </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead style={{ backgroundColor: '#f8fafc' }}>
-            <tr>
-              <th style={{
-                textAlign: 'left',
-                padding: '12px 24px',
-                fontWeight: '500',
-                color: '#374151',
-                fontSize: '14px'
-              }}>
-                <input
-                  type="checkbox"
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedItems(data.map(item => item.id))
-                    } else {
-                      setSelectedItems([])
-                    }
-                  }}
-                />
-              </th>
-              {columns.map((column) => (
-                <th key={column.key} style={{
-                  textAlign: 'left',
-                  padding: '12px 24px',
-                  fontWeight: '500',
-                  color: '#374151',
-                  fontSize: '14px'
-                }}>
-                  {column.label}
-                </th>
-              ))}
-              <th style={{
-                textAlign: 'right',
-                padding: '12px 24px',
-                fontWeight: '500',
-                color: '#374151',
-                fontSize: '14px'
-              }}>
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+      {/* Card Grid */}
+      <div style={{
+        padding: '24px',
+        display: 'grid',
+        gridTemplateColumns: screenSize.isMobile 
+          ? '1fr' 
+          : screenSize.isDesktop 
+            ? 'repeat(3, 1fr)' 
+            : 'repeat(2, 1fr)',
+        gap: '20px'
+      }}>
             {data.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length + 2} style={{
+          <div style={{
+            gridColumn: '1 / -1',
                   padding: '48px',
                   textAlign: 'center',
                   color: '#64748b'
                 }}>
                   No {type} found
-                </td>
-              </tr>
+          </div>
             ) : (
               data.map((item) => (
-                <tr key={item.id} style={{
-                  borderBottom: '1px solid #e2e8f0'
-                }}>
-                  <td style={{ padding: '12px 24px' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.includes(item.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedItems([...selectedItems, item.id])
-                        } else {
-                          setSelectedItems(selectedItems.filter(id => id !== item.id))
-                        }
-                      }}
-                    />
-                  </td>
-                  {columns.map((column) => (
-                    <td key={column.key} style={{
-                      padding: '12px 24px',
-                      fontSize: '14px',
-                      color: '#0f172a'
-                    }}>
-                      {column.render ? column.render(item) : item[column.key]}
-                    </td>
-                  ))}
-                  <td style={{
-                    padding: '12px 24px',
-                    textAlign: 'right'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      gap: '8px'
-                    }}>
-                      <button 
-                        onClick={() => handleViewDetails(item, type)}
-                        style={{
-                          backgroundColor: 'transparent',
-                          border: 'none',
-                          color: '#6b7280',
-                          cursor: 'pointer',
-                          padding: '4px',
-                          borderRadius: '4px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = '#f3f4f6'
-                          e.target.style.color = '#16a34a'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = 'transparent'
-                          e.target.style.color = '#6b7280'
-                        }}
-                      >
-                        <Eye size={16} />
-                      </button>
-                      <button style={{
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        color: '#6b7280',
-                        cursor: 'pointer',
-                        padding: '4px'
-                      }} onClick={() => {
-                        const next = item.status === 'Active' ? 'Paused' : 'Active'
-                        handleStatusChange(item, type, next)
-                      }}>
-                        <Edit size={16} />
-                      </button>
-                      <button style={{
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        color: '#dc2626',
-                        cursor: 'pointer',
-                        padding: '4px'
-                      }} onClick={() => handleDelete(item, type)}>
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+            <ContentCard 
+              key={item.id} 
+              item={item} 
+              type={type} 
+              columns={columns} 
+            />
+          ))
+        )}
       </div>
     </div>
   )
@@ -1403,7 +2028,7 @@ const Content = () => {
         return (
           <ContentTable
             type="jobs"
-            data={jobsData}
+            data={filterDataByStatus(jobsData, statusFilter)}
             columns={[
               { key: 'title', label: 'Job Title' },
               { key: 'company', label: 'Company' },
@@ -1441,7 +2066,7 @@ const Content = () => {
         return (
           <ContentTable
             type="tenders"
-            data={tendersData}
+            data={filterDataByStatus(tendersData, statusFilter)}
             columns={[
               { key: 'title', label: 'Tender Title' },
               { key: 'organization', label: 'Organization' },
@@ -1479,7 +2104,7 @@ const Content = () => {
         return (
           <ContentTable
             type="opportunities"
-            data={opportunitiesData}
+            data={filterDataByStatus(opportunitiesData, statusFilter)}
             columns={[
               { key: 'title', label: 'Opportunity Title' },
               { key: 'type', label: 'Type' },
@@ -4358,7 +4983,7 @@ const Content = () => {
                       color: '#374151',
                       margin: 0
                     }}>
-                      {selectedItem.about || 'Experienced software developer with 5+ years of expertise in frontend development, specializing in React, TypeScript, and modern web technologies. Passionate about creating user-friendly applications and contributing to innovative projects.'}
+                      {selectedItem.about}
                     </p>
                   </div>
 
@@ -4377,7 +5002,7 @@ const Content = () => {
                       flexWrap: 'wrap',
                       gap: '8px'
                     }}>
-                      {(selectedItem.skills || ['React', 'TypeScript', 'JavaScript', 'Node.js', 'CSS', 'HTML', 'Git', 'AWS']).map((skill, index) => (
+                      {(Array.isArray(selectedItem.skills) ? selectedItem.skills : []).map((skill, index) => (
                         <span key={index} style={{
                           backgroundColor: '#f1f5f9',
                           color: '#475569',
@@ -4403,20 +5028,7 @@ const Content = () => {
                       Experience
                     </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      {(selectedItem.experience || [
-                        {
-                          title: 'Senior Frontend Developer',
-                          company: 'TechCorp Solutions',
-                          duration: '2022 - Present',
-                          description: 'Led development of multiple React applications, mentored junior developers, and implemented best practices for code quality and performance.'
-                        },
-                        {
-                          title: 'Frontend Developer',
-                          company: 'Digital Innovations Ltd',
-                          duration: '2020 - 2022',
-                          description: 'Developed responsive web applications using React and TypeScript, collaborated with design and backend teams.'
-                        }
-                      ]).map((exp, index) => (
+                      {(Array.isArray(selectedItem.experience) ? selectedItem.experience : []).map((exp, index) => (
                         <div key={index} style={{
                           padding: '16px',
                           backgroundColor: '#f8fafc',
@@ -4534,20 +5146,7 @@ const Content = () => {
                       Certificates
                     </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {(selectedItem.certificates || [
-                        {
-                          name: 'React Developer Certification',
-                          issuer: 'Meta',
-                          date: '2023',
-                          image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=60&h=60&fit=crop'
-                        },
-                        {
-                          name: 'AWS Certified Developer',
-                          issuer: 'Amazon Web Services',
-                          date: '2022',
-                          image: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=60&h=60&fit=crop'
-                        }
-                      ]).map((cert, index) => (
+                      {(Array.isArray(selectedItem.certificates) ? selectedItem.certificates : []).map((cert, index) => (
                         <div key={index} style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -4718,6 +5317,8 @@ const Content = () => {
       )}
     </div>
   )
+
+
 }
 
 export default Content

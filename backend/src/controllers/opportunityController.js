@@ -14,7 +14,10 @@ const getAllOpportunities = async (req, res) => {
     } = req.query;
 
     const offset = (page - 1) * limit;
-    const whereClause = { status };
+    const whereClause = { 
+      status,
+      approval_status: 'approved'
+    };
 
     // Build search conditions
     if (search) {
@@ -105,7 +108,11 @@ const getOpportunityById = async (req, res) => {
 
 const createOpportunity = async (req, res) => {
   try {
-    const opportunityData = { ...req.body, created_by: req.user.id };
+    const opportunityData = { 
+      ...req.body, 
+      created_by: req.user.id,
+      approval_status: 'pending'
+    };
 
     // Handle uploaded files
     if (req.files) {

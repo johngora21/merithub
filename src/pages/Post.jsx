@@ -168,7 +168,8 @@ const Post = ({ onClose }) => {
           salary_max,
           currency: formData.currency || 'USD',
           application_deadline: formData.deadline || undefined,
-          posted_by: 'individual'
+          posted_by: 'individual',
+          country: formData.country || 'Global'
         }
         Object.entries(jobBody).forEach(([k, v]) => {
           if (v !== undefined && v !== null) fd.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
@@ -1508,6 +1509,55 @@ const Post = ({ onClose }) => {
                   </select>
                 </div>
               </>
+            )}
+
+            {/* Cover Image (opportunities only) */}
+            {formData.type === 'opportunity' && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '6px',
+                  display: 'block'
+                }}>
+                  Cover Image
+                </label>
+                <div style={{
+                  border: '2px dashed #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s ease-in-out',
+                  backgroundColor: '#fafafa'
+                }}
+                onClick={() => document.getElementById('opportunity-cover-upload').click()}
+                onMouseEnter={(e) => e.target.style.borderColor = '#3b82f6'}
+                onMouseLeave={(e) => e.target.style.borderColor = '#e2e8f0'}
+                >
+                  <Upload size={24} color="#9ca3af" style={{ marginBottom: '8px' }} />
+                  <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
+                    Click to upload cover image
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+                    Only images are allowed (Max 5MB)
+                  </div>
+                </div>
+                <input
+                  id="opportunity-cover-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleLogoChange(e, 'coverImage')}
+                  style={{ display: 'none' }}
+                />
+                {formData.coverImage && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                    <img src={URL.createObjectURL(formData.coverImage)} alt="cover image" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
+                    <div style={{ fontSize: '12px', color: '#374151' }}>{formData.coverImage.name}</div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Common Fields */}

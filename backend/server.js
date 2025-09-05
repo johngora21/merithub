@@ -40,10 +40,27 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Trust proxy so req.ip reflects real client behind proxies
+app.set('trust proxy', 1);
+
+// Rate limiting with whitelist support via env RATE_LIMIT_WHITELIST_IPS=ip1,ip2
+const whitelist = (process.env.RATE_LIMIT_WHITELIST_IPS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    const forwarded = req.headers['x-forwarded-for'];
+    const clientIp = Array.isArray(forwarded)
+      ? forwarded[0]
+      : (forwarded?.split(',')[0]?.trim() || req.ip);
+    return whitelist.includes(clientIp);
+  },
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'

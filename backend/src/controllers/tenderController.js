@@ -14,7 +14,10 @@ const getAllTenders = async (req, res) => {
     } = req.query;
 
     const offset = (page - 1) * limit;
-    const whereClause = { status };
+    const whereClause = { 
+      status,
+      approval_status: 'approved'
+    };
 
     // Build search conditions
     if (search) {
@@ -112,7 +115,8 @@ const createTender = async (req, res) => {
     
     const tenderData = {
       ...req.body,
-      created_by: req.user.id
+      created_by: req.user.id,
+      approval_status: 'pending'
     };
 
     // Parse JSON fields that come as strings from FormData

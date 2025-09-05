@@ -40,6 +40,19 @@ Application.belongsTo(User, { foreignKey: 'reviewed_by', as: 'reviewer' });
 User.hasMany(Course, { foreignKey: 'created_by', as: 'createdCourses' });
 Course.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 
+// Approver associations
+User.hasMany(Job, { foreignKey: 'approved_by', as: 'approvedJobs' });
+Job.belongsTo(User, { foreignKey: 'approved_by', as: 'approver' });
+
+User.hasMany(Tender, { foreignKey: 'approved_by', as: 'approvedTenders' });
+Tender.belongsTo(User, { foreignKey: 'approved_by', as: 'approver' });
+
+User.hasMany(Opportunity, { foreignKey: 'approved_by', as: 'approvedOpportunities' });
+Opportunity.belongsTo(User, { foreignKey: 'approved_by', as: 'approver' });
+
+User.hasMany(Course, { foreignKey: 'approved_by', as: 'approvedCourses' });
+Course.belongsTo(User, { foreignKey: 'approved_by', as: 'approver' });
+
 // Admin Log associations
 User.hasMany(AdminLog, { foreignKey: 'admin_id', as: 'adminLogs' });
 AdminLog.belongsTo(User, { foreignKey: 'admin_id', as: 'admin' });

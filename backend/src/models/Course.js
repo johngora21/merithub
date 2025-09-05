@@ -110,6 +110,31 @@ const Course = sequelize.define('Course', {
       model: 'users',
       key: 'id'
     }
+  },
+  approval_status: {
+    type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+    defaultValue: 'pending'
+  },
+  approved_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  approved_at: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  rejection_reason: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  price: {
+    type: DataTypes.ENUM('Free', 'Pro'),
+    defaultValue: 'Free',
+    allowNull: false
   }
 }, {
   tableName: 'courses',
@@ -119,7 +144,8 @@ const Course = sequelize.define('Course', {
     { fields: ['level'] },
     { fields: ['status'] },
     { fields: ['is_free'] },
-    { fields: ['created_at'] }
+    { fields: ['created_at'] },
+    { fields: ['approval_status'] }
   ]
 });
 

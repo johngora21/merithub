@@ -82,7 +82,8 @@ const Tenders = () => {
             submissions: t.submissions_count || 0,
             externalUrl: t.external_url,
             status: t.status || 'active',
-            isUrgent: !!t.is_urgent
+            isUrgent: !!t.is_urgent,
+            price: t.price || 'Free'
           }
         })
         setTenders(transformed)
@@ -679,16 +680,19 @@ const Tenders = () => {
                     marginTop: 'auto',
                     flexShrink: 0
                   }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      fontSize: '12px',
-                      color: '#64748b'
+                    {/* FREE/PRO Badge */}
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: tender.price === 'Pro' ? '#3b82f6' : '#16a34a',
+                      backgroundColor: tender.price === 'Pro' ? '#dbeafe' : '#dcfce7',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      border: `1px solid ${tender.price === 'Pro' ? '#93c5fd' : '#bbf7d0'}`,
+                      letterSpacing: '0.5px'
                     }}>
-                      <Users size={12} />
-                      {tender.submissions} submissions
-                    </div>
+                      {tender.price || 'FREE'}
+                    </span>
 
                     <div style={{
                       display: 'flex',

@@ -114,7 +114,6 @@ const Jobs = () => {
       description: apiJob.description,
       benefits: apiJob.benefits || [],
       postedTime: apiJob.created_at ? new Date(apiJob.created_at).toLocaleDateString() : 'Recently',
-      applicants: apiJob.applications_count || 0,
       isRemote: apiJob.work_type === 'remote',
       urgentHiring: apiJob.is_urgent || false,
       price: apiJob.price || null,
@@ -866,16 +865,19 @@ ${user?.first_name} ${user?.last_name}`
                 paddingTop: '8px',
                 borderTop: '1px solid #f1f5f9'
                 }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                  gap: '3px',
-                  fontSize: '11px',
-                    color: '#64748b'
+                  {/* FREE/PRO Badge */}
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: job.price === 'Pro' ? '#3b82f6' : '#16a34a',
+                    backgroundColor: job.price === 'Pro' ? '#dbeafe' : '#dcfce7',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    border: `1px solid ${job.price === 'Pro' ? '#93c5fd' : '#bbf7d0'}`,
+                    letterSpacing: '0.5px'
                   }}>
-                  <Users size={11} />
-                  {job.applicants || 0} applicants
-                  </div>
+                    {job.price || 'FREE'}
+                  </span>
 
                     <button
                       onClick={(e) => {

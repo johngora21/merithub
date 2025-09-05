@@ -11,6 +11,9 @@ const {
   getAllContent,
   updateContentStatus,
   deleteContent,
+  approveContent,
+  rejectContent,
+  updateContentPrice,
   getAdminLogs,
   getAllApplications,
   getFinanceData,
@@ -47,6 +50,13 @@ router.delete('/users/:id', deleteUser);
 router.get('/content', getAllContent);
 // Include content type in params so controller can resolve correct model
 router.put('/content/:type/:id/status', updateContentStatus);
+router.put('/content/:type/:id/approve', approveContent);
+router.put('/content/:type/:id/reject', [
+  body('rejection_reason').notEmpty().withMessage('Rejection reason is required')
+], rejectContent);
+router.put('/content/:type/:id/price', [
+  body('price').isIn(['Free', 'Pro']).withMessage('Price must be Free or Pro')
+], updateContentPrice);
 router.delete('/content/:type/:id', deleteContent);
 
 // Applications management

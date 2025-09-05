@@ -117,6 +117,31 @@ const Job = sequelize.define('Job', {
       model: 'users',
       key: 'id'
     }
+  },
+  approval_status: {
+    type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+    defaultValue: 'pending'
+  },
+  approved_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  approved_at: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  rejection_reason: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  price: {
+    type: DataTypes.ENUM('Free', 'Pro'),
+    defaultValue: 'Free',
+    allowNull: false
   }
 }, {
   tableName: 'jobs',
@@ -128,7 +153,8 @@ const Job = sequelize.define('Job', {
     { fields: ['experience_level'] },
     { fields: ['status'] },
     { fields: ['posted_by'] },
-    { fields: ['created_at'] }
+    { fields: ['created_at'] },
+    { fields: ['approval_status'] }
   ]
 });
 

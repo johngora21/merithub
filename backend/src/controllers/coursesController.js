@@ -3,7 +3,9 @@ const { Course, CourseEnrollment, User } = require('../models');
 const list = async (req, res) => {
   try {
     const { page = 1, limit = 10, status, search } = req.query;
-    const where = {};
+    const where = {
+      approval_status: 'approved'
+    };
     if (status) where.status = status;
     if (search) where.title = { $like: `%${search}%` };
 
@@ -18,7 +20,12 @@ const list = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const course = await Course.create(req.body);
+    const courseData = {
+      ...req.body,
+      created_by: req.user?.id,
+      approval_status: 'pending'
+    };
+    const course = await Course.create(courseData);
     res.json({ course });
   } catch (e) {
     console.error('Course create error:', e);
