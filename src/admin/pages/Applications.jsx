@@ -27,25 +27,44 @@ const Applications = () => {
   const [loadError, setLoadError] = useState('')
 
   // Map backend payloads to the exact UI fields used by the cards
-  const mapJob = (j) => ({
-    id: j.id || j.job_id || `JOB-${j?.id || ''}`,
-    title: j.title || j.position || '',
-    company: j.company || j.company_name || '',
-    industry: j.industry || j.category || '',
-    location: j.location || j.country || '',
-    type: j.type || j.employment_type || '',
-    experience: j.experience || j.experience_level || '',
-    salary: j.salary || j.salary_range || '',
-    postedTime: j.posted_time || j.created_at || '',
-    applicants: j.applicants_count || 0,
-    description: j.description || '',
-    skills: Array.isArray(j.skills) ? j.skills : [],
-    logo: j.logo || j.company_logo || '',
-    urgentHiring: !!(j.is_urgent || j.urgentHiring),
-    isRemote: !!(j.is_remote || j.remote),
-    postedBy: j.posted_by || j.source || 'platform',
-    status: j.status || 'Active'
-  })
+  const mapJob = (j) => {
+    // Use EXACT same salary logic as main Merit app
+    const min = j.salary_min != null ? Number(j.salary_min) : undefined
+    const max = j.salary_max != null ? Number(j.salary_max) : undefined
+    const fmt = (n) => typeof n === 'number' && !Number.isNaN(n) ? n.toLocaleString() : ''
+    let salary
+    if (min != null && max != null) {
+      salary = min === max
+        ? `${j.currency} ${fmt(min)}`
+        : `${j.currency} ${fmt(min)} - ${j.currency} ${fmt(max)}`
+    } else if (min != null) {
+      salary = `${j.currency} ${fmt(min)}`
+    } else if (max != null) {
+      salary = `${j.currency} ${fmt(max)}`
+    } else {
+      salary = 'Salary not specified'
+    }
+
+    return {
+      id: j.id || j.job_id || `JOB-${j?.id || ''}`,
+      title: j.title || j.position || '',
+      company: j.company || j.company_name || '',
+      industry: j.industry || j.category || '',
+      location: j.location || j.country || '',
+      type: j.type || j.employment_type || '',
+      experience: j.experience || j.experience_level || '',
+      salary: salary,
+      postedTime: j.posted_time || j.created_at || '',
+      applicants: j.applicants_count || 0,
+      description: j.description || '',
+      skills: Array.isArray(j.skills) ? j.skills : [],
+      logo: j.logo || j.company_logo || '',
+      urgentHiring: !!(j.is_urgent || j.urgentHiring),
+      isRemote: !!(j.is_remote || j.remote),
+      postedBy: j.posted_by || j.source || 'platform',
+      status: j.status || 'Active'
+    }
+  }
 
   const mapTender = (t) => ({
     id: t.id || t.tender_id || `TENDER-${t?.id || ''}`,
@@ -519,6 +538,28 @@ const Applications = () => {
             }}
             onClick={() => handleItemClick(job)}>
               
+              {/* PRO Badge - Top Right */}
+              {job.postedBy === 'platform' && (
+                <div style={{
+                  position: 'absolute',
+                  top: '12px',
+                  right: '12px',
+                  zIndex: 10
+                }}>
+                  <span style={{
+                    fontSize: '10px',
+                    color: 'white',
+                    backgroundColor: '#3b82f6',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    fontWeight: '600',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}>
+                    PRO
+                  </span>
+                </div>
+              )}
+
               {/* Company Profile Header */}
               <div style={{
                 display: 'flex',
@@ -527,17 +568,35 @@ const Applications = () => {
                 marginBottom: '10px'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                  <img 
-                    src={job.logo} 
-                    alt={job.company}
-                    style={{
+                  {job.logo && job.logo.trim() !== '' ? (
+                    <img 
+                      src={job.logo} 
+                      alt={job.company}
+                      style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '22px',
+                        objectFit: 'cover',
+                        border: '2px solid #f8f9fa'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
                       width: '44px',
                       height: '44px',
                       borderRadius: '22px',
-                      objectFit: 'cover',
-                      border: '2px solid #f8f9fa'
-                    }}
-                  />
+                      backgroundColor: '#f8f9fa',
+                      border: '2px solid #e2e8f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#64748b'
+                    }}>
+                      {job.company ? job.company.charAt(0).toUpperCase() : '?'}
+                    </div>
+                  )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h3 style={{
                       fontSize: '14px',
@@ -562,18 +621,6 @@ const Applications = () => {
                       }}>
                         {job.industry}
                       </span>
-                      {job.postedBy === 'platform' && (
-                        <span style={{
-                          fontSize: '10px',
-                          color: 'white',
-                          backgroundColor: '#3b82f6',
-                          padding: '1px 4px',
-                          borderRadius: '3px',
-                          fontWeight: '600'
-                        }}>
-                          PRO
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -1097,16 +1144,34 @@ const Applications = () => {
                 marginBottom: '16px'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <img 
-                    src={selectedItem.logo} 
-                    alt={selectedItem.company}
-                    style={{
+                  {selectedItem.logo && selectedItem.logo.trim() !== '' ? (
+                    <img 
+                      src={selectedItem.logo} 
+                      alt={selectedItem.company}
+                      style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '24px',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
                       width: '48px',
                       height: '48px',
                       borderRadius: '24px',
-                      objectFit: 'cover'
-                    }}
-                  />
+                      backgroundColor: '#f8f9fa',
+                      border: '2px solid #e2e8f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#64748b'
+                    }}>
+                      {selectedItem.company ? selectedItem.company.charAt(0).toUpperCase() : '?'}
+                    </div>
+                  )}
                   <div>
                     <h2 style={{
                       fontSize: '20px',

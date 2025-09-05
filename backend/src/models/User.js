@@ -69,10 +69,6 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING(100),
     allowNull: true
   },
-  years_experience: {
-    type: DataTypes.STRING(50),
-    allowNull: true
-  },
   employment_status: {
     type: DataTypes.ENUM('employed', 'unemployed', 'self-employed', 'student', 'retired', 'freelancer'),
     allowNull: true

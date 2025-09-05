@@ -20,7 +20,8 @@ const {
   getReportsData,
   getApplicationsOverview,
   getApplicantsForItem,
-  updateApplicantStatus
+  updateApplicantStatus,
+  downloadDocument
 } = require('../controllers/adminController');
 const { body } = require('express-validator');
 
@@ -73,6 +74,9 @@ router.get('/finance', getFinanceData);
 
 // Reports
 router.get('/reports', getReportsData);
+
+// Document download
+router.get('/download/:userId/:documentId', downloadDocument);
 
 module.exports = router;
 
