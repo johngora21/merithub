@@ -32,7 +32,6 @@ const Profile = () => {
     joinDate: '',
     jobTitle: '',
     industry: '',
-    yearsExperience: '',
     employmentStatus: '',
     maritalStatus: '',
     nationality: '',
@@ -87,7 +86,6 @@ const Profile = () => {
       joinDate: apiProfile.created_at ? new Date(apiProfile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '',
       jobTitle: apiProfile.current_job_title || '',
       industry: apiProfile.industry || '',
-      yearsExperience: apiProfile.years_experience || '',
       employmentStatus: apiProfile.employment_status || '',
       maritalStatus: apiProfile.marital_status || '',
       nationality: apiProfile.nationality || '',
@@ -117,20 +115,49 @@ const Profile = () => {
     console.log('Raw experience data from API:', apiExperience)
     return apiExperience.map(exp => {
       const transformed = {
-      id: exp.id,
+        id: exp.id,
         title: exp.title || exp.job_title || '',
         company: exp.company || exp.organization || '',
-      location: exp.location || '',
-      period: exp.start_date && exp.end_date 
-        ? `${new Date(exp.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - ${exp.end_date === 'present' ? 'Present' : new Date(exp.end_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`
-          : exp.period || '',
+        industry: exp.industry || '',
+        location: exp.location || '',
+        startMonth: exp.startMonth || exp.start_month || '',
+        startYear: exp.startYear || exp.start_year || '',
+        endMonth: exp.endMonth || exp.end_month || '',
+        endYear: exp.endYear || exp.end_year || '',
+        isCurrent: exp.isCurrent || exp.is_current || false,
         type: exp.employment_type || exp.type || '',
-      description: exp.description || ''
+        description: exp.description || ''
       }
       console.log('Transformed experience item:', transformed)
       return transformed
     })
   }
+
+  // Function to calculate total experience from experience array
+  const calculateTotalExperience = (experienceArray) => {
+    if (!Array.isArray(experienceArray) || experienceArray.length === 0) return 0;
+    
+    let totalMonths = 0;
+    
+    experienceArray.forEach(exp => {
+      if (exp.startYear && exp.startMonth) {
+        const startDate = new Date(parseInt(exp.startYear), parseInt(exp.startMonth) - 1);
+        const endDate = exp.isCurrent 
+          ? new Date() 
+          : (exp.endYear && exp.endMonth) 
+            ? new Date(parseInt(exp.endYear), parseInt(exp.endMonth) - 1)
+            : new Date();
+        
+        if (endDate >= startDate) {
+          const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                           (endDate.getMonth() - startDate.getMonth());
+          totalMonths += monthsDiff;
+        }
+      }
+    });
+    
+    return Math.floor(totalMonths / 12);
+  };
 
   const transformEducationData = (apiEducation) => {
     console.log('Raw education data from API:', apiEducation)
@@ -282,7 +309,6 @@ const Profile = () => {
         // Job-related fields
         current_job_title: editData.personal.jobTitle || null,
         industry: editData.personal.industry || null,
-        years_experience: editData.personal.yearsExperience || null,
         employment_status: editData.personal.employmentStatus ? editData.personal.employmentStatus.toLowerCase() : null,
         
         // Personal information fields
@@ -304,9 +330,17 @@ const Profile = () => {
         profile_link3_url: editData.personal.profileLink3.url || null,
         
         // Complex data fields
-        education: editData.education,
-        certificates: editData.certificates.map(cert => ({
-          id: cert.id,
+        education: editData.education.map((edu, index) => ({
+          id: Date.now() + index + Math.random(), // Always generate new unique ID
+          level: edu.level,
+          program: edu.program,
+          school: edu.school,
+          location: edu.location,
+          period: edu.period,
+          gpa: edu.gpa
+        })),
+        certificates: editData.certificates.map((cert, index) => ({
+          id: Date.now() + index + Math.random(), // Always generate new unique ID
           name: cert.name,
           issuing_organization: cert.issuer,
           issue_date: cert.issueDate,
@@ -315,9 +349,22 @@ const Profile = () => {
           certificate_type: cert.type,
           certificate_file: cert.certificateFile
         })),
-        experience: editData.experience,
-        skills: editData.skills.map(skill => ({
-          id: skill.id,
+        experience: editData.experience.map((exp, index) => ({
+          id: Date.now() + index + Math.random(), // Always generate new unique ID
+          title: exp.title,
+          company: exp.company,
+          industry: exp.industry,
+          location: exp.location,
+          startMonth: exp.startMonth,
+          startYear: exp.startYear,
+          endMonth: exp.endMonth,
+          endYear: exp.endYear,
+          isCurrent: exp.isCurrent,
+          type: exp.type,
+          description: exp.description
+        })),
+        skills: editData.skills.map((skill, index) => ({
+          id: Date.now() + index + Math.random(), // Always generate new unique ID
           name: skill.name,
           level: skill.level,
           category: skill.category,
@@ -1917,38 +1964,6 @@ const Profile = () => {
                        </select>
                      </div>
                      
-                     <div>
-                       <label style={{
-                         fontSize: '12px',
-                         fontWeight: '500',
-                         color: '#64748b',
-                         marginBottom: '6px',
-                         display: 'block'
-                       }}>
-                         Years of Experience
-                       </label>
-                       <select
-                         value={editData.personal.yearsExperience}
-                         onChange={(e) => setEditData({
-                           ...editData,
-                           personal: {...editData.personal, yearsExperience: e.target.value}
-                         })}
-                         style={{
-                           width: '100%',
-                           padding: '10px 12px',
-                           border: '1px solid #e2e8f0',
-                           borderRadius: '6px',
-                           fontSize: '14px',
-                           outline: 'none'
-                         }}
-                       >
-                         <option value="0-1 years">0-1 years</option>
-                         <option value="1-3 years">1-3 years</option>
-                         <option value="3-5 years">3-5 years</option>
-                         <option value="5-10 years">5-10 years</option>
-                         <option value="10+ years">10+ years</option>
-                       </select>
-                     </div>
                    </div>
                    
                    <div style={{ 
@@ -3210,6 +3225,7 @@ const Profile = () => {
                          id: Date.now(),
                          title: '',
                          company: '',
+                         industry: '',
                          location: '',
                          period: '',
                          type: 'Full-time',
@@ -3305,11 +3321,59 @@ const Profile = () => {
                            onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                          />
                        </div>
+                       
+                       <div>
+                         <label style={{
+                           fontSize: '12px',
+                           fontWeight: '500',
+                           color: '#64748b',
+                           marginBottom: '4px',
+                           display: 'block'
+                         }}>
+                           Industry Sector
+                         </label>
+                         <select
+                           value={exp.industry || ''}
+                           onChange={(e) => {
+                             const newExp = [...editData.experience]
+                             newExp[index] = {...exp, industry: e.target.value}
+                             setEditData({...editData, experience: newExp})
+                           }}
+                           style={{
+                             width: '100%',
+                             padding: '8px 10px',
+                             border: '1px solid #e2e8f0',
+                             borderRadius: '4px',
+                             fontSize: '14px',
+                             outline: 'none'
+                           }}
+                           onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                           onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                         >
+                           <option value="">Select Industry</option>
+                           <option value="Technology">Technology</option>
+                           <option value="Healthcare">Healthcare</option>
+                           <option value="Finance">Finance</option>
+                           <option value="Education">Education</option>
+                           <option value="Manufacturing">Manufacturing</option>
+                           <option value="Retail">Retail</option>
+                           <option value="Construction">Construction</option>
+                           <option value="Transportation">Transportation</option>
+                           <option value="Energy">Energy</option>
+                           <option value="Media & Entertainment">Media & Entertainment</option>
+                           <option value="Agriculture">Agriculture</option>
+                           <option value="Real Estate">Real Estate</option>
+                           <option value="Consulting">Consulting</option>
+                           <option value="Government">Government</option>
+                           <option value="Non-Profit">Non-Profit</option>
+                           <option value="Other">Other</option>
+                         </select>
+                       </div>
                      </div>
                      
                      <div style={{ 
                        display: 'grid', 
-                       gridTemplateColumns: screenSize.isMobile ? '1fr' : screenSize.isTablet ? '1fr 1fr' : '1fr 1fr 1fr', 
+                       gridTemplateColumns: screenSize.isMobile ? '1fr' : screenSize.isTablet ? '1fr 1fr' : '1fr 1fr', 
                        gap: '12px', 
                        marginBottom: '12px' 
                      }}>
@@ -3343,6 +3407,79 @@ const Profile = () => {
                            onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                          />
                        </div>
+                     </div>
+                     
+                     <div style={{ 
+                       display: 'grid', 
+                       gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                       gap: '12px', 
+                       marginBottom: '12px' 
+                     }}>
+                       <div>
+                         <label style={{
+                           fontSize: '12px',
+                           fontWeight: '500',
+                           color: '#64748b',
+                           marginBottom: '4px',
+                           display: 'block'
+                         }}>
+                           Start Date
+                         </label>
+                         <div style={{ display: 'flex', gap: '8px' }}>
+                           <select
+                             value={exp.startMonth || ''}
+                             onChange={(e) => {
+                               const newExp = [...editData.experience]
+                               newExp[index] = {...exp, startMonth: e.target.value}
+                               setEditData({...editData, experience: newExp})
+                             }}
+                             style={{
+                               flex: 1,
+                               padding: '8px 10px',
+                               border: '1px solid #e2e8f0',
+                               borderRadius: '4px',
+                               fontSize: '14px',
+                               outline: 'none'
+                             }}
+                           >
+                             <option value="">Month</option>
+                             <option value="01">January</option>
+                             <option value="02">February</option>
+                             <option value="03">March</option>
+                             <option value="04">April</option>
+                             <option value="05">May</option>
+                             <option value="06">June</option>
+                             <option value="07">July</option>
+                             <option value="08">August</option>
+                             <option value="09">September</option>
+                             <option value="10">October</option>
+                             <option value="11">November</option>
+                             <option value="12">December</option>
+                           </select>
+                           <input
+                             type="number"
+                             value={exp.startYear || ''}
+                             placeholder="Year"
+                             min="1950"
+                             max={new Date().getFullYear()}
+                             onChange={(e) => {
+                               const newExp = [...editData.experience]
+                               newExp[index] = {...exp, startYear: e.target.value}
+                               setEditData({...editData, experience: newExp})
+                             }}
+                             style={{
+                               flex: 1,
+                               padding: '8px 10px',
+                               border: '1px solid #e2e8f0',
+                               borderRadius: '4px',
+                               fontSize: '14px',
+                               outline: 'none'
+                             }}
+                             onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                             onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                           />
+                         </div>
+                       </div>
                        
                        <div>
                          <label style={{
@@ -3352,30 +3489,100 @@ const Profile = () => {
                            marginBottom: '4px',
                            display: 'block'
                          }}>
-                           Period
+                           End Date
                          </label>
-                         <input
-                           type="text"
-                           value={exp.period}
-                           placeholder="e.g. Jan 2022 - Present"
-                           onChange={(e) => {
-                             const newExp = [...editData.experience]
-                             newExp[index] = {...exp, period: e.target.value}
-                             setEditData({...editData, experience: newExp})
-                           }}
-                           style={{
-                             width: '100%',
-                             padding: '8px 10px',
-                             border: '1px solid #e2e8f0',
-                             borderRadius: '4px',
-                             fontSize: '14px',
-                             outline: 'none'
-                           }}
-                           onFocus={(e) => e.target.style.borderColor = '#16a34a'}
-                           onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                         />
+                         <div style={{ display: 'flex', gap: '8px' }}>
+                           <label style={{
+                             display: 'flex',
+                             alignItems: 'center',
+                             gap: '6px',
+                             fontSize: '12px',
+                             color: '#64748b',
+                             cursor: 'pointer'
+                           }}>
+                             <input
+                               type="checkbox"
+                               checked={exp.isCurrent || false}
+                               onChange={(e) => {
+                                 const newExp = [...editData.experience]
+                                 newExp[index] = {
+                                   ...exp, 
+                                   isCurrent: e.target.checked,
+                                   endMonth: e.target.checked ? null : exp.endMonth,
+                                   endYear: e.target.checked ? null : exp.endYear
+                                 }
+                                 setEditData({...editData, experience: newExp})
+                               }}
+                               style={{ margin: 0 }}
+                             />
+                             Present
+                           </label>
+                         </div>
+                         {!exp.isCurrent && (
+                           <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                             <select
+                               value={exp.endMonth || ''}
+                               onChange={(e) => {
+                                 const newExp = [...editData.experience]
+                                 newExp[index] = {...exp, endMonth: e.target.value}
+                                 setEditData({...editData, experience: newExp})
+                               }}
+                               style={{
+                                 flex: 1,
+                                 padding: '8px 10px',
+                                 border: '1px solid #e2e8f0',
+                                 borderRadius: '4px',
+                                 fontSize: '14px',
+                                 outline: 'none'
+                               }}
+                             >
+                               <option value="">Month</option>
+                               <option value="01">January</option>
+                               <option value="02">February</option>
+                               <option value="03">March</option>
+                               <option value="04">April</option>
+                               <option value="05">May</option>
+                               <option value="06">June</option>
+                               <option value="07">July</option>
+                               <option value="08">August</option>
+                               <option value="09">September</option>
+                               <option value="10">October</option>
+                               <option value="11">November</option>
+                               <option value="12">December</option>
+                             </select>
+                             <input
+                               type="number"
+                               value={exp.endYear || ''}
+                               placeholder="Year"
+                               min="1950"
+                               max={new Date().getFullYear()}
+                               onChange={(e) => {
+                                 const newExp = [...editData.experience]
+                                 newExp[index] = {...exp, endYear: e.target.value}
+                                 setEditData({...editData, experience: newExp})
+                               }}
+                               style={{
+                                 flex: 1,
+                                 padding: '8px 10px',
+                                 border: '1px solid #e2e8f0',
+                                 borderRadius: '4px',
+                                 fontSize: '14px',
+                                 outline: 'none'
+                               }}
+                               onFocus={(e) => e.target.style.borderColor = '#16a34a'}
+                               onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                             />
+                           </div>
+                         )}
                        </div>
-                       
+                     </div>
+                     
+                     <div style={{ 
+                       display: 'grid', 
+                       gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr', 
+                       gap: '12px', 
+                       marginBottom: '12px' 
+                     }}>
                        <div>
                          <label style={{
                            fontSize: '12px',

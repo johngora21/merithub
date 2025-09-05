@@ -61,7 +61,7 @@ const Content = () => {
   const [tendersData, setTendersData] = useState([])
   const [opportunitiesData, setOpportunitiesData] = useState([])
   const [coursesData, setCoursesData] = useState([])
-  const [applicationsData, setApplicationsData] = useState([])
+  const [applicantsData, setApplicantsData] = useState([])
   const [courseFormData, setCourseFormData] = useState({
     type: 'video', // video, book, business-plan
     title: '',
@@ -97,6 +97,8 @@ const Content = () => {
     const loadContent = async () => {
       try {
         console.log('Loading admin content using admin APIs...')
+        console.log('Auth token:', localStorage.getItem('auth-token'))
+        console.log('User type:', localStorage.getItem('user-type'))
         const [jobs, tenders, opportunities, courses, applications] = await Promise.all([
           apiService.get('/admin/content', { type: 'jobs', limit: 50 }).catch((err) => {
             console.log('Jobs API error:', err)
@@ -114,8 +116,12 @@ const Content = () => {
             console.log('Courses API error:', err)
             return { content: [] }
           }),
-          apiService.get('/admin/applications', { limit: 50 }).catch((err) => {
+          apiService.get('/admin/applications', { limit: 100 }).then((data) => {
+            console.log('Applications API success:', data)
+            return data
+          }).catch((err) => {
             console.log('Applications API error:', err)
+            console.log('Error details:', err.message, err.status)
             return { applications: [] }
           })
         ])
@@ -148,16 +154,87 @@ const Content = () => {
           })
         
         const coursesArr = (courses?.content || [])
-        const appsArr = (applications?.applications || [])
+          .map(transformCourseAdminItem)
+          .sort((a, b) => {
+            if (a.approval_status === 'pending' && b.approval_status !== 'pending') return -1
+            if (a.approval_status !== 'pending' && b.approval_status === 'pending') return 1
+            return new Date(b.createdAt) - new Date(a.createdAt)
+          })
+        
+        // Process applicants data - group by user and show all their applications
+        console.log('Applications API response:', applications)
+        console.log('Applications type:', typeof applications)
+        console.log('Applications success:', applications?.success)
+        console.log('Applications message:', applications?.message)
+        const applicationsArr = applications?.applications || applications || []
+        console.log('Applications array length:', applicationsArr.length)
+        console.log('Applications array:', applicationsArr)
+        const applicantsMap = new Map()
+        
+        applicationsArr.forEach((app, index) => {
+          console.log(`Processing application ${index + 1}:`, app)
+          // Handle the new data structure from /admin/applications endpoint
+          const userId = app.applicant?.id || app.user_id
+          const applicantName = app.applicantName || (app.applicant ? `${app.applicant.first_name} ${app.applicant.last_name}` : 'Unknown')
+          const applicantEmail = app.applicantEmail || app.applicant?.email || 'unknown@email.com'
+          const profileImage = app.applicant?.profile_image || null
+          
+          console.log(`User ID: ${userId}, Name: ${applicantName}, Email: ${applicantEmail}, Username: ${app.applicant?.username}`)
+          
+          if (userId) {
+            if (!applicantsMap.has(userId)) {
+              console.log(`Creating new applicant entry for user ${userId}`)
+              applicantsMap.set(userId, {
+                id: userId,
+                name: applicantName,
+                email: applicantEmail,
+                profileImage: profileImage,
+                username: app.applicant?.username || null,
+                location: app.applicant?.location || 'Not specified',
+                industry: app.applicant?.industry || 'Not specified',
+                currentJobTitle: app.applicant?.current_job_title || 'Not specified',
+                bio: app.applicant?.bio || null,
+                skills: app.applicant?.skills || [],
+                education: app.applicant?.education || [],
+                experience: app.applicant?.experience || [],
+                certificates: app.applicant?.certificates || [],
+                profileCompletion: '85%', // Default value
+                applications: []
+              })
+            }
+            console.log(`Adding application to user ${userId}`)
+            applicantsMap.get(userId).applications.push({
+              id: app.id,
+              type: app.type || app.application_type,
+              status: app.status,
+              appliedAt: app.appliedDate || app.applied_at,
+              job: app.job || { title: app.title, company: app.company, location: app.location, salary: app.salary },
+              tender: app.tender,
+              opportunity: app.opportunity,
+              coverLetter: app.cover_letter
+            })
+          } else {
+            console.log(`No user ID found for application ${app.id}`)
+          }
+        })
+        
+        const applicantsArr = Array.from(applicantsMap.values())
+          .sort((a, b) => new Date(b.applications[0]?.appliedAt || 0) - new Date(a.applications[0]?.appliedAt || 0))
 
-        console.log('Raw data arrays:', { jobsArr, tendersArr, oppArr, coursesArr, appsArr })
+        console.log('Applicants map size:', applicantsMap.size)
+        console.log('Applicants array:', applicantsArr)
+        console.log('First applicant username:', applicantsArr[0]?.username)
+        
+        
+        console.log('Raw data arrays:', { jobsArr, tendersArr, oppArr, coursesArr, applicantsArr })
 
         // Set real data into state used by the UI
         setJobsData(jobsArr)
         setTendersData(tendersArr)
         setOpportunitiesData(oppArr)
         setCoursesData(coursesArr)
-        setApplicationsData(appsArr)
+        setApplicantsData(applicantsArr)
+        
         
         console.log('Loaded data:', {
           jobs: jobsArr.length,
@@ -679,16 +756,43 @@ const Content = () => {
     }
   }
 
+  // Transform course data for admin display
+  const transformCourseAdminItem = (apiCourse) => {
+    return {
+      id: apiCourse.id,
+      title: apiCourse.title || '',
+      instructor: apiCourse.instructor || '',
+      duration: apiCourse.duration || '',
+      level: apiCourse.level || '',
+      price: apiCourse.price || 'Free',
+      description: apiCourse.description || '',
+      category: apiCourse.category || '',
+      tags: Array.isArray(apiCourse?.tags) ? apiCourse.tags : [],
+      approval_status: apiCourse.approval_status || 'pending',
+      status: apiCourse.status || 'active',
+      createdAt: apiCourse.createdAt,
+      updatedAt: apiCourse.updatedAt,
+      coverImage: apiCourse.cover_image,
+      videoUrl: apiCourse.video_url,
+      materials: apiCourse.materials || [],
+      requirements: apiCourse.requirements || [],
+      learningOutcomes: apiCourse.learning_outcomes || []
+    }
+  }
+
   // Filter data based on status filter
   const filterDataByStatus = (data, statusFilter) => {
     if (statusFilter === 'all') return data
-    return data.filter(item => {
+    
+    const filtered = data.filter(item => {
       if (statusFilter === 'pending') return item.approval_status === 'pending'
-      if (statusFilter === 'active') return item.approval_status === 'approved' || item.status === 'active'
+      if (statusFilter === 'active') return item.approval_status === 'approved'
       if (statusFilter === 'expired') return item.status === 'expired'
       if (statusFilter === 'rejected') return item.approval_status === 'rejected'
       return true
     })
+    
+    return filtered
   }
 
   // Card component for individual items - renders different designs based on type
@@ -998,7 +1102,7 @@ const Content = () => {
                     fontSize: '12px',
                     fontWeight: '500'
                   }}>
-                    {tag}
+                    {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
                   </span>
                 ))}
                 {item.tags.length > 3 && (
@@ -1365,7 +1469,7 @@ const Content = () => {
                     fontSize: '12px',
                     fontWeight: '500'
                   }}>
-                    {tag}
+                    {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
                   </span>
                 ))}
                 {item.tags.length > 3 && (
@@ -1719,7 +1823,7 @@ const Content = () => {
                 fontSize: '11px',
                 fontWeight: '500'
               }}>
-                {skill}
+                {typeof skill === 'string' ? skill : skill?.name || skill?.title || 'Unknown'}
               </span>
             ))}
             {item.skills.length > 4 && (
@@ -2177,45 +2281,128 @@ const Content = () => {
           />
         )
 
-      case 'applications':
+      case 'applicants':
         return (
-          <ContentTable
-            type="applications"
-            data={applicationsData}
-            columns={[
-              { key: 'applicant', label: 'Applicant' },
-              { key: 'appliedFor', label: 'Applied For' },
-              { key: 'type', label: 'Type' },
-              { 
-                key: 'status', 
-                label: 'Status',
-                render: (item) => {
-                  const statusStyle = getStatusColor(item.status)
-                  return (
+          <div style={{ padding: '20px' }}>
+            <div style={{ marginBottom: '20px', fontSize: '16px', fontWeight: '600' }}>
+              Applicants ({applicantsData.length})
+            </div>
+            {applicantsData.length === 0 ? (
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '40px', 
+                color: '#64748b',
+                fontSize: '16px'
+              }}>
+                No applicants found
+              </div>
+            ) : (
+              <div style={{ 
+                display: 'grid', 
+                gap: '20px',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))'
+              }}>
+                {applicantsData.map(applicant => (
+                <div key={applicant.id} style={{
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  backgroundColor: 'white',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                }}>
+                  {/* Applicant Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                    <img 
+                      src={applicant.profileImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop'} 
+                      alt={applicant.name}
+                      style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '50%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#111827' }}>
+                        {applicant.name}
+                      </h3>
+                      <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
+                        {applicant.email}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Applications List */}
+                  <div>
+                    <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600', color: '#374151' }}>
+                      Applications ({applicant.applications.length})
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {applicant.applications.map((app, index) => (
+                        <div key={app.id} style={{
+                          padding: '12px',
+                          backgroundColor: '#f9fafb',
+                          borderRadius: '8px',
+                          border: '1px solid #e5e7eb'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                            <div>
+                              <p style={{ margin: 0, fontSize: '14px', fontWeight: '500', color: '#111827' }}>
+                                {app.job?.title || app.tender?.title || app.opportunity?.title || 'Unknown Position'}
+                              </p>
+                              <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>
+                                {app.job?.company || app.tender?.organization || app.opportunity?.organization || 'Unknown Organization'}
+                              </p>
+                            </div>
                     <span style={{
                       padding: '4px 8px',
                       borderRadius: '12px',
-                      fontSize: '12px',
+                              fontSize: '11px',
                       fontWeight: '500',
-                      border: `1px solid ${statusStyle.borderColor}`,
-                      backgroundColor: statusStyle.backgroundColor,
-                      color: statusStyle.color
-                    }}>
-                      {item.status}
+                              backgroundColor: app.status === 'approved' ? '#dcfce7' : 
+                                            app.status === 'rejected' ? '#fef2f2' : '#fef3c7',
+                              color: app.status === 'approved' ? '#166534' : 
+                                   app.status === 'rejected' ? '#991b1b' : '#92400e',
+                              border: `1px solid ${app.status === 'approved' ? '#bbf7d0' : 
+                                               app.status === 'rejected' ? '#fecaca' : '#fde68a'}`
+                            }}>
+                              {app.status}
                     </span>
-                  )
-                }
-              },
-              { 
-                key: 'appliedDate', 
-                label: 'Applied Date',
-                render: (item) => formatDate(item.appliedDate)
-              }
-            ]}
-          />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                              {app.type} • {new Date(app.appliedAt).toLocaleDateString()}
+                            </span>
+                            {app.coverLetter && (
+                              <button 
+                                onClick={() => {
+                                  setSelectedItem({ ...app, applicant: applicant })
+                                  setShowDetails(true)
+                                }}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  backgroundColor: '#3b82f6',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                View Details
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              </div>
+            )}
+          </div>
         )
-
-
 
       default:
         return null
@@ -2334,10 +2521,10 @@ const Content = () => {
               Courses
             </div>
           </TabButton>
-          <TabButton value="applications" isActive={activeTab === "applications"} onClick={setActiveTab}>
+          <TabButton value="applicants" isActive={activeTab === "applicants"} onClick={setActiveTab}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <UserCheck size={16} />
-              Applications
+              <Users size={16} />
+              Applicants
             </div>
           </TabButton>
 
@@ -3393,7 +3580,7 @@ const Content = () => {
                                  gap: '4px'
                                }}
                              >
-                               {tag}
+                               {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
                                <button
                                  type="button"
                                  onClick={() => handleRemoveTag(tag)}
@@ -3741,7 +3928,7 @@ const Content = () => {
                             fontSize: '13px',
                             fontWeight: '500'
                           }}>
-                            {skill}
+                            {typeof skill === 'string' ? skill : skill?.name || skill?.title || 'Unknown'}
                           </span>
                         ))}
                       </div>
@@ -4387,9 +4574,9 @@ const Content = () => {
                       }}>
                         <span>{selectedItem.instructor || selectedItem.author}</span>
                         <span>•</span>
-                        <span>{selectedItem.category}</span>
+                        <span>{typeof selectedItem.category === 'string' ? selectedItem.category : selectedItem.category?.name || selectedItem.category?.title || 'Unknown'}</span>
                         <span>•</span>
-                        <span>{selectedItem.level}</span>
+                        <span>{typeof selectedItem.level === 'string' ? selectedItem.level : selectedItem.level?.name || selectedItem.level?.title || 'Unknown'}</span>
                         <span>•</span>
                         <span style={{ color: selectedItem.price === 'Free' ? '#16a34a' : '#f59e0b', fontWeight: '600' }}>
                           {selectedItem.price}
@@ -4812,7 +4999,7 @@ const Content = () => {
                             fontSize: '13px',
                             fontWeight: '500'
                           }}>
-                            {tag}
+                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
                           </span>
                         ))}
                       </div>
@@ -5011,7 +5198,7 @@ const Content = () => {
                           fontSize: '14px',
                           fontWeight: '500'
                         }}>
-                          {skill}
+                          {typeof skill === 'string' ? skill : skill?.name || skill?.title || 'Unknown'}
                         </span>
                       ))}
                     </div>

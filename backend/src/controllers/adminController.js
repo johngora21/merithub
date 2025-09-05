@@ -928,14 +928,32 @@ const getApplicationsOverview = async (req, res) => {
       Job.findAll({
         order: [['createdAt', 'DESC']],
         limit,
+        include: [{
+          model: Application,
+          as: 'applications',
+          attributes: ['id'],
+          required: false
+        }]
       }),
       Tender.findAll({
         order: [['createdAt', 'DESC']],
         limit,
+        include: [{
+          model: Application,
+          as: 'applications',
+          attributes: ['id'],
+          required: false
+        }]
       }),
       Opportunity.findAll({
         order: [['createdAt', 'DESC']],
         limit,
+        include: [{
+          model: Application,
+          as: 'applications',
+          attributes: ['id'],
+          required: false
+        }]
       })
     ]);
 
@@ -949,7 +967,7 @@ const getApplicationsOverview = async (req, res) => {
       experience: j.experience_level,
       salary: j.salary_min && j.salary_max ? `${j.currency} ${j.salary_min} - ${j.currency} ${j.salary_max}` : 'Salary not specified',
       postedTime: j.createdAt,
-      applicants: j.applications_count || 0,
+      applicants: j.applications ? j.applications.length : (j.applications_count || 0),
       description: j.description || '',
       skills: Array.isArray(j.skills) ? j.skills : [],
       logo: resolveAssetUrl(j.company_logo),
@@ -968,7 +986,7 @@ const getApplicationsOverview = async (req, res) => {
       budget: t.contract_value_min && t.contract_value_max ? `${t.currency} ${t.contract_value_min} - ${t.currency} ${t.contract_value_max}` : 'Value not specified',
       deadline: t.deadline,
       postedTime: t.createdAt,
-      applicants: t.submissions_count || 0,
+      applicants: t.applications ? t.applications.length : (t.submissions_count || 0),
       description: t.description || '',
       requirements: Array.isArray(t.requirements) ? t.requirements : [],
       logo: resolveAssetUrl(t.organization_logo),
@@ -986,7 +1004,7 @@ const getApplicationsOverview = async (req, res) => {
       duration: o.duration || '',
       stipend: o.amount_min && o.amount_max ? `${o.currency} ${o.amount_min} - ${o.currency} ${o.amount_max}` : '',
       postedTime: o.createdAt,
-      applicants: o.applications_count || 0,
+      applicants: o.applications ? o.applications.length : (o.applications_count || 0),
       description: o.description || '',
       benefits: Array.isArray(o.benefits) ? o.benefits : [],
       logo: o.organization_logo || '',
@@ -1021,13 +1039,462 @@ const getApplicantsForItem = async (req, res) => {
     const applications = await Application.findAll({
       where,
       order: [['applied_at', 'DESC']],
-      include: [{ model: User, as: 'user', required: false }]
+      include: [
+        { model: User, as: 'applicant', required: false },
+        { model: Job, as: 'job', required: false },
+        { model: Tender, as: 'tender', required: false },
+        { model: Opportunity, as: 'opportunity', required: false }
+      ]
     });
 
     const toTitle = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 
+// Text processing and grammar correction functions
+const processText = (rawText) => {
+  if (!rawText || typeof rawText !== 'string') return '';
+  
+  return rawText
+    .replace(/\b(i|we|you)\b/gi, (match) => match.toLowerCase())
+    .replace(/\b(am|is|are|was|were)\b/gi, (match) => match.toLowerCase())
+    .replace(/\.{2,}/g, '.') // Fix multiple periods
+    .replace(/\s+/g, ' ') // Fix multiple spaces
+    .replace(/^\s*[.!?]\s*/g, '') // Remove leading punctuation
+    .replace(/\s*[.!?]\s*$/g, '.') // Ensure proper ending punctuation
+    .trim();
+};
+
+// Helper function to extract skill names from various data structures
+const extractSkillNames = (skills) => {
+  if (!skills) return 'key technical skills';
+  
+  if (Array.isArray(skills)) {
+    return skills.map(skill => {
+      if (typeof skill === 'string') return skill;
+      if (typeof skill === 'object' && skill !== null) {
+        return skill.name || skill.title || skill.skill || 'Technical Skill';
+      }
+      return 'Technical Skill';
+    }).slice(0, 3).join(', ');
+  }
+  
+  if (typeof skills === 'string') {
+    return skills;
+  }
+  
+  return 'technical skills';
+};
+
+const generateProfessionalStatement = (data, type) => {
+  switch(type) {
+    case 'background':
+      const industry = data.industry || 'various fields';
+      const skills = extractSkillNames(data.skills);
+      return `With a solid background in ${industry} and proven expertise in ${skills}`;
+    
+    case 'experience':
+      const company = data.company || 'previous organizations';
+      const achievement = data.achievement || 'delivered significant results and contributed to team success';
+      return `In my previous role at ${company}, I ${achievement}`;
+    
+    case 'skills':
+      const skillList = extractSkillNames(data.skills);
+      return `This experience sharpened my abilities in ${skillList}`;
+    
+    case 'motivation':
+      const companyName = data.companyName || 'this organization';
+      const reason = data.reason || 'the innovative approach and commitment to excellence';
+      return `What excites me most about joining ${companyName} is ${reason}`;
+    
+    default:
+      return '';
+  }
+};
+
+const extractKeyAchievement = (experience) => {
+  if (!Array.isArray(experience) || experience.length === 0) return 'delivered significant results and contributed to team success';
+  
+  // Look for experience with descriptions or achievements
+  const expWithDescription = experience.find(exp => exp.description && exp.description.length > 20);
+  if (expWithDescription) {
+    const desc = processText(expWithDescription.description);
+    // Extract key phrases and make them more professional
+    if (desc.includes('led') || desc.includes('managed') || desc.includes('developed')) {
+      return desc;
+    }
+  }
+  
+  // Fallback to company-based achievement
+  const recentExp = experience[0];
+  const company = recentExp?.company || 'my previous organization';
+  return `delivered measurable results and contributed to organizational success`;
+};
+
+// Generate cover letter from user profile data
+const generateCoverLetter = (user, application) => {
+  const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+  const currentRole = user.current_job_title || 'Professional';
+  const industry = user.industry || 'various industries';
+  const yearsExp = user.years_experience || 'several years';
+  const location = user.location || 'my location';
+  const phone = user.phone || 'Not provided';
+  const email = user.email || 'Not provided';
+  const nationality = user.nationality || 'Not specified';
+  const languages = user.languages || 'Not specified';
+  const employmentStatus = user.employment_status || 'Not specified';
+  
+  // Process skills with better handling
+  const skills = Array.isArray(user.skills) ? 
+    user.skills.map(skill => 
+      typeof skill === 'string' ? skill : skill?.name || skill?.title || 'Skill'
+    ).join(', ') : 'Not specified';
+  
+  // Process education data with comprehensive details in descending order
+  const education = Array.isArray(user.education) && user.education.length > 0 ? user.education : [];
+  
+  // Helper function to get education level hierarchy
+  const getEducationLevel = (level) => {
+    if (!level) return 0;
+    const levelLower = level.toLowerCase();
+    if (levelLower.includes('phd') || levelLower.includes('doctorate') || levelLower.includes('doctor')) return 7;
+    if (levelLower.includes('master') || levelLower.includes('ms') || levelLower.includes('ma') || 
+        levelLower.includes('mba') || levelLower.includes('mfa') || levelLower.includes('m.ed')) return 6;
+    if (levelLower.includes('bachelor') || levelLower.includes('bs') || levelLower.includes('ba') || 
+        levelLower.includes('bsc') || levelLower.includes('b.eng') || levelLower.includes('b.com')) return 5;
+    if (levelLower.includes('associate') || levelLower.includes('aa') || levelLower.includes('as')) return 4;
+    if (levelLower.includes('diploma') || levelLower.includes('certificate')) return 3;
+    if (levelLower.includes('high school') || levelLower.includes('secondary') || 
+        levelLower.includes('hsc') || levelLower.includes('a level')) return 2;
+    if (levelLower.includes('ordinary level') || levelLower.includes('o level')) return 1.5;
+    return 1;
+  };
+  
+  // Sort education by level in descending order (highest first)
+  const sortedEducation = [...education].sort((a, b) => {
+    const levelA = getEducationLevel(a.level || '');
+    const levelB = getEducationLevel(b.level || '');
+    return levelB - levelA;
+  });
+  
+  // Get highest education for cover letter summary
+  const highestEducation = education.length > 0 ? education.reduce((highest, current) => {
+    const currentLevel = getEducationLevel(current.level || '');
+    const highestLevel = getEducationLevel(highest.level || '');
+    return currentLevel > highestLevel ? current : highest;
+  }) : null;
+  
+  const educationSummary = highestEducation ? 
+    `${highestEducation.level || 'Education'}${highestEducation.program || highestEducation.major || highestEducation.field || highestEducation.subject ? ` in ${highestEducation.program || highestEducation.major || highestEducation.field || highestEducation.subject}` : ''} from ${highestEducation.institution || highestEducation.school || highestEducation.university || 'Institution'}` : 
+    '';
+  
+  // Process all experiences for cover letter summary
+  const experience = Array.isArray(user.experience) && user.experience.length > 0 ? user.experience : [];
+  
+  // Calculate experience per industry
+  const calculateExperienceByIndustry = (experienceArray) => {
+    if (!Array.isArray(experienceArray) || experienceArray.length === 0) return {};
+    
+    const industryExperience = {};
+    
+    experienceArray.forEach(exp => {
+      if (exp.startYear && exp.startMonth) {
+        const startDate = new Date(parseInt(exp.startYear), parseInt(exp.startMonth) - 1);
+        const endDate = exp.isCurrent 
+          ? new Date() 
+          : (exp.endYear && exp.endMonth) 
+            ? new Date(parseInt(exp.endYear), parseInt(exp.endMonth) - 1)
+            : new Date();
+        
+        if (endDate >= startDate) {
+          const monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                           (endDate.getMonth() - startDate.getMonth());
+          const years = Math.floor(monthsDiff / 12);
+          
+          const expIndustry = exp.industry || industry;
+          if (!industryExperience[expIndustry]) {
+            industryExperience[expIndustry] = 0;
+          }
+          industryExperience[expIndustry] += years;
+        }
+      }
+    });
+    
+    return industryExperience;
+  };
+
+  const industryExperience = calculateExperienceByIndustry(experience);
+  
+        // Get the job's industry to match against user's experience
+      const jobData = application.job || null;
+      const tenderData = application.tender || null;
+      const opportunityData = application.opportunity || null;
+      const jobIndustry = jobData?.industry || tenderData?.sector || opportunityData?.category || 'General';
+      
+      // Check if user has experience in the SAME industry as the job
+      const hasJobIndustryExperience = industryExperience[jobIndustry] && industryExperience[jobIndustry] > 0;
+      const jobIndustryYears = hasJobIndustryExperience ? industryExperience[jobIndustry] : 0;
+      
+      // Only mention industry experience if user has worked in the SAME industry as the job
+      const primaryIndustry = hasJobIndustryExperience ? jobIndustry : null;
+      const primaryIndustryYears = hasJobIndustryExperience ? jobIndustryYears : 0;
+  
+  // Create detailed work experience summary for the cover letter - show ALL experience
+  const relevantExperience = experience;
+  
+  const workExperienceDetails = relevantExperience.length > 0 ? 
+    relevantExperience.map(exp => {
+      const position = exp.position || exp.job_title || exp.title || 'Professional';
+      const company = exp.company || exp.organization || exp.employer || 'Company';
+      return `${position} at ${company}`;
+    }).join(', ') : '';
+
+  // Create industry-specific experience summary for cover letter - only relevant industry
+  const industryExperienceSummary = relevantExperience.length > 0 ? 
+    relevantExperience.map(exp => {
+      const position = exp.position || exp.job_title || exp.title || 'Professional';
+      const company = exp.company || exp.organization || exp.employer || 'Company';
+      return `${position} at ${company}`;
+    }).join(', ') + (primaryIndustryYears > 0 ? ` with ${primaryIndustryYears} of experience in the ${primaryIndustry} industry` : '') :
+    '';
+
+  // Process certificates data - simplified
+  const certificates = Array.isArray(user.certificates) && user.certificates.length > 0 ? user.certificates : [];
+  const certificatesSummary = certificates.map(cert => {
+    const name = cert.name || cert.title || cert.certificate_name || 'Certificate';
+    const issuer = cert.issuer || cert.issuing_organization || cert.organization || 'Issuer';
+    return `${name} from ${issuer}`;
+  }).join(', ');
+  
+  // Get job/tender/opportunity details for personalized cover letter
+  let positionTitle = 'this position';
+  let companyName = 'your organization';
+  let jobDescription = '';
+  let requirements = '';
+  
+  if (application.job) {
+    positionTitle = application.job.title || positionTitle;
+    companyName = application.job.company || companyName;
+    jobDescription = application.job.description || '';
+    requirements = application.job.requirements || '';
+  } else if (application.tender) {
+    positionTitle = application.tender.title || positionTitle;
+    companyName = application.tender.organization || companyName;
+    jobDescription = application.tender.description || '';
+    requirements = application.tender.requirements || '';
+  } else if (application.opportunity) {
+    positionTitle = application.opportunity.title || positionTitle;
+    companyName = application.opportunity.organization || companyName;
+    jobDescription = application.opportunity.description || '';
+    requirements = application.opportunity.requirements || '';
+  }
+  
+  // Ensure requirements is a string before calling substring
+  if (requirements && typeof requirements !== 'string') {
+    requirements = String(requirements);
+  }
+  
+  // Ensure jobDescription is a string before calling substring
+  if (jobDescription && typeof jobDescription !== 'string') {
+    jobDescription = String(jobDescription);
+  }
+
+  // Generate professional statements using algorithms
+  // Only mention industry background if user has experience in that specific industry
+  const backgroundStatement = hasJobIndustryExperience ? 
+    generateProfessionalStatement({
+      industry: jobIndustry,
+      skills: user.skills
+    }, 'background') :
+    generateProfessionalStatement({
+      industry: 'various fields',
+      skills: user.skills
+    }, 'background');
+
+      // Create a comprehensive experience statement for multiple roles
+    const experienceStatement = experience.length > 0 ? 
+      (() => {
+        if (experience.length === 1) {
+          const exp = experience[0];
+          const company = exp.company || 'my previous organization';
+          const achievement = processText(extractKeyAchievement(experience));
+          return `In my previous role at ${company}, I ${achievement}`;
+        } else {
+          // Multiple experiences - create a summary
+          const recentExp = experience[0];
+          const company = recentExp.company || 'my previous organization';
+          const totalRoles = experience.length;
+          const industries = [...new Set(experience.map(exp => exp.industry).filter(Boolean))];
+          const industryText = industries.length > 0 ? ` across ${industries.join(', ')} industries` : '';
+          
+          const achievement = processText(extractKeyAchievement(experience));
+          return `Through my ${totalRoles} previous roles${industryText}, including my most recent position at ${company}, I ${achievement}`;
+        }
+      })() : 
+      (() => {
+        const achievement = processText(extractKeyAchievement(experience));
+        return `I ${achievement}`;
+      })();
+
+  // Create a comprehensive skills statement that reflects diverse experience
+  const skillsStatement = experience.length > 1 ? 
+    (() => {
+      const skillList = extractSkillNames(user.skills);
+      const industries = [...new Set(experience.map(exp => exp.industry).filter(Boolean))];
+      const industryText = industries.length > 1 ? ` across multiple industries` : '';
+      
+      return `This diverse experience${industryText} has sharpened my abilities in ${skillList}`;
+    })() :
+    generateProfessionalStatement({
+      skills: user.skills
+    }, 'skills');
+
+  const motivationStatement = generateProfessionalStatement({
+    companyName: companyName,
+    reason: 'the innovative approach and commitment to excellence'
+  }, 'motivation');
+
+  // Professional cover letter template
+  const coverLetter = `${name}
+${location}
+${email} | ${phone}
+${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+
+Dear Hiring Manager,
+
+I am writing to express my strong interest in the ${positionTitle} position at ${companyName}, as advertised on Merit Platform. ${backgroundStatement}, I am confident in my ability to make a valuable contribution to your team.
+
+${experienceStatement}. ${skillsStatement} and strengthened my capacity to collaborate across teams and adapt quickly to challenges.
+
+${motivationStatement}. I believe my skills in ${extractSkillNames(user.skills)} align well with your mission and would enable me to contribute meaningfully to your goals.
+
+${educationSummary ? `I hold a ${processText(educationSummary)}.` : ''}
+
+${certificatesSummary ? `I also hold the following certifications: ${processText(certificatesSummary)}.` : ''}
+
+I would welcome the chance to discuss how my background and experience fit the needs of your team. Thank you for your time and consideration. I look forward to the possibility of contributing to ${companyName}'s success and am available at your earliest convenience for an interview.
+
+Sincerely,
+${name}`;
+
+  return coverLetter;
+};
+
+// Generate academic summary from education data
+const generateAcademicSummary = (education) => {
+  if (!Array.isArray(education) || education.length === 0) {
+    return 'No education information provided';
+  }
+  
+  const summaries = education.map(edu => {
+    const degree = edu.degree || edu.qualification || 'Degree';
+    const field = edu.field || edu.major || edu.subject || 'field of study';
+    const institution = edu.institution || edu.school || edu.university || 'institution';
+    const year = edu.graduation_year || edu.year || edu.end_year || '';
+    const gpa = edu.gpa || edu.grade || '';
+    
+    let summary = `${degree} in ${field} from ${institution}`;
+    if (year) summary += ` (${year})`;
+    if (gpa) summary += ` - GPA: ${gpa}`;
+    
+    return summary;
+  });
+  
+  return summaries.join('; ');
+};
+
+// Generate experience summary from work experience data
+const generateExperienceSummary = (experience) => {
+  if (!Array.isArray(experience) || experience.length === 0) {
+    return 'No work experience information provided';
+  }
+  
+  const summaries = experience.map(exp => {
+    const position = exp.position || exp.job_title || exp.title || 'Position';
+    const company = exp.company || exp.organization || exp.employer || 'Company';
+    const duration = exp.duration || exp.period || '';
+    const description = exp.description || exp.responsibilities || '';
+    
+    let summary = `${position} at ${company}`;
+    if (duration) summary += ` (${duration})`;
+    if (description) summary += ` - ${description.substring(0, 100)}${description.length > 100 ? '...' : ''}`;
+    
+    return summary;
+  });
+  
+  return summaries.join('; ');
+};
+
+// Generate certificates summary from certificates data
+const generateCertificatesSummary = (certificates) => {
+  if (!Array.isArray(certificates) || certificates.length === 0) {
+    return 'No certificates information provided';
+  }
+  
+  const summaries = certificates.map(cert => {
+    const name = cert.name || cert.title || cert.certificate_name || 'Certificate';
+    const issuer = cert.issuer || cert.issuing_organization || cert.organization || 'Issuer';
+    const date = cert.issue_date || cert.date || cert.obtained_date || '';
+    const expiry = cert.expiry_date || cert.expiration_date || '';
+    
+    let summary = `${name} from ${issuer}`;
+    if (date) summary += ` (${date})`;
+    if (expiry) summary += ` - Expires: ${expiry}`;
+    
+    return summary;
+  });
+  
+  return summaries.join('; ');
+};
+
+// Process documents for download URLs
+const processDocuments = (documents) => {
+  if (!Array.isArray(documents) || documents.length === 0) {
+    return [];
+  }
+  
+  return documents.map(doc => ({
+    id: doc.id || Math.random().toString(36).substr(2, 9),
+    name: doc.name || doc.filename || doc.title || 'Document',
+    type: doc.type || doc.file_type || 'application/pdf',
+    size: doc.size || 'Unknown',
+    url: doc.url ? resolveAssetUrl(doc.url) : '',
+    uploadedAt: doc.uploaded_at || doc.created_at || new Date().toISOString(),
+    description: doc.description || ''
+  }));
+};
+
+// Process certificates for display and download
+const processCertificates = (certificates) => {
+  if (!Array.isArray(certificates) || certificates.length === 0) {
+    return [];
+  }
+  
+  return certificates.map(cert => ({
+    id: cert.id || Math.random().toString(36).substr(2, 9),
+    name: cert.name || cert.title || cert.certificate_name || 'Certificate',
+    issuer: cert.issuer || cert.issuing_organization || cert.organization || 'Issuer',
+    issueDate: cert.issue_date || cert.date || cert.obtained_date || '',
+    expiryDate: cert.expiry_date || cert.expiration_date || '',
+    credentialId: cert.credential_id || cert.certificate_id || '',
+    url: cert.url ? resolveAssetUrl(cert.url) : '',
+    description: cert.description || '',
+    skills: cert.skills || [],
+    verified: cert.verified || false
+  }));
+};
+
     const applicants = applications.map((app) => {
-      const user = app.user || {};
+      const user = app.applicant || {};
+      
+      // Calculate profile completion percentage
+      const profileFields = [
+        'first_name', 'last_name', 'email', 'phone', 'profile_image', 'bio', 
+        'location', 'country', 'skills', 'experience_level', 'industry', 
+        'current_job_title', 'years_experience', 'employment_status', 
+        'linkedin_url', 'education', 'experience', 'certificates'
+      ];
+      const completedFields = profileFields.filter(field => user[field] && user[field] !== '');
+      const profileCompletion = Math.round((completedFields.length / profileFields.length) * 100);
+      
       return {
         id: user.id || app.id,
         applicationId: app.id,
@@ -1038,9 +1505,90 @@ const getApplicantsForItem = async (req, res) => {
         appliedDate: app.applied_at,
         status: toTitle(app.status?.replace('-', ' ')) || 'Under Review',
         experience: toTitle(user.experience_level) || 'Not specified',
-        skills: Array.isArray(user.skills) ? user.skills : [],
-        profileCompletion: 0,
-        avatar: user.profile_image || ''
+        yearsExperience: user.years_experience || 'Not specified',
+        currentJobTitle: user.current_job_title || 'Not specified',
+        industry: user.industry || 'Not specified',
+        employmentStatus: toTitle(user.employment_status?.replace('-', ' ')) || 'Not specified',
+        userType: toTitle(user.user_type?.replace('-', ' ')) || 'Not specified',
+        bio: user.bio || '',
+        skills: Array.isArray(user.skills) ? 
+          user.skills.map(skill => 
+            typeof skill === 'string' ? skill : skill?.name || skill?.title || 'Skill'
+          ) : [],
+        education: Array.isArray(user.education) ? user.education : [],
+        workExperience: Array.isArray(user.experience) ? user.experience : [],
+        certificates: Array.isArray(user.certificates) ? user.certificates : [],
+        languages: user.languages || 'Not specified',
+        linkedinUrl: user.linkedin_url || '',
+        profileLinks: [
+          { name: user.profile_link1_name, url: user.profile_link1_url },
+          { name: user.profile_link2_name, url: user.profile_link2_url },
+          { name: user.profile_link3_name, url: user.profile_link3_url }
+        ].filter(link => link.name && link.url),
+        nationality: user.nationality || 'Not specified',
+        countryOfResidence: user.country_of_residence || 'Not specified',
+        isVerified: user.is_verified || false,
+        lastLogin: user.last_login,
+        profileCompletion,
+        avatar: user.profile_image || '',
+        coverLetter: generateCoverLetter(user, app),
+        applicationData: app.application_data || {},
+        documents: app.documents || [],
+        
+        // Additional comprehensive profile data
+        profileImage: user.profile_image || '',
+        username: user.username || '',
+        bio: user.bio || '',
+        currentJobTitle: user.current_job_title || 'Not specified',
+        yearsExperience: user.years_experience || 'Not specified',
+        employmentStatus: user.employment_status || 'Not specified',
+        maritalStatus: user.marital_status || 'Not specified',
+        nationality: user.nationality || 'Not specified',
+        countryOfResidence: user.country_of_residence || 'Not specified',
+        dateOfBirth: user.date_of_birth || 'Not specified',
+        gender: user.gender || 'Not specified',
+        disabilityStatus: user.disability_status || 'Not specified',
+        languages: user.languages || 'Not specified',
+        
+        // Profile links
+        linkedinUrl: user.linkedin_url || '',
+        profileLink1Name: user.profile_link1_name || '',
+        profileLink1Url: user.profile_link1_url || '',
+        profileLink2Name: user.profile_link2_name || '',
+        profileLink2Url: user.profile_link2_url || '',
+        profileLink3Name: user.profile_link3_name || '',
+        profileLink3Url: user.profile_link3_url || '',
+        
+        // Documents and files with download URLs
+        userDocuments: processDocuments(user.documents || []),
+        applicationDocuments: processDocuments(app.documents || []),
+        certificates: processCertificates(user.certificates || []),
+        
+        // Academic and professional summary
+        academicSummary: generateAcademicSummary(user.education || []),
+        experienceSummary: generateExperienceSummary(user.experience || []),
+        certificatesSummary: generateCertificatesSummary(user.certificates || []),
+        
+        // Additional comprehensive data
+        profileImage: user.profile_image ? resolveAssetUrl(user.profile_image) : '',
+        linkedinUrl: user.linkedin_url || '',
+        profileLinks: [
+          { name: user.profile_link1_name, url: user.profile_link1_url },
+          { name: user.profile_link2_name, url: user.profile_link2_url },
+          { name: user.profile_link3_name, url: user.profile_link3_url }
+        ].filter(link => link.name && link.url),
+        
+        // Complete education array
+        education: user.education || [],
+        // Complete experience array
+        experience: user.experience || [],
+        // Complete certificates array
+        certificates: user.certificates || [],
+        // Complete skills array
+        skills: Array.isArray(user.skills) ? 
+          user.skills.map(skill => 
+            typeof skill === 'string' ? skill : skill?.name || skill?.title || 'Skill'
+          ) : []
       };
     });
 
@@ -1198,6 +1746,72 @@ const getReportsData = async (req, res) => {
   }
 };
 
+// Download document endpoint
+const downloadDocument = async (req, res) => {
+  try {
+    const { documentId, userId } = req.params;
+    
+    // Verify admin authentication
+    if (!req.user || !req.user.is_admin) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Access denied. Admin privileges required.' 
+      });
+    }
+
+    // Find the user and their documents
+    const user = await User.findByPk(userId, {
+      attributes: ['id', 'first_name', 'last_name', 'documents']
+    });
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    const documents = user.documents || [];
+    const document = documents.find(doc => doc.id === documentId || doc._id === documentId);
+
+    if (!document) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Document not found' 
+      });
+    }
+
+    // Check if document has a URL
+    if (!document.url) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Document URL not available' 
+      });
+    }
+
+    // Resolve the full URL
+    const documentUrl = resolveAssetUrl(document.url);
+    
+    // Set appropriate headers for download
+    const filename = document.name || document.filename || document.title || 'document';
+    const fileExtension = document.type ? document.type.split('/')[1] : 'pdf';
+    const downloadFilename = `${filename}.${fileExtension}`;
+
+    res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
+    res.setHeader('Content-Type', document.type || 'application/octet-stream');
+
+    // Redirect to the document URL for download
+    res.redirect(documentUrl);
+
+  } catch (error) {
+    console.error('Error downloading document:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error downloading document' 
+    });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getAllUsers,
@@ -1218,5 +1832,6 @@ module.exports = {
   // added exports
   getApplicationsOverview,
   getApplicantsForItem,
-  updateApplicantStatus
+  updateApplicantStatus,
+  downloadDocument
 };
