@@ -148,9 +148,9 @@ const Applications = () => {
       benefits: Array.isArray(t.benefits) ? t.benefits : (t.benefits ? [t.benefits] : []),
       tags: Array.isArray(t.tags) ? t.tags : (t.tags ? [t.tags] : []),
     logo: t.logo || t.organization_logo || '',
-      postedBy: t.creator ? t.creator.name : (t.posted_by || 'government'),
-      contactEmail: t.creator ? t.creator.email : t.contact_email || '',
-      contactPhone: t.creator ? t.creator.phone : t.contact_phone || '',
+      postedBy: t.postedBy || 'government',
+      contactEmail: t.contactEmail || '',
+      contactPhone: t.contactPhone || '',
       externalUrl: t.external_url || '',
     status: t.status || 'Active'
     }
@@ -208,9 +208,9 @@ const Applications = () => {
       eligibility: Array.isArray(o.eligibility) ? o.eligibility : (o.eligibility ? [o.eligibility] : []),
       applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : (o.applicationProcess ? [o.applicationProcess] : []),
     logo: o.logo || o.organization_logo || '',
-      postedBy: o.creator ? o.creator.name : (o.posted_by || 'institution'),
-      contactEmail: o.creator ? o.creator.email : o.contact_email || '',
-      contactPhone: o.creator ? o.creator.phone : o.contact_phone || '',
+      postedBy: o.postedBy || 'institution',
+      contactEmail: o.contactEmail || '',
+      contactPhone: o.contactPhone || '',
       externalUrl: o.external_url || '',
     status: o.status || 'Active'
     }
@@ -258,6 +258,7 @@ const Applications = () => {
         } catch (enrichErr) {
           setJobsState(jobs.map(mapJob))
         }
+        
         setTendersState(tenders.map(mapTender))
         setOpportunitiesState(opportunities.map(mapOpportunity))
       } catch (e) {
