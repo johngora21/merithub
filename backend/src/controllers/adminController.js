@@ -1087,6 +1087,7 @@ const getApplicationsOverview = async (req, res) => {
       title: o.title,
       company: o.organization,
       industry: o.category,
+      type: o.type,
       location: o.location || o.country || 'Remote',
       country: o.country,
       duration: o.duration || '',
@@ -1117,10 +1118,13 @@ const getApplicationsOverview = async (req, res) => {
       } : null
     });
 
+    const mappedOpportunities = opportunities.map(mapOpportunity);
+    console.log('First opportunity mapped:', mappedOpportunities[0] ? { id: mappedOpportunities[0].id, title: mappedOpportunities[0].title, type: mappedOpportunities[0].type } : 'No opportunities');
+    
     res.json({
       jobs: jobs.map(mapJob),
       tenders: tenders.map(mapTender),
-      opportunities: opportunities.map(mapOpportunity)
+      opportunities: mappedOpportunities
     });
   } catch (error) {
     console.error('Error fetching applications overview:', error);

@@ -194,6 +194,7 @@ const Applications = () => {
     title: o.title || '',
     company: o.organization || o.company || '',
     industry: o.industry || o.category || '',
+    type: o.type || '',
     location: o.location || o.country || 'Remote',
       country: normalizedCountry || '',
     duration: o.duration || '',
@@ -1412,7 +1413,7 @@ const Applications = () => {
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.company}</p>
                       </div>
                       <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Type</label>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Opportunity Type</label>
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.type}</p>
                       </div>
                       <div>
@@ -1430,10 +1431,6 @@ const Applications = () => {
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Stipend/Amount</label>
                         <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedItem.stipend}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application Deadline</label>
-                        <p style={{ fontSize: '14px', color: '#dc2626', margin: 0, fontWeight: '500' }}>{selectedItem.deadline}</p>
                       </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Posted By</label>
@@ -1693,7 +1690,7 @@ const Applications = () => {
                     color: '#0f172a',
                     margin: '0 0 12px 0'
                   }}>
-                    Benefits
+                    {activeTab === 'opportunities' ? 'Benefits & Value' : 'Benefits'}
                   </h3>
                   <div style={{
                     display: 'flex',
