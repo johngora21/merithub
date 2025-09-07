@@ -229,7 +229,7 @@ const Post = ({ onClose, editItem = null }) => {
         }).then(async r => { if (!r.ok) throw new Error((await r.json()).message || `Failed to ${editItem ? 'update' : 'create'} job`); return r.json() })
       } else if (formData.type === 'tender') {
         if (!payload.location) {
-          alert('Location is required for tenders')
+          alert('City/Town is required for tenders')
           return
         }
         const fd2 = new FormData()
@@ -777,9 +777,9 @@ const Post = ({ onClose, editItem = null }) => {
                   </div>
                 )}
 
-                {/* Location field - conditional for jobs based on work type, excluded for opportunities (they have their own dropdown) */}
-                {((formData.type === 'job' && formData.workType && formData.workType !== 'Remote') || 
-                  (formData.type === 'tender')) && (
+                {/* City/Town field - show for jobs unless explicitly Remote, and for tenders */}
+                {(((formData.type === 'job' && formData.workType !== 'Remote') || 
+                  (formData.type === 'tender'))) && (
                   <div style={{ marginBottom: '16px' }}>
                     <label style={{
                       fontSize: '14px',
@@ -788,7 +788,7 @@ const Post = ({ onClose, editItem = null }) => {
                       marginBottom: '6px',
                       display: 'block'
                     }}>
-                      Location{formData.type === 'job' ? ' *' : ''}
+                      City/Town{formData.type === 'job' ? ' *' : ''}
                     </label>
                     <input
                       type="text"
@@ -798,7 +798,7 @@ const Post = ({ onClose, editItem = null }) => {
                       placeholder={
                         formData.type === 'job' 
                           ? "e.g., New York, NY" 
-                          : "Enter location..."
+                          : "Enter city/town..."
                       }
                       style={{
                         width: '100%',
@@ -1761,7 +1761,7 @@ const Post = ({ onClose, editItem = null }) => {
                     marginBottom: '6px',
                     display: 'block'
                   }}>
-                    Location
+                    City/Town
                   </label>
                   <select
                     value={formData.location}
@@ -1777,7 +1777,7 @@ const Post = ({ onClose, editItem = null }) => {
                       boxSizing: 'border-box'
                     }}
                   >
-                    <option value="">Select location</option>
+                    <option value="">Select City/Town</option>
                     <option value="Global">Global</option>
                     <option value="Online">Online</option>
                     <option value="Remote">Remote</option>
