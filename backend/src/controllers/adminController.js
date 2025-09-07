@@ -977,22 +977,38 @@ const getApplicationsOverview = async (req, res) => {
       Tender.findAll({
         order: [['createdAt', 'DESC']],
         limit,
-        include: [{
-          model: Application,
-          as: 'applications',
-          attributes: ['id'],
-          required: false
-        }]
+        include: [
+          {
+            model: Application,
+            as: 'applications',
+            attributes: ['id'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'creator',
+            attributes: ['id', 'email', 'phone', 'first_name', 'last_name'],
+            required: false
+          }
+        ]
       }),
       Opportunity.findAll({
         order: [['createdAt', 'DESC']],
         limit,
-        include: [{
-          model: Application,
-          as: 'applications',
-          attributes: ['id'],
-          required: false
-        }]
+        include: [
+          {
+            model: Application,
+            as: 'applications',
+            attributes: ['id'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'creator',
+            attributes: ['id', 'email', 'phone', 'first_name', 'last_name'],
+            required: false
+          }
+        ]
       })
     ]);
 
@@ -1043,9 +1059,16 @@ const getApplicationsOverview = async (req, res) => {
       applicants: t.applications ? t.applications.length : (t.submissions_count || 0),
       description: t.description || '',
       requirements: Array.isArray(t.requirements) ? t.requirements : [],
+      project_scope: Array.isArray(t.project_scope) ? t.project_scope : [],
+      technical_requirements: Array.isArray(t.technical_requirements) ? t.technical_requirements : [],
+      submission_process: Array.isArray(t.submission_process) ? t.submission_process : [],
+      evaluation_criteria: Array.isArray(t.evaluation_criteria) ? t.evaluation_criteria : [],
       logo: resolveAssetUrl(t.organization_logo),
       coverImage: resolveAssetUrl(t.cover_image),
-      postedBy: 'government',
+      postedBy: t.creator ? `${t.creator.first_name} ${t.creator.last_name}` : 'government',
+      contactEmail: t.creator ? t.creator.email : t.contact_email || '',
+      contactPhone: t.creator ? t.creator.phone : t.contact_phone || '',
+      externalUrl: t.external_url || '',
       status: t.status && t.status.charAt(0).toUpperCase() + t.status.slice(1)
     });
 
@@ -1062,8 +1085,14 @@ const getApplicationsOverview = async (req, res) => {
       applicants: o.applications ? o.applications.length : (o.applications_count || 0),
       description: o.description || '',
       benefits: Array.isArray(o.benefits) ? o.benefits : [],
+      requirements: Array.isArray(o.requirements) ? o.requirements : [],
+      eligibility: Array.isArray(o.eligibility) ? o.eligibility : [],
+      applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : [],
       logo: o.organization_logo || '',
-      postedBy: 'institution',
+      postedBy: o.creator ? `${o.creator.first_name} ${o.creator.last_name}` : 'institution',
+      contactEmail: o.creator ? o.creator.email : o.contact_email || '',
+      contactPhone: o.creator ? o.creator.phone : o.contact_phone || '',
+      externalUrl: o.external_url || '',
       status: o.status && o.status.charAt(0).toUpperCase() + o.status.slice(1)
     });
 
