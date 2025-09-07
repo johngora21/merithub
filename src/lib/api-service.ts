@@ -8,6 +8,10 @@ export function resolveAssetUrl(possiblePath?: string | null): string {
   if (!possiblePath) return '';
   if (/^https?:\/\//i.test(possiblePath)) return possiblePath;
   if (possiblePath.startsWith('/uploads')) return `${ASSET_BASE_URL}${possiblePath}`;
+  // If it's just a filename, assume it's in uploads directory
+  if (!possiblePath.startsWith('/')) {
+    return `${ASSET_BASE_URL}/uploads/${possiblePath}`;
+  }
   return `${ASSET_BASE_URL}/${possiblePath.replace(/^\//, '')}`;
 }
 

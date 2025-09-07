@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { RefreshCw, Download, Users, MapPin, DollarSign, Briefcase, Clock, Star, Search, SlidersHorizontal, X, Check, FileText, GraduationCap, Calendar } from 'lucide-react'
+import { RefreshCw, Download, Users, MapPin, DollarSign, Briefcase, Clock, Star, Search, SlidersHorizontal, X, Check, FileText, GraduationCap, Calendar, Building2, Shield, Factory } from 'lucide-react'
 import { useResponsive, getGridColumns, getGridGap } from '../../hooks/useResponsive'
 import { countries } from '../../utils/countries'
 import ApplicantsList from './ApplicantsList'
-import { apiService } from '../../lib/api-service'
+import { apiService, resolveAssetUrl } from '../../lib/api-service'
 
 const Applications = () => {
   const screenSize = useResponsive()
@@ -90,7 +90,7 @@ const Applications = () => {
       contactPhone: j.creator ? j.creator.phone : '',
       approvalStatus: j.approval_status || 'pending',
       externalUrl: j.external_url || '',
-      workType: toTitleCase(j.work_type) || (j.isRemote ? 'Remote' : ''),
+      workType: toTitleCase(j.work_type) || (j.isRemote ? 'Remote' : 'Not specified'),
       status: j.status || 'Active'
     }
   }
@@ -132,7 +132,7 @@ const Applications = () => {
     id: t.id || t.tender_id || `TENDER-${t?.id || ''}`,
     title: t.title || '',
     company: t.organization || t.company || '',
-      industry: t.industry || t.sector || 'Government',
+      industry: t.industry || t.sector || 'Not specified',
     location: t.location || t.country || '',
       country: normalizedCountry || '',
       budget: budget,
@@ -140,6 +140,7 @@ const Applications = () => {
     postedTime: t.postedTime || t.createdAt ? new Date(t.postedTime || t.createdAt).toLocaleDateString() : 'Recently',
     applicants: t.applicants || t.applicants_count || 0,
       description: t.description || t.tender_description || '',
+      coverImage: t.cover_image || t.coverImage || t.logo || t.organization_logo || '',
     requirements: Array.isArray(t.requirements) ? t.requirements : [],
       projectScope: Array.isArray(t.project_scope) ? t.project_scope : (t.project_scope ? [t.project_scope] : []),
       technicalRequirements: Array.isArray(t.technical_requirements) ? t.technical_requirements : (t.technical_requirements ? [t.technical_requirements] : []),
@@ -195,7 +196,7 @@ const Applications = () => {
     company: o.organization || o.company || '',
     industry: o.industry || o.category || '',
     type: o.type || '',
-    location: o.location || o.country || 'Remote',
+    location: o.location || o.country || 'Not specified',
       country: normalizedCountry || '',
     duration: o.duration || '',
       stipend: stipend,
@@ -209,6 +210,7 @@ const Applications = () => {
       eligibility: Array.isArray(o.eligibility) ? o.eligibility : (o.eligibility ? [o.eligibility] : []),
       applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : (o.applicationProcess ? [o.applicationProcess] : []),
     logo: o.logo || o.organization_logo || '',
+      poster: o.poster || o.cover_image || o.coverImage || o.logo || o.organization_logo || '',
       postedBy: o.postedBy,
       contactEmail: o.contactEmail,
       contactPhone: o.contactPhone,
@@ -228,8 +230,13 @@ const Applications = () => {
         const tenders = Array.isArray(payload.tenders) ? payload.tenders : (payload.data?.tenders || [])
         const opportunities = Array.isArray(payload.opportunities) ? payload.opportunities : (payload.data?.opportunities || [])
 
-        // Enrich jobs with application_deadline from content endpoint (same controller)
+        // Enrich all data with detailed information from content endpoint
+        let enrichedJobs = jobs
+        let enrichedTenders = tenders  
+        let enrichedOpportunities = opportunities
+
         try {
+          // Enrich jobs
           const jobsDetailResp = await apiService.get('/admin/content?type=jobs&limit=50')
           const jobsDetailPayload = jobsDetailResp?.data || jobsDetailResp || {}
           const detailedJobs = Array.isArray(jobsDetailPayload)
@@ -237,12 +244,11 @@ const Applications = () => {
             : (jobsDetailPayload.content || jobsDetailPayload.data || jobsDetailPayload.jobs || [])
           const byId = new Map()
           detailedJobs.forEach(dj => { if (dj && dj.id != null) byId.set(dj.id, dj) })
-          const merged = jobs.map(j => {
+          enrichedJobs = jobs.map(j => {
             const dj = byId.get(j.id) || {}
             return {
               ...j,
               application_deadline: j.application_deadline || dj.application_deadline || dj.deadline,
-              // enrich missing fields from detailed content
               benefits: Array.isArray(j.benefits) ? j.benefits : (Array.isArray(dj.benefits) ? dj.benefits : (dj.benefits ? [dj.benefits] : (j.benefits ? [j.benefits] : []))),
               tags: Array.isArray(j.tags) ? j.tags : (Array.isArray(dj.tags) ? dj.tags : (dj.tags ? [dj.tags] : [])),
               contact_email: j.contact_email || dj.contact_email,
@@ -255,13 +261,63 @@ const Applications = () => {
               creator: j.creator || dj.creator
             }
           })
-          setJobsState(merged.map(mapJob))
         } catch (enrichErr) {
-          setJobsState(jobs.map(mapJob))
+          console.error('Error enriching jobs:', enrichErr)
         }
-        
-        setTendersState(tenders.map(mapTender))
-        setOpportunitiesState(opportunities.map(mapOpportunity))
+
+        try {
+          // Enrich tenders
+          const tendersDetailResp = await apiService.get('/admin/content?type=tenders&limit=50')
+          const tendersDetailPayload = tendersDetailResp?.data || tendersDetailResp || {}
+          const detailedTenders = Array.isArray(tendersDetailPayload)
+            ? tendersDetailPayload
+            : (tendersDetailPayload.content || tendersDetailPayload.data || tendersDetailPayload.tenders || [])
+          const tendersById = new Map()
+          detailedTenders.forEach(dt => { if (dt && dt.id != null) tendersById.set(dt.id, dt) })
+          enrichedTenders = tenders.map(t => {
+            const dt = tendersById.get(t.id) || {}
+            return {
+              ...t,
+              cover_image: t.cover_image || dt.cover_image,
+              organization_logo: t.organization_logo || dt.organization_logo
+            }
+          })
+        } catch (enrichErr) {
+          console.error('Error enriching tenders:', enrichErr)
+        }
+
+        try {
+          // Enrich opportunities
+          const opportunitiesDetailResp = await apiService.get('/admin/content?type=opportunities&limit=50')
+          const opportunitiesDetailPayload = opportunitiesDetailResp?.data || opportunitiesDetailResp || {}
+          const detailedOpportunities = Array.isArray(opportunitiesDetailPayload)
+            ? opportunitiesDetailPayload
+            : (opportunitiesDetailPayload.content || opportunitiesDetailPayload.data || opportunitiesDetailPayload.opportunities || [])
+          
+          const opportunitiesById = new Map()
+          detailedOpportunities.forEach(detail => { 
+            if (detail && detail.id != null) {
+              opportunitiesById.set(detail.id, detail) 
+            }
+          })
+          
+          enrichedOpportunities = opportunities.map(o => {
+            const detail = opportunitiesById.get(o.id) || {}
+            return {
+              ...o,
+              cover_image: o.cover_image || detail.cover_image || detail.poster || detail.logo,
+              organization_logo: o.organization_logo || detail.organization_logo || detail.logo,
+              poster: o.poster || detail.poster || o.cover_image || detail.cover_image || o.logo || detail.logo
+            }
+          })
+        } catch (enrichErr) {
+          console.error('Error enriching opportunities:', enrichErr)
+        }
+
+        // Set all enriched data at once
+        setJobsState(enrichedJobs.map(mapJob))
+        setTendersState(enrichedTenders.map(mapTender))
+        setOpportunitiesState(enrichedOpportunities.map(mapOpportunity))
       } catch (e) {
         console.error('Error fetching applications:', e)
         setJobsState([])
@@ -666,8 +722,697 @@ const Applications = () => {
             </p>
           </div>
         ) : (
-          filteredApplications.map((job) => (
-            <div key={job.id} style={{
+          filteredApplications.map((item) => {
+            // Render different card types based on activeTab
+            if (activeTab === 'tenders') {
+              const getSectorIcon = (sector) => {
+                const icons = {
+                  'Technology': FileText,
+                  'Construction': Building2,
+                  'Healthcare': Shield,
+                  'Transportation': Briefcase,
+                  'Energy': Factory,
+                  'Education': GraduationCap,
+                  'Finance': DollarSign,
+                  'Government': Building2,
+                  'Manufacturing': Factory,
+                  'Agriculture': Factory,
+                  'Telecommunications': FileText,
+                  'Consulting': Briefcase,
+                  'Real Estate': Building2,
+                  'Retail': Briefcase,
+                  'Hospitality': Building2,
+                  'Media': FileText,
+                  'Non-Profit': Shield,
+                  'Research': FileText,
+                  'Security': Shield,
+                  'Logistics': Briefcase
+                }
+                return icons[sector] || FileText
+              }
+
+              const getSectorColor = (sector) => {
+                switch (sector) {
+                  case 'Government': return '#1d4ed8'
+                  case 'Healthcare': return '#dc2626'
+                  case 'Transportation': return '#059669'
+                  case 'Private': return '#7c3aed'
+                  case 'Manufacturing': return '#ea580c'
+                  case 'Technology': return '#3b82f6'
+                  case 'Construction': return '#f59e0b'
+                  case 'Energy': return '#f97316'
+                  case 'Education': return '#06b6d4'
+                  case 'Finance': return '#84cc16'
+                  case 'Agriculture': return '#22c55e'
+                  case 'Telecommunications': return '#0ea5e9'
+                  case 'Consulting': return '#a855f7'
+                  case 'Real Estate': return '#f43f5e'
+                  case 'Retail': return '#14b8a6'
+                  case 'Hospitality': return '#f59e0b'
+                  case 'Media': return '#8b5cf6'
+                  case 'Non-Profit': return '#06b6d4'
+                  case 'Research': return '#3b82f6'
+                  case 'Security': return '#ef4444'
+                  case 'Logistics': return '#10b981'
+                  default: return '#16a34a'
+                }
+              }
+
+              const getDaysUntilDeadline = (deadline) => {
+                if (!deadline) return 0
+                const now = new Date()
+                const deadlineDate = new Date(deadline)
+                const diffTime = deadlineDate - now
+                return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+              }
+
+              const SectorIcon = getSectorIcon(item.sector || item.industry)
+              const sectorColor = getSectorColor(item.sector || item.industry)
+              const daysUntilDeadline = getDaysUntilDeadline(item.deadline)
+              const isDeadlineUrgent = daysUntilDeadline <= 7
+              
+
+              return (
+                <div key={item.id} style={{
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  border: '1px solid #f0f0f0',
+                  position: 'relative',
+                  transition: 'all 0.2s ease-in-out',
+                  cursor: 'pointer',
+                  height: '480px',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+                onClick={() => handleItemClick(item)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}>
+                  
+                  {/* Cover Image */}
+                  <div style={{ position: 'relative' }}>
+                    {(() => {
+                      const imageUrl = item.coverImage || item.cover_image || item.logo || item.organization_logo
+                      if (imageUrl) {
+                        return (
+                          <img 
+                            src={resolveAssetUrl(imageUrl)} 
+                            alt={item.title || 'Tender'}
+                            style={{
+                              width: '100%',
+                              height: '200px',
+                              objectFit: 'cover'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                              e.target.nextSibling.style.display = 'flex'
+                            }}
+                          />
+                        )
+                      }
+                      return null
+                    })()}
+                    <div style={{
+                      width: '100%',
+                      height: '200px',
+                      backgroundColor: '#f8f9fa',
+                      display: (item.coverImage || item.cover_image || item.logo || item.organization_logo) ? 'none' : 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#64748b'
+                    }}>
+                      <SectorIcon size={48} color={sectorColor} />
+                    </div>
+                    
+                    {/* Overlay badges */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      left: '12px',
+                      right: '12px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start'
+                    }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <span style={{
+                          fontSize: '12px',
+                          color: 'white',
+                          backgroundColor: sectorColor,
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontWeight: '600',
+                          backdropFilter: 'blur(10px)',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                          minHeight: '24px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          {item.sector || item.industry || 'Not specified'}
+                        </span>
+                        {item.urgentHiring && (
+                          <span style={{
+                            fontSize: '10px',
+                            color: 'white',
+                            backgroundColor: '#dc2626',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontWeight: '700',
+                            letterSpacing: '0.5px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: '20px',
+                            lineHeight: '1'
+                          }}>
+                            URGENT
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* PRO Badge - Top Right */}
+                      {item.postedBy === 'platform' && (
+                        <span style={{
+                          fontSize: '10px',
+                          color: 'white',
+                          backgroundColor: '#3b82f6',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontWeight: '600',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}>
+                          PRO
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    {/* Title */}
+                    <h2 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0',
+                      lineHeight: '1.3'
+                    }}>
+                      {item.title}
+                    </h2>
+
+                    {/* Organization */}
+                    <div style={{
+                      fontSize: '13px',
+                      color: '#64748b',
+                      marginBottom: '12px',
+                      fontWeight: '500'
+                    }}>
+                      {item.organization || item.company}
+                    </div>
+
+                    {/* Contract Value */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '13px',
+                      color: '#16a34a',
+                      fontWeight: '600',
+                      marginBottom: '12px'
+                    }}>
+                      <DollarSign size={14} />
+                      {item.contractValue || item.salary || 'Not specified'}
+                    </div>
+
+                    {/* Location and Deadline */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      marginBottom: '12px',
+                      flexWrap: 'wrap',
+                      flexShrink: 0
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '13px',
+                        color: '#64748b'
+                      }}>
+                        <MapPin size={14} />
+                        {item.location}{item.country && `, ${item.country}`}
+                      </div>
+                      <span style={{ color: '#e2e8f0' }}>•</span>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '13px',
+                        color: isDeadlineUrgent ? '#dc2626' : '#64748b',
+                        fontWeight: isDeadlineUrgent ? '600' : '500'
+                      }}>
+                        <Calendar size={12} />
+                        {item.deadline}
+                      </div>
+                    </div>
+
+                    {/* Tags */}
+                    {item.tags && item.tags.length > 0 && (
+                      <div style={{ marginBottom: '12px', flex: 1 }}>
+                        <div style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '6px'
+                        }}>
+                          {item.tags.slice(0, 4).map((tag, index) => (
+                            <span key={index} style={{
+                              backgroundColor: '#f1f5f9',
+                              color: '#475569',
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: '500'
+                            }}>
+                              {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Not specified'}
+                            </span>
+                          ))}
+                          {item.tags.length > 4 && (
+                            <span style={{
+                              color: '#64748b',
+                              fontSize: '12px',
+                              padding: '4px 8px',
+                              fontWeight: '500'
+                            }}>
+                              +{item.tags.length - 4} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Footer */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingTop: '12px',
+                      borderTop: '1px solid #f1f5f9',
+                      marginTop: 'auto',
+                      flexShrink: 0
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          color: '#16a34a',
+                          backgroundColor: '#dcfce7',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid #bbf7d0',
+                          letterSpacing: '0.5px'
+                        }}>
+                          FREE
+                        </span>
+                        
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          fontSize: '11px',
+                          color: '#64748b'
+                        }}>
+                          <Users size={11} />
+                          {item.applicants || 0} applicants
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleViewApplicants(item)
+                        }}
+                        style={{
+                          backgroundColor: '#ea580c',
+                          color: 'white',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease-in-out'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#dc2626'
+                          e.target.style.transform = 'translateY(-1px)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#ea580c'
+                          e.target.style.transform = 'translateY(0)'
+                        }}>
+                        View Applicants
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            if (activeTab === 'opportunities') {
+              const getTypeColor = (type) => {
+                switch (type) {
+                  case 'Scholarship': return '#1d4ed8'
+                  case 'Fellowship': return '#7c3aed'
+                  case 'Grant': return '#dc2626'
+                  case 'Program': return '#059669'
+                  case 'Internship': return '#ea580c'
+                  case 'Award': return '#ef4444'
+                  case 'Competition': return '#06b6d4'
+                  case 'Workshop': return '#f97316'
+                  case 'Conference': return '#ec4899'
+                  case 'Training': return '#6366f1'
+                  default: return '#16a34a'
+                }
+              }
+
+              const typeColor = getTypeColor(item.type)
+              
+
+              return (
+                <div key={item.id} style={{
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  border: '1px solid #f0f0f0',
+                  position: 'relative',
+                  transition: 'all 0.2s ease-in-out',
+                  cursor: 'pointer',
+                  height: '480px',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+                onClick={() => handleItemClick(item)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}>
+                  
+                  {/* Poster Image */}
+                  <div style={{ position: 'relative' }}>
+                    {(() => {
+                      const imageUrl = item.poster || item.cover_image || item.coverImage || item.logo || item.organization_logo
+                      if (imageUrl) {
+                        return (
+                          <img 
+                            src={resolveAssetUrl(imageUrl)} 
+                            alt={item.title || 'Opportunity'}
+                            style={{
+                              width: '100%',
+                              height: '200px',
+                              objectFit: 'cover'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                              e.target.nextSibling.style.display = 'flex'
+                            }}
+                          />
+                        )
+                      }
+                      return null
+                    })()}
+                    <div style={{
+                      width: '100%',
+                      height: '200px',
+                      backgroundColor: '#f8f9fa',
+                      display: (item.poster || item.cover_image || item.coverImage || item.logo || item.organization_logo) ? 'none' : 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#64748b'
+                    }}>
+                      <GraduationCap size={48} color={typeColor} />
+                    </div>
+                    
+                    {/* Overlay badges */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      left: '12px',
+                      right: '12px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start'
+                    }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <span style={{
+                          fontSize: '12px',
+                          color: 'white',
+                          backgroundColor: typeColor,
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontWeight: '600',
+                          backdropFilter: 'blur(10px)'
+                        }}>
+                          {item.type}
+                        </span>
+                        {item.price === 'Pro' && (
+                          <span style={{
+                            fontSize: '10px',
+                            color: 'white',
+                            backgroundColor: '#3b82f6',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontWeight: '700',
+                            letterSpacing: '0.5px'
+                          }}>
+                            PRO
+                          </span>
+                        )}
+                        {item.price === 'Free' && (
+                          <span style={{
+                            fontSize: '10px',
+                            color: 'white',
+                            backgroundColor: '#16a34a',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontWeight: '700'
+                          }}>
+                            Free
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* PRO Badge - Top Right */}
+                      {item.postedBy === 'platform' && (
+                        <span style={{
+                          fontSize: '10px',
+                          color: 'white',
+                          backgroundColor: '#3b82f6',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontWeight: '600',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}>
+                          PRO
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    {/* Title */}
+                    <h2 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0',
+                      lineHeight: '1.3'
+                    }}>
+                      {item.title}
+                    </h2>
+
+                    {/* Organization */}
+                    <div style={{
+                      fontSize: '13px',
+                      color: '#64748b',
+                      marginBottom: '12px',
+                      fontWeight: '500'
+                    }}>
+                      {item.organization || item.company || item.category}
+                    </div>
+
+                    {/* Key Info Row */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      marginBottom: '12px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '13px',
+                        color: '#64748b'
+                      }}>
+                        <Clock size={14} />
+                        {item.duration || 'Not specified'}
+                      </div>
+                      <span style={{ color: '#e2e8f0' }}>•</span>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '13px',
+                        color: '#64748b'
+                      }}>
+                        <MapPin size={14} />
+                        {item.location}
+                      </div>
+                    </div>
+
+                    {/* Deadline */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '13px',
+                      color: '#dc2626',
+                      marginBottom: '12px',
+                      fontWeight: '600'
+                    }}>
+                      <Calendar size={12} />
+                      {item.deadline}
+                    </div>
+
+                    {/* Tags */}
+                    {item.tags && item.tags.length > 0 && (
+                      <div style={{ marginBottom: '12px', flex: 1 }}>
+                        <div style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: '6px'
+                        }}>
+                          {item.tags.slice(0, 4).map((tag, index) => (
+                            <span key={index} style={{
+                              backgroundColor: '#f1f5f9',
+                              color: '#475569',
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: '500'
+                            }}>
+                              {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Not specified'}
+                            </span>
+                          ))}
+                          {item.tags.length > 4 && (
+                            <span style={{
+                              color: '#64748b',
+                              fontSize: '12px',
+                              padding: '4px 8px',
+                              fontWeight: '500'
+                            }}>
+                              +{item.tags.length - 4} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Footer */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingTop: '12px',
+                      borderTop: '1px solid #f1f5f9',
+                      marginTop: 'auto',
+                      flexShrink: 0
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          color: '#16a34a',
+                          backgroundColor: '#dcfce7',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid #bbf7d0',
+                          letterSpacing: '0.5px'
+                        }}>
+                          FREE
+                        </span>
+                        
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          fontSize: '11px',
+                          color: '#64748b'
+                        }}>
+                          <Users size={11} />
+                          {item.applicants || 0} applicants
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleViewApplicants(item)
+                        }}
+                        style={{
+                          backgroundColor: '#ea580c',
+                          color: 'white',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease-in-out'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#dc2626'
+                          e.target.style.transform = 'translateY(-1px)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#ea580c'
+                          e.target.style.transform = 'translateY(0)'
+                        }}>
+                        View Applicants
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            // Default job card design - keep original simple structure
+            return (
+              <div key={item.id} style={{
               backgroundColor: 'white',
               borderRadius: '12px',
               padding: '16px 12px',
@@ -685,10 +1430,10 @@ const Applications = () => {
               e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
               e.currentTarget.style.transform = 'translateY(0)'
             }}
-            onClick={() => handleItemClick(job)}>
+            onClick={() => handleItemClick(item)}>
               
               {/* PRO Badge - Top Right */}
-              {job.postedBy === 'platform' && (
+              {item.postedBy === 'platform' && (
                 <div style={{
                   position: 'absolute',
                   top: '12px',
@@ -717,10 +1462,10 @@ const Applications = () => {
                 marginBottom: '10px'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                  {job.logo && job.logo.trim() !== '' ? (
+                  {item.logo && item.logo.trim() !== '' ? (
                     <img 
-                      src={job.logo} 
-                      alt={job.company}
+                      src={item.logo} 
+                      alt={item.company}
                       style={{
                         width: '44px',
                         height: '44px',
@@ -743,7 +1488,7 @@ const Applications = () => {
                       fontWeight: '600',
                       color: '#64748b'
                     }}>
-                      {job.company ? job.company.charAt(0).toUpperCase() : '?'}
+                      {item.company ? item.company.charAt(0).toUpperCase() : '?'}
                     </div>
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -756,7 +1501,7 @@ const Applications = () => {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
                     }}>
-                      {job.company}
+                      {item.company}
                     </h3>
                     <div style={{
                       display: 'flex',
@@ -768,7 +1513,7 @@ const Applications = () => {
                         fontWeight: '500',
                         color: '#64748b'
                       }}>
-                        {job.industry}
+                        {item.industry}
                       </span>
                     </div>
                   </div>
@@ -785,8 +1530,8 @@ const Applications = () => {
                 alignItems: 'center',
                 gap: '4px'
               }}>
-                {job.title}
-                {job.urgentHiring && (
+                {item.title}
+                {item.urgentHiring && (
                   <Star size={14} color="#2563eb" fill="#2563eb" />
                 )}
               </h2>
@@ -804,30 +1549,30 @@ const Applications = () => {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <MapPin size={12} />
-                  <span style={{ color: '#0f172a' }}>{job.location}</span>
+                  <span style={{ color: '#0f172a' }}>{item.location}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ color: '#0f172a' }}>{job.country || '-'}</span>
+                  <span style={{ color: '#0f172a' }}>{item.country || '-'}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <DollarSign size={12} color="#16a34a" />
-                  <span style={{ color: '#16a34a', fontWeight: 600 }}>{job.salary}</span>
+                  <span style={{ color: '#16a34a', fontWeight: 600 }}>{item.salary}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Briefcase size={12} />
-                  <span style={{ color: '#0f172a' }}>{job.type}</span>
+                  <span style={{ color: '#0f172a' }}>{item.type}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Calendar size={12} />
-                  <span style={{ color: '#dc2626', fontWeight: 600 }}>{job.deadline}</span>
+                  <span style={{ color: '#dc2626', fontWeight: 600 }}>{item.deadline}</span>
                 </div>
               </div>
 
               {/* Tags */}
-              {job.tags && job.tags.length > 0 && (
+              {item.tags && item.tags.length > 0 && (
                 <div style={{ marginBottom: '10px' }}>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                    {job.tags.slice(0, 4).map((tag, index) => (
+                    {item.tags.slice(0, 4).map((tag, index) => (
                       <span key={index} style={{
                         backgroundColor: '#eef2ff',
                         color: '#4338ca',
@@ -839,9 +1584,9 @@ const Applications = () => {
                         {tag}
                       </span>
                     ))}
-                    {job.tags.length > 4 && (
+                    {item.tags.length > 4 && (
                       <span style={{ color: '#64748b', fontSize: '11px', padding: '2px 6px', fontWeight: '500' }}>
-                        +{job.tags.length - 4} more
+                        +{item.tags.length - 4} more
                       </span>
                     )}
                   </div>
@@ -865,11 +1610,11 @@ const Applications = () => {
                   color: '#64748b'
                 }}>
                   <Users size={11} />
-                  {job.applicants || 0} applicants
+                  {item.applicants || 0} applicants
                 </div>
 
                 <button
-                  onClick={() => handleViewApplicants(job)}
+                  onClick={() => handleViewApplicants(item)}
                   style={{
                     backgroundColor: '#ea580c',
                     color: 'white',
@@ -893,7 +1638,8 @@ const Applications = () => {
                 </button>
               </div>
             </div>
-          ))
+            )
+          })
         )}
       </div>
 

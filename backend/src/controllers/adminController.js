@@ -397,9 +397,6 @@ const getAllContent = async (req, res) => {
       order,
       limit: parseInt(limit),
       offset: (page - 1) * limit,
-      attributes: {
-        include: type === 'courses' ? ['experience_years'] : ['benefits', 'external_url', 'tags', 'experience_years']
-      },
       include: [
         {
           model: User,

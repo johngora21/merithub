@@ -720,6 +720,7 @@ const Content = () => {
     return {
       ...apiTender,
       amount,
+      sector: (apiTender?.sector || '').split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('-'),
       postedTime: apiTender?.created_at ? new Date(apiTender.created_at).toLocaleDateString() : 'Recently',
       description: apiTender?.description || apiTender?.tender_description || '',
       tags: Array.isArray(apiTender?.tags) ? apiTender.tags : []
@@ -1025,15 +1026,20 @@ const Content = () => {
             }}>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{
-                  fontSize: '12px',
+                  fontSize: '14px',
                   color: 'white',
                   backgroundColor: sectorColor,
-                  padding: '4px 8px',
-                  borderRadius: '6px',
-                  fontWeight: '600',
-                  backdropFilter: 'blur(10px)'
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  backdropFilter: 'blur(10px)',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                  minHeight: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
-                  {item.sector}
+                  {item.sector || item.industry || 'General'}
                 </span>
                 {item.isUrgent && (
                   <span style={{
@@ -1080,13 +1086,51 @@ const Content = () => {
               {item.organization}
             </div>
 
-            {/* Quick info: exact flow to match Applications (vertical) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px', flexShrink: 0, fontSize: '13px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+            {/* Contract Value */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '13px',
+              color: '#16a34a',
+              fontWeight: '600',
+              marginBottom: '12px'
+            }}>
+              <DollarSign size={14} />
+              {item.amount || 'Value not specified'}
+            </div>
+
+            {/* Location and Deadline */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              marginBottom: '12px',
+              flexWrap: 'wrap',
+              flexShrink: 0
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                color: '#64748b'
+              }}>
                 <MapPin size={14} />
-                <span style={{ color: '#0f172a' }}>{item.location}</span>
+                {item.location}
               </div>
-              <div style={{ color: '#0f172a' }}>{item.country || '-'}</div>
+              <span style={{ color: '#e2e8f0' }}>•</span>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                color: isDeadlineUrgent ? '#dc2626' : '#64748b',
+                fontWeight: isDeadlineUrgent ? '600' : '500'
+              }}>
+                <Calendar size={12} />
+                Due: {new Date(item.deadline).toLocaleDateString()} ({daysUntilDeadline} days)
+              </div>
             </div>
 
             {/* Description */}
@@ -1326,7 +1370,10 @@ const Content = () => {
           border: '1px solid #f0f0f0',
           position: 'relative',
           transition: 'all 0.2s ease-in-out',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          height: '480px',
+          display: 'flex',
+          flexDirection: 'column'
         }}
         onClick={() => handleViewDetails(item, type)}
         onMouseEnter={(e) => {
@@ -1438,22 +1485,61 @@ const Content = () => {
               {item.organization || item.category}
             </div>
 
-            {/* Salary and Type (vertical) */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16a34a', fontWeight: 600 }}>
+            {/* Amount, Duration, Location */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              marginBottom: '12px',
+              flexWrap: 'wrap'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                color: '#16a34a',
+                fontWeight: '600'
+              }}>
                 <DollarSign size={14} />
-                <span style={{ fontSize: '13px' }}>{item.amount || item.salary}</span>
+                {item.amount || item.salary}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
-                <Briefcase size={14} />
-                <span style={{ fontSize: '13px' }}>{item.type}</span>
+              <span style={{ color: '#e2e8f0' }}>•</span>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                color: '#64748b'
+              }}>
+                <Clock size={14} />
+                {item.duration || 'Varies'}
+              </div>
+              <span style={{ color: '#e2e8f0' }}>•</span>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '13px',
+                color: '#64748b'
+              }}>
+                <MapPin size={14} />
+                {item.location}
               </div>
             </div>
 
-            {/* Deadline (last line) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#dc2626', marginBottom: '12px', fontWeight: 600 }}>
+            {/* Deadline */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '13px',
+              color: '#dc2626',
+              marginBottom: '12px',
+              fontWeight: '600'
+            }}>
               <Calendar size={12} />
-              <span style={{ fontSize: '13px' }}>{new Date(item.deadline).toLocaleDateString()}</span>
+              Deadline: {new Date(item.deadline).toLocaleDateString()}
             </div>
 
             {/* Description */}
@@ -1470,93 +1556,58 @@ const Content = () => {
               {item.detailedDescription || item.description}
             </p>
 
-            {/* Tags */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '6px'
-              }}>
-                {item.tags.slice(0, 3).map((tag, index) => (
-                  <span key={index} style={{
-                    backgroundColor: '#f1f5f9',
-                    color: '#475569',
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '500'
-                  }}>
-                    {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
-                  </span>
-                ))}
-                {item.tags.length > 3 && (
-                  <span style={{
-                    color: '#64748b',
-                    fontSize: '12px',
-                    padding: '4px 8px',
-                    fontWeight: '500'
-                  }}>
-                    +{item.tags.length - 3} more
-                  </span>
-                )}
-              </div>
-            </div>
 
             {/* Footer */}
             <div style={{
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              flexDirection: 'column',
+              gap: '12px',
               paddingTop: '12px',
-              borderTop: '1px solid #f1f5f9'
+              borderTop: '1px solid #f1f5f9',
+              marginTop: 'auto',
+              flexShrink: 0
             }}>
+              {/* Tags */}
+              {item.tags && item.tags.length > 0 && (
+                <div>
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '6px'
+                  }}>
+                    {item.tags.slice(0, 4).map((tag, index) => (
+                      <span key={index} style={{
+                        backgroundColor: '#f1f5f9',
+                        color: '#475569',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '500'
+                      }}>
+                        {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
+                      </span>
+                    ))}
+                    {item.tags.length > 4 && (
+                      <span style={{
+                        color: '#64748b',
+                        fontSize: '12px',
+                        padding: '4px 8px',
+                        fontWeight: '500'
+                      }}>
+                        +{item.tags.length - 4} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Admin Actions */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'flex-end',
                 gap: '8px'
               }}>
-                <span style={{
-                fontSize: '12px',
-                  fontWeight: '600',
-                  color: item.price === 'Pro' ? '#3b82f6' : '#16a34a',
-                  backgroundColor: item.price === 'Pro' ? '#dbeafe' : '#dcfce7',
-                  padding: '4px 8px',
-                  borderRadius: '6px',
-                  border: `1px solid ${item.price === 'Pro' ? '#93c5fd' : '#bbf7d0'}`
-                }}>
-                  {item.price || 'Free'}
-                </span>
-                
-                {/* Switch Toggle */}
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handlePriceToggle(item, type)
-                  }}
-                  style={{
-                    position: 'relative',
-                    width: '44px',
-                    height: '24px',
-                    backgroundColor: item.price === 'Pro' ? '#3b82f6' : '#d1d5db',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '2px'
-                  }}
-                >
-                  <div style={{
-                    width: '20px',
-                    height: '20px',
-                    backgroundColor: 'white',
-                    borderRadius: '50%',
-                    transition: 'transform 0.3s ease',
-                    transform: item.price === 'Pro' ? 'translateX(20px)' : 'translateX(0)',
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-                  }} />
-                </div>
-              </div>
 
               {item.approval_status === 'pending' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1643,6 +1694,7 @@ const Content = () => {
                   </span>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>
