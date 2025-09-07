@@ -129,26 +129,26 @@ const Applications = () => {
     const normalizedCountry = countryFromList ? countryFromList.name : rawCountry
 
     return {
-      id: t.id || t.tender_id || `TENDER-${t?.id || ''}`,
-      title: t.title || '',
-      company: t.organization || t.company || '',
+    id: t.id || t.tender_id || `TENDER-${t?.id || ''}`,
+    title: t.title || '',
+    company: t.organization || t.company || '',
       industry: t.industry || t.sector || 'Government',
-      location: t.location || t.country || '',
+    location: t.location || t.country || '',
       country: normalizedCountry || '',
       budget: budget,
       deadline: t.deadline ? formatDate(t.deadline) : 'No deadline',
-      postedTime: t.postedTime || t.createdAt ? new Date(t.postedTime || t.createdAt).toLocaleDateString() : 'Recently',
-      applicants: t.applicants || t.applicants_count || 0,
+    postedTime: t.postedTime || t.createdAt ? new Date(t.postedTime || t.createdAt).toLocaleDateString() : 'Recently',
+    applicants: t.applicants || t.applicants_count || 0,
       description: t.description || t.tender_description || '',
-      requirements: Array.isArray(t.requirements) ? t.requirements : [],
+    requirements: Array.isArray(t.requirements) ? t.requirements : [],
       benefits: Array.isArray(t.benefits) ? t.benefits : (t.benefits ? [t.benefits] : []),
       tags: Array.isArray(t.tags) ? t.tags : (t.tags ? [t.tags] : []),
-      logo: t.logo || t.organization_logo || '',
+    logo: t.logo || t.organization_logo || '',
       postedBy: t.posted_by || t.poster || 'government',
       contactEmail: t.contact_email || '',
       contactPhone: t.contact_phone || '',
       externalUrl: t.external_url || '',
-      status: t.status || 'Active'
+    status: t.status || 'Active'
     }
   }
 
@@ -186,27 +186,27 @@ const Applications = () => {
     const normalizedCountry = countryFromList ? countryFromList.name : rawCountry
 
     return {
-      id: o.id || o.opportunity_id || `OPP-${o?.id || ''}`,
-      title: o.title || '',
-      company: o.organization || o.company || '',
-      industry: o.industry || o.category || '',
-      location: o.location || o.country || 'Remote',
+    id: o.id || o.opportunity_id || `OPP-${o?.id || ''}`,
+    title: o.title || '',
+    company: o.organization || o.company || '',
+    industry: o.industry || o.category || '',
+    location: o.location || o.country || 'Remote',
       country: normalizedCountry || '',
-      duration: o.duration || '',
+    duration: o.duration || '',
       stipend: stipend,
       deadline: o.deadline ? formatDate(o.deadline) : 'No deadline',
-      postedTime: o.postedTime || o.createdAt ? new Date(o.postedTime || o.createdAt).toLocaleDateString() : 'Recently',
-      applicants: o.applicants || o.applicants_count || 0,
+    postedTime: o.postedTime || o.createdAt ? new Date(o.postedTime || o.createdAt).toLocaleDateString() : 'Recently',
+    applicants: o.applicants || o.applicants_count || 0,
       description: o.description || o.opportunity_description || '',
       benefits: Array.isArray(o.benefits) ? o.benefits : (o.benefits ? [o.benefits] : []),
       tags: Array.isArray(o.tags) ? o.tags : (o.tags ? [o.tags] : []),
       requirements: Array.isArray(o.requirements) ? o.requirements : (o.requirements ? [o.requirements] : []),
-      logo: o.logo || o.organization_logo || '',
+    logo: o.logo || o.organization_logo || '',
       postedBy: o.posted_by || o.poster || 'institution',
       contactEmail: o.contact_email || '',
       contactPhone: o.contact_phone || '',
       externalUrl: o.external_url || '',
-      status: o.status || 'Active'
+    status: o.status || 'Active'
     }
   }
 
@@ -1409,12 +1409,16 @@ const Applications = () => {
                   {activeTab === 'tenders' && (
                     <>
                       <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Budget</label>
-                        <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedItem.budget}</p>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Organization</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.company}</p>
                       </div>
                       <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry</label>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Sector</label>
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.industry}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contract Value</label>
+                        <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedItem.budget}</p>
                       </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
@@ -1423,6 +1427,10 @@ const Applications = () => {
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Country</label>
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.country}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Submission Deadline</label>
+                        <p style={{ fontSize: '14px', color: '#dc2626', margin: 0, fontWeight: '500' }}>{selectedItem.deadline}</p>
                       </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Posted By</label>
@@ -1452,16 +1460,16 @@ const Applications = () => {
                   {activeTab === 'opportunities' && (
                     <>
                       <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Organization</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.company}</p>
+                      </div>
+                      <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Type</label>
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.type}</p>
                       </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Duration</label>
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.duration}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.industry}</p>
                       </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
@@ -1472,8 +1480,12 @@ const Applications = () => {
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.country}</p>
                       </div>
                       <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Stipend</label>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Stipend/Amount</label>
                         <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedItem.stipend}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application Deadline</label>
+                        <p style={{ fontSize: '14px', color: '#dc2626', margin: 0, fontWeight: '500' }}>{selectedItem.deadline}</p>
                       </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Posted By</label>
