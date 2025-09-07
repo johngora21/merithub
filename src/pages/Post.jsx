@@ -233,18 +233,30 @@ const Post = ({ onClose, editItem = null }) => {
           return
         }
         const fd2 = new FormData()
+        // Process contract value based on type (fixed or range)
+        let contract_value_min
+        let contract_value_max
+        if (formData.salaryType === 'fixed') {
+          contract_value_min = formData.salaryMin ? parseFloat(formData.salaryMin) : undefined
+          contract_value_max = formData.salaryMin ? parseFloat(formData.salaryMin) : undefined
+        } else if (formData.salaryType === 'range') {
+          contract_value_min = formData.salaryMin ? parseFloat(formData.salaryMin) : undefined
+          contract_value_max = formData.salaryMax ? parseFloat(formData.salaryMax) : undefined
+        }
+
         const tenderBody = {
           ...payload,
           organization: formData.organization,
-          contract_value_min: undefined,
-          contract_value_max: undefined,
+          contract_value_min,
+          contract_value_max,
           sector: formData.sector === 'Other' ? formData.customSector : formData.sector,
           category: 'general',
           submission_type: 'electronic',
           duration: formData.experience || undefined,
-          price: formData.price || undefined,
+          price: formData.price || 'Free',
           currency: formData.currency || 'USD',
-          external_url: formData.applicationUrl || undefined
+          external_url: formData.applicationUrl || undefined,
+          contact_email: formData.contactEmail || undefined
         }
         Object.entries(tenderBody).forEach(([k, v]) => {
           if (v !== undefined && v !== null) fd2.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
@@ -275,6 +287,7 @@ const Post = ({ onClose, editItem = null }) => {
           benefits: formData.benefits ? formData.benefits.split(',').map(s => s.trim()).filter(Boolean) : [],
           requirements: formData.requirements ? formData.requirements.split('\n').filter(Boolean) : [],
           duration: formData.experience || undefined,
+          currency: formData.currency || 'USD',
           // price is admin-only via onClose
           price: onClose ? (formData.price || undefined) : undefined
         }
@@ -1224,7 +1237,7 @@ const Post = ({ onClose, editItem = null }) => {
                   </div>
                 )}
                 
-                {/* Project Scope (chips via multiline) */}
+                {/* Duration */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
                     fontSize: '14px',
@@ -1233,13 +1246,11 @@ const Post = ({ onClose, editItem = null }) => {
                     marginBottom: '6px',
                     display: 'block'
                   }}>
-                    Project Scope (one per line)
+                    Duration (Project Timeline)
                   </label>
-                  <textarea
-                    value={formData.projectScope}
-                    onChange={(e) => handleInputChange('projectScope', e.target.value)}
-                    placeholder={'e.g.\nDesign system upgrade\nMigrate database\nDeploy CI/CD'}
-                    rows={4}
+                  <select
+                    value={formData.experience}
+                    onChange={(e) => handleInputChange('experience', e.target.value)}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -1247,13 +1258,53 @@ const Post = ({ onClose, editItem = null }) => {
                       borderRadius: '8px',
                       fontSize: '14px',
                       outline: 'none',
-                      boxSizing: 'border-box',
-                      resize: 'vertical'
+                      backgroundColor: 'white',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="">Select duration</option>
+                    <option value="1 month">1 month</option>
+                    <option value="2 months">2 months</option>
+                    <option value="3 months">3 months</option>
+                    <option value="6 months">6 months</option>
+                    <option value="1 year">1 year</option>
+                    <option value="1.5 years">1.5 years</option>
+                    <option value="2 years">2 years</option>
+                    <option value="3 years">3 years</option>
+                    <option value="5 years">5 years</option>
+                    <option value="Ongoing">Ongoing</option>
+                  </select>
+                </div>
+
+                {/* Submission Deadline */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Submission Deadline *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.deadline}
+                    onChange={(e) => handleInputChange('deadline', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
 
-                {/* Technical Requirements */}
+                {/* Application URL */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
                     fontSize: '14px',
@@ -1262,13 +1313,13 @@ const Post = ({ onClose, editItem = null }) => {
                     marginBottom: '6px',
                     display: 'block'
                   }}>
-                    Technical Requirements (one per line)
+                    Application URL
                   </label>
-                  <textarea
-                    value={formData.technicalRequirements}
-                    onChange={(e) => handleInputChange('technicalRequirements', e.target.value)}
-                    placeholder={'e.g.\nISO 27001 compliance\nAWS expertise\nKubernetes experience'}
-                    rows={4}
+                  <input
+                    type="url"
+                    value={formData.applicationUrl}
+                    onChange={(e) => handleInputChange('applicationUrl', e.target.value)}
+                    placeholder="https://procurement.gov/tender/123"
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -1276,13 +1327,12 @@ const Post = ({ onClose, editItem = null }) => {
                       borderRadius: '8px',
                       fontSize: '14px',
                       outline: 'none',
-                      boxSizing: 'border-box',
-                      resize: 'vertical'
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
 
-                {/* Submission Process */}
+                {/* Contact Email */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
                     fontSize: '14px',
@@ -1291,13 +1341,14 @@ const Post = ({ onClose, editItem = null }) => {
                     marginBottom: '6px',
                     display: 'block'
                   }}>
-                    Submission Process (steps, one per line)
+                    Contact Email *
                   </label>
-                  <textarea
-                    value={formData.submissionProcess}
-                    onChange={(e) => handleInputChange('submissionProcess', e.target.value)}
-                    placeholder={'e.g.\nRegister on portal\nUpload documents\nSubmit before deadline'}
-                    rows={3}
+                  <input
+                    type="email"
+                    required
+                    value={formData.contactEmail}
+                    onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                    placeholder="procurement@organization.gov"
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -1305,37 +1356,7 @@ const Post = ({ onClose, editItem = null }) => {
                       borderRadius: '8px',
                       fontSize: '14px',
                       outline: 'none',
-                      boxSizing: 'border-box',
-                      resize: 'vertical'
-                    }}
-                  />
-                </div>
-
-                {/* Evaluation Criteria */}
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151',
-                    marginBottom: '6px',
-                    display: 'block'
-                  }}>
-                    Evaluation Criteria (one per line)
-                  </label>
-                  <textarea
-                    value={formData.evaluationCriteria}
-                    onChange={(e) => handleInputChange('evaluationCriteria', e.target.value)}
-                    placeholder={'e.g.\nTechnical proposal 40%\nFinancial proposal 40%\nExperience 20%'}
-                    rows={3}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                      resize: 'vertical'
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -1460,40 +1481,7 @@ const Post = ({ onClose, editItem = null }) => {
                   )}
                 </div>
 
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
-                  gap: '12px', 
-                  marginBottom: '16px' 
-                }}>
-                  <div>
-                    <label style={{
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#374151',
-                      marginBottom: '6px',
-                      display: 'block'
-                    }}>
-                      Submission Deadline *
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={formData.deadline}
-                      onChange={(e) => handleInputChange('deadline', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-                </div>
-
+                {/* Currency */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
                     fontSize: '14px',
@@ -1502,7 +1490,68 @@ const Post = ({ onClose, editItem = null }) => {
                     marginBottom: '6px',
                     display: 'block'
                   }}>
-                    Requirements & Qualifications *
+                    Currency
+                  </label>
+                  <select
+                    value={formData.currency}
+                    onChange={(e) => handleInputChange('currency', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {['TZS','KES','UGX','RWF','BIF','SSP','ETB','SOS','ZAR','ZMW','NGN','USD','EUR','GBP'].map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tender Overview */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Tender Overview *
+                  </label>
+                  <textarea
+                    required
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    placeholder="Describe the tender, its objectives, and what contractors can expect..."
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      resize: 'vertical',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {/* Requirements */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Requirements *
                   </label>
                   <textarea
                     required
@@ -1523,72 +1572,186 @@ const Post = ({ onClose, editItem = null }) => {
                   />
                 </div>
 
-                <div style={{ 
-                                      display: 'grid', 
-                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
-                    gap: '12px', 
-                  marginBottom: '16px' 
-                }}>
-                  <div>
-                    <label style={{
+                {/* Evaluation Criteria */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Evaluation Criteria
+                  </label>
+                  <textarea
+                    value={formData.evaluationCriteria}
+                    onChange={(e) => handleInputChange('evaluationCriteria', e.target.value)}
+                    placeholder={'e.g.\nTechnical proposal 40%\nFinancial proposal 40%\nExperience 20%'}
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
                       fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#374151',
-                      marginBottom: '6px',
-                      display: 'block'
-                    }}>
-                      Application URL
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.applicationUrl}
-                      onChange={(e) => handleInputChange('applicationUrl', e.target.value)}
-                      placeholder="https://procurement.gov/tender/123"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
 
-                  <div>
-                    <label style={{
+                {/* Submission Process */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Submission Process
+                  </label>
+                  <textarea
+                    value={formData.submissionProcess}
+                    onChange={(e) => handleInputChange('submissionProcess', e.target.value)}
+                    placeholder={'e.g.\nRegister on portal\nUpload documents\nSubmit before deadline'}
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
                       fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#374151',
-                      marginBottom: '6px',
-                      display: 'block'
-                    }}>
-                      Contact Email *
-                    </label>
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      resize: 'vertical'
+                    }}
+                  />
+                </div>
+
+                {/* Mark as urgent - Tender specific */}
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input
-                      type="email"
-                      required
-                      value={formData.contactEmail}
-                      onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                      placeholder="procurement@organization.gov"
+                      type="checkbox"
+                      id="isUrgentTender"
+                      checked={!!formData.isUrgent}
+                      onChange={(e) => handleInputChange('isUrgent', e.target.checked)}
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    <label htmlFor="isUrgentTender" style={{ fontSize: '14px', color: '#374151' }}>
+                      Mark as urgent
+                    </label>
+                  </div>
+                </div>
+
+                {/* Tags - Tender specific */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Tags
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <input
+                      type="text"
+                      value={formData.customTag || ''}
+                      onChange={(e) => handleInputChange('customTag', e.target.value)}
+                      placeholder="Add a tag..."
                       style={{
-                        width: '100%',
-                        padding: '10px 12px',
+                        flex: 1,
+                        padding: '8px 12px',
                         border: '1px solid #e2e8f0',
                         borderRadius: '8px',
                         fontSize: '14px',
                         outline: 'none',
                         boxSizing: 'border-box'
                       }}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (formData.customTag && formData.customTag.trim()) {
+                            const newTags = [...(formData.tags || []), formData.customTag.trim()];
+                            handleInputChange('tags', newTags);
+                            handleInputChange('customTag', '');
+                          }
+                        }
+                      }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (formData.customTag && formData.customTag.trim()) {
+                          const newTags = [...(formData.tags || []), formData.customTag.trim()];
+                          handleInputChange('tags', newTags);
+                          handleInputChange('customTag', '');
+                        }
+                      }}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        fontWeight: '500'
+                      }}
+                    >
+                      Add
+                    </button>
                   </div>
+                  {formData.tags && formData.tags.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {formData.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          style={{
+                            backgroundColor: '#e2e8f0',
+                            color: '#374151',
+                            padding: '4px 8px',
+                            borderRadius: '16px',
+                            fontSize: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newTags = formData.tags.filter((_, i) => i !== index);
+                              handleInputChange('tags', newTags);
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#6b7280',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              padding: '0',
+                              marginLeft: '4px'
+                            }}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </>
             )}
 
             {formData.type === 'opportunity' && (
               <>
+                {/* Organization */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
                     fontSize: '14px',
@@ -1617,77 +1780,7 @@ const Post = ({ onClose, editItem = null }) => {
                   />
                 </div>
 
-                <div style={{ 
-                                      display: 'grid', 
-                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
-                    gap: '12px', 
-                  marginBottom: '16px' 
-                }}>
-                  <div>
-                    <label style={{
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#374151',
-                      marginBottom: '6px',
-                      display: 'block'
-                    }}>
-                      Opportunity Type *
-                    </label>
-                    <select
-                      required
-                      value={formData.jobType}
-                      onChange={(e) => handleInputChange('jobType', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        backgroundColor: 'white',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      <option value="">Select type</option>
-                      <option value="Scholarships">Scholarships</option>
-                      <option value="Fellowships">Fellowships</option>
-                      <option value="Funds">Funds</option>
-                      <option value="Grants">Grants</option>
-                      <option value="Internships">Internships</option>
-                      <option value="Programs">Programs</option>
-                      <option value="Competitions">Competitions</option>
-                      <option value="Research">Research</option>
-                      <option value="Professional Development">Professional Development</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label style={{
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#374151',
-                      marginBottom: '6px',
-                      display: 'block'
-                    }}>
-                      Application Deadline
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.deadline}
-                      onChange={(e) => handleInputChange('deadline', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-                </div>
-
+                {/* Opportunity Type */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
                     fontSize: '14px',
@@ -1696,7 +1789,136 @@ const Post = ({ onClose, editItem = null }) => {
                     marginBottom: '6px',
                     display: 'block'
                   }}>
-                    Duration
+                    Opportunity Type *
+                  </label>
+                  <select
+                    required
+                    value={formData.jobType}
+                    onChange={(e) => handleInputChange('jobType', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="">Select type</option>
+                    <option value="Scholarships">Scholarships</option>
+                    <option value="Fellowships">Fellowships</option>
+                    <option value="Funds">Funds</option>
+                    <option value="Grants">Grants</option>
+                    <option value="Internships">Internships</option>
+                    <option value="Programs">Programs</option>
+                    <option value="Competitions">Competitions</option>
+                    <option value="Research">Research</option>
+                    <option value="Professional Development">Professional Development</option>
+                  </select>
+                </div>
+
+                {/* Location */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Location
+                  </label>
+                  <select
+                    value={formData.location}
+                    onChange={(e) => handleInputChange('location', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="">Select Location</option>
+                    <option value="Global">Global</option>
+                    <option value="Online">Online</option>
+                    <option value="Remote">Remote</option>
+                    <option value="On-site">On-site</option>
+                  </select>
+                </div>
+
+                {/* Contact Email */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Contact Email
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.contactEmail}
+                    onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                    placeholder="opportunities@organization.com"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {/* Application URL */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Application URL *
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    value={formData.applicationUrl}
+                    onChange={(e) => handleInputChange('applicationUrl', e.target.value)}
+                    placeholder="https://organization.com/apply"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {/* Application Duration */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Application Duration
                   </label>
                   <select
                     value={formData.experience}
@@ -1735,12 +1957,40 @@ const Post = ({ onClose, editItem = null }) => {
                   </select>
                 </div>
 
+                {/* Application Deadline */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: '500',
-                    color: '#64748b',
-                    marginBottom: '4px',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Application Deadline
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.deadline}
+                    onChange={(e) => handleInputChange('deadline', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {/* Stipend/Amount Type */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
                     display: 'block'
                   }}>
                     Stipend/Amount Type *
@@ -1855,6 +2105,68 @@ const Post = ({ onClose, editItem = null }) => {
                   )}
                 </div>
 
+                {/* Currency */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Currency
+                  </label>
+                  <select
+                    value={formData.currency}
+                    onChange={(e) => handleInputChange('currency', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {['TZS','KES','UGX','RWF','BIF','SSP','ETB','SOS','ZAR','ZMW','NGN','USD','EUR','GBP'].map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Overview */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Overview *
+                  </label>
+                  <textarea
+                    required
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    placeholder="Describe the opportunity, its purpose, and what participants can expect..."
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      resize: 'vertical',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {/* Eligibility & Requirements */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
                     fontSize: '14px',
@@ -1884,6 +2196,7 @@ const Post = ({ onClose, editItem = null }) => {
                   />
                 </div>
 
+                {/* Benefits & Value */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
                     fontSize: '14px',
@@ -1894,11 +2207,11 @@ const Post = ({ onClose, editItem = null }) => {
                   }}>
                     Benefits & Value
                   </label>
-                  <input
-                    type="text"
+                  <textarea
                     value={formData.benefits}
                     onChange={(e) => handleInputChange('benefits', e.target.value)}
-                    placeholder="e.g., $50,000 scholarship, Mentorship, Research opportunity"
+                    placeholder="Describe the benefits, value, and what participants will gain from this opportunity..."
+                    rows={3}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -1906,96 +2219,10 @@ const Post = ({ onClose, editItem = null }) => {
                       borderRadius: '8px',
                       fontSize: '14px',
                       outline: 'none',
+                      resize: 'vertical',
                       boxSizing: 'border-box'
                     }}
                   />
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151',
-                    marginBottom: '6px',
-                    display: 'block'
-                  }}>
-                    Application URL *
-                  </label>
-                  <input
-                    type="url"
-                    required
-                    value={formData.applicationUrl}
-                    onChange={(e) => handleInputChange('applicationUrl', e.target.value)}
-                    placeholder="https://organization.com/apply"
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151',
-                    marginBottom: '6px',
-                    display: 'block'
-                  }}>
-                    Contact Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.contactEmail}
-                    onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                    placeholder="opportunities@organization.com"
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151',
-                    marginBottom: '6px',
-                    display: 'block'
-                  }}>
-                    City/Town
-                  </label>
-                  <select
-                    value={formData.location}
-                    onChange={(e) => handleInputChange('location', e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      backgroundColor: 'white',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <option value="">Select City/Town</option>
-                    <option value="Global">Global</option>
-                    <option value="Online">Online</option>
-                    <option value="Remote">Remote</option>
-                    <option value="On-site">On-site</option>
-                  </select>
                 </div>
               </>
             )}
@@ -2044,6 +2271,97 @@ const Post = ({ onClose, editItem = null }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                     <img src={URL.createObjectURL(formData.coverImage)} alt="cover image" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
                     <div style={{ fontSize: '12px', color: '#374151' }}>{formData.coverImage.name}</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tags (opportunities only) */}
+            {formData.type === 'opportunity' && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  color: '#374151',
+                  marginBottom: '6px',
+                  display: 'block'
+                }}>
+                  Tags
+                </label>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                  <input
+                    type="text"
+                    value={formData.customTag}
+                    onChange={(e) => handleInputChange('customTag', e.target.value)}
+                    placeholder="Add a tag..."
+                    style={{
+                      flex: 1,
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleAddTag()
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddTag}
+                    style={{
+                      padding: '10px 16px',
+                      backgroundColor: '#3b82f6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+                {formData.tags && formData.tags.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {(Array.isArray(formData.tags) ? formData.tags : (formData.tags || '').split(',').filter(t => t.trim())).map((tag, index) => (
+                      <span
+                        key={index}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          backgroundColor: '#f3f4f6',
+                          color: '#374151',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '500'
+                        }}
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#6b7280',
+                            cursor: 'pointer',
+                            padding: '0',
+                            fontSize: '14px',
+                            lineHeight: '1'
+                          }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>
@@ -2154,8 +2472,8 @@ const Post = ({ onClose, editItem = null }) => {
             )}
 
 
-            {/* Urgent flag (jobs and tenders only) */}
-            {(formData.type === 'job' || formData.type === 'tender') && (
+            {/* Urgent flag (jobs only - tender has its own) */}
+            {formData.type === 'job' && (
               <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input
                   id="isUrgent"
@@ -2173,7 +2491,8 @@ const Post = ({ onClose, editItem = null }) => {
 
 
 
-            {/* Tags Section */}
+            {/* Tags Section (jobs and opportunities only - tender has its own) */}
+            {formData.type !== 'tender' && (
             <div style={{ marginBottom: '16px' }}>
               <label style={{
                 fontSize: '14px',
@@ -2267,6 +2586,7 @@ const Post = ({ onClose, editItem = null }) => {
                 </div>
               )}
             </div>
+            )}
 
 
             {/* Document Upload Section: tenders only */}

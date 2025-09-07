@@ -119,50 +119,21 @@ const createTender = async (req, res) => {
       approval_status: 'pending'
     };
 
-    // Parse JSON fields that come as strings from FormData
-    if (tenderData.requirements) {
-      try {
-        tenderData.requirements = JSON.parse(tenderData.requirements);
-      } catch (e) {
-        console.log('Error parsing requirements:', e);
-        tenderData.requirements = [];
-      }
+    // Handle array fields that come as individual form fields (requirements[], project_scope[], etc.)
+    if (req.body.requirements && Array.isArray(req.body.requirements)) {
+      tenderData.requirements = req.body.requirements;
     }
-    
-    if (tenderData.project_scope) {
-      try {
-        tenderData.project_scope = JSON.parse(tenderData.project_scope);
-      } catch (e) {
-        console.log('Error parsing project_scope:', e);
-        tenderData.project_scope = [];
-      }
+    if (req.body.project_scope && Array.isArray(req.body.project_scope)) {
+      tenderData.project_scope = req.body.project_scope;
     }
-    
-    if (tenderData.technical_requirements) {
-      try {
-        tenderData.technical_requirements = JSON.parse(tenderData.technical_requirements);
-      } catch (e) {
-        console.log('Error parsing technical_requirements:', e);
-        tenderData.technical_requirements = [];
-      }
+    if (req.body.technical_requirements && Array.isArray(req.body.technical_requirements)) {
+      tenderData.technical_requirements = req.body.technical_requirements;
     }
-    
-    if (tenderData.submission_process) {
-      try {
-        tenderData.submission_process = JSON.parse(tenderData.submission_process);
-      } catch (e) {
-        console.log('Error parsing submission_process:', e);
-        tenderData.submission_process = [];
-      }
+    if (req.body.submission_process && Array.isArray(req.body.submission_process)) {
+      tenderData.submission_process = req.body.submission_process;
     }
-    
-    if (tenderData.evaluation_criteria) {
-      try {
-        tenderData.evaluation_criteria = JSON.parse(tenderData.evaluation_criteria);
-      } catch (e) {
-        console.log('Error parsing evaluation_criteria:', e);
-        tenderData.evaluation_criteria = [];
-      }
+    if (req.body.evaluation_criteria && Array.isArray(req.body.evaluation_criteria)) {
+      tenderData.evaluation_criteria = req.body.evaluation_criteria;
     }
 
     // Handle cover image
