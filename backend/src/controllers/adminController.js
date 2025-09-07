@@ -1,9 +1,4 @@
-const User = require('../models/User');
-const Job = require('../models/Job');
-const Tender = require('../models/Tender');
-const Opportunity = require('../models/Opportunity');
-const Course = require('../models/Course');
-const Application = require('../models/Application');
+const { User, Job, Tender, Opportunity, Application, Course } = require('../models');
 const AdminLog = require('../models/AdminLog');
 const { validationResult } = require('express-validator');
 
@@ -396,16 +391,20 @@ const getAllContent = async (req, res) => {
 
     const order = [[sortBy === 'createdAt' ? 'created_at' : sortBy === 'updatedAt' ? 'updated_at' : 'created_at', sortOrder === 'desc' ? 'DESC' : 'ASC']];
 
+    console.log(`[ADMIN CONTENT] Fetching ${type} with whereClause:`, whereClause);
     const { count: total, rows: content } = await Model.findAndCountAll({
       where: whereClause,
       order,
       limit: parseInt(limit),
       offset: (page - 1) * limit,
+      attributes: {
+        include: type === 'courses' ? ['experience_years'] : ['benefits', 'external_url', 'tags', 'experience_years']
+      },
       include: [
         {
           model: User,
           as: 'creator',
-          attributes: ['id', 'first_name', 'last_name', 'email'],
+          attributes: ['id', 'first_name', 'last_name', 'email', 'phone'],
           required: false
         },
         {
@@ -416,6 +415,18 @@ const getAllContent = async (req, res) => {
         }
       ]
     });
+    
+    console.log(`[ADMIN CONTENT] Fetched ${content.length} ${type} items from database`);
+    if (type === 'jobs' && content.length > 0) {
+      console.log(`[ADMIN CONTENT] Job IDs:`, content.map(j => j.id));
+      console.log(`[ADMIN CONTENT] First job:`, {
+        id: content[0].id,
+        title: content[0].title,
+        company: content[0].company,
+        location: content[0].location,
+        country: content[0].country
+      });
+    }
 
     // Transform content to match mock data structure
     const transformedContent = content.map(item => {
@@ -431,7 +442,13 @@ const getAllContent = async (req, res) => {
         approvedAt: item.approved_at,
         rejectionReason: item.rejection_reason,
         views: item.views_count || 0,
-        applications: item.applications_count || 0
+        applications: item.applications_count || 0,
+        creator: item.creator ? {
+          id: item.creator.id,
+          name: `${item.creator.first_name || ''} ${item.creator.last_name || ''}`.trim() || item.creator.email,
+          email: item.creator.email,
+          phone: item.creator.phone
+        } : null
       };
 
       // Add type-specific fields
@@ -440,25 +457,31 @@ const getAllContent = async (req, res) => {
           ...baseItem,
           company: item.company || 'Unknown Company',
           location: item.location || 'Unknown Location',
+          country: item.country || '',
           type: item.job_type || 'Full-time',
-          experience: item.experience_level || 'Not specified',
+          experience: item.experience_years ? `${item.experience_years} years` : (item.experience_level ? item.experience_level.charAt(0).toUpperCase() + item.experience_level.slice(1) + ' level' : 'Not specified'),
           salary: item.salary_min && item.salary_max ? 
                   `${item.currency} ${item.salary_min} - ${item.currency} ${item.salary_max}` : 
                   'Salary not specified',
           industry: item.industry || 'Unknown',
-          logo: resolveAssetUrl(item.company_logo) || 'https://via.placeholder.com/44x44/3b82f6/ffffff?text=TC',
+          benefits: Array.isArray(item.benefits) ? item.benefits : (item.benefits ? [item.benefits] : []),
+          tags: Array.isArray(item.tags) ? item.tags : (item.tags ? [item.tags] : []),
+          external_url: item.external_url || '',
+          logo: resolveAssetUrl(item.company_logo) || 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
           urgentHiring: item.is_urgent || false,
           isRemote: item.work_type === 'remote',
           description: item.description || '',
-          skills: item.skills || [],
+          skills: Array.isArray(item.skills) ? item.skills : (item.skills ? item.skills.split(',').map(s => s.trim()).filter(Boolean) : []),
                   salary_min: item.salary_min,
         salary_max: item.salary_max,
         currency: item.currency || 'USD',
         job_type: item.job_type,
         experience_level: item.experience_level,
+        experience_years: item.experience_years,
         work_type: item.work_type,
         is_urgent: item.is_urgent,
         company_logo: item.company_logo,
+          application_deadline: item.application_deadline,
         price: item.price || 'Free'
         };
       } else if (type === 'tenders') {
@@ -843,10 +866,15 @@ const getAllApplications = async (req, res) => {
       limit: parseInt(limit),
       offset: (page - 1) * limit,
       include: [
-        { association: 'applicant', attributes: ['first_name', 'last_name', 'email'] },
-        { association: 'job', attributes: ['title', 'company', 'location', 'salary_min', 'salary_max', 'currency'] },
-        { association: 'tender', attributes: ['title', 'organization', 'location', 'contract_value_min', 'contract_value_max', 'currency'] },
-        { association: 'opportunity', attributes: ['title', 'organization', 'location', 'amount_min', 'amount_max', 'currency'] }
+        { 
+          model: User, 
+          as: 'applicant', 
+          required: false,
+          attributes: { exclude: ['password_hash'] }
+        },
+        { model: Job, as: 'job', required: false },
+        { model: Tender, as: 'tender', required: false },
+        { model: Opportunity, as: 'opportunity', required: false }
       ]
     });
 
@@ -888,6 +916,7 @@ const getAllApplications = async (req, res) => {
 
       return {
         id: app.id,
+        user_id: app.user_id,
         title,
         company,
         type,
@@ -898,6 +927,8 @@ const getAllApplications = async (req, res) => {
         nextAction: app.nextAction || 'Awaiting response',
         applicantName: app.applicant ? `${app.applicant.first_name} ${app.applicant.last_name}` : 'Unknown User',
         applicantEmail: app.applicant?.email || 'No email',
+        applicantUsername: app.applicant?.username || '',
+        applicantProfileImage: app.applicant?.profile_image ? resolveAssetUrl(app.applicant.profile_image) : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop',
         applicationUrl: app.applicationUrl,
         documents: app.documents || [],
         notes: app.notes || '',
@@ -928,12 +959,20 @@ const getApplicationsOverview = async (req, res) => {
       Job.findAll({
         order: [['createdAt', 'DESC']],
         limit,
-        include: [{
+          include: [
+            {
           model: Application,
           as: 'applications',
           attributes: ['id'],
           required: false
-        }]
+            },
+            {
+              model: User,
+              as: 'creator',
+              attributes: ['id', 'email', 'phone', 'first_name', 'last_name'],
+              required: false
+            }
+          ]
       }),
       Tender.findAll({
         order: [['createdAt', 'DESC']],
@@ -963,6 +1002,7 @@ const getApplicationsOverview = async (req, res) => {
       company: j.company,
       industry: j.industry,
       location: j.location,
+      country: j.country,
       type: j.job_type,
       experience: j.experience_level,
       salary: j.salary_min && j.salary_max ? `${j.currency} ${j.salary_min} - ${j.currency} ${j.salary_max}` : 'Salary not specified',
@@ -973,11 +1013,21 @@ const getApplicationsOverview = async (req, res) => {
       applicants: j.applications ? j.applications.length : (j.applications_count || 0),
       description: j.description || '',
       skills: Array.isArray(j.skills) ? j.skills : [],
+      benefits: j.benefits || [],
+      external_url: j.external_url,
+      contact_email: j.contact_email,
       logo: resolveAssetUrl(j.company_logo),
       urgentHiring: !!j.is_urgent,
       isRemote: j.work_type === 'remote',
       postedBy: j.posted_by,
-      status: j.status && j.status.charAt(0).toUpperCase() + j.status.slice(1)
+      status: j.status && j.status.charAt(0).toUpperCase() + j.status.slice(1),
+      creator: j.creator ? {
+        name: j.creator.first_name && j.creator.last_name ? 
+          `${j.creator.first_name} ${j.creator.last_name}`.trim() : 
+          (j.creator.first_name || j.creator.last_name || 'Unknown'),
+        email: j.creator.email,
+        phone: j.creator.phone
+      } : null
     });
 
     const mapTender = (t) => ({
@@ -1258,7 +1308,7 @@ const generateCoverLetter = (user, application) => {
       return `${position} at ${company}`;
     }).join(', ') + (primaryIndustryYears > 0 ? ` with ${primaryIndustryYears} of experience in the ${primaryIndustry} industry` : '') :
     '';
-
+  
   // Process certificates data - simplified
   const certificates = Array.isArray(user.certificates) && user.certificates.length > 0 ? user.certificates : [];
   const certificatesSummary = certificates.map(cert => {
@@ -1504,9 +1554,10 @@ const processCertificates = (certificates) => {
         name: user.first_name || user.last_name ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Unknown',
         email: user.email || 'N/A',
         phone: user.phone || 'N/A',
+        username: user.username || '',
         location: user.location || user.country || 'N/A',
         appliedDate: app.applied_at,
-        status: toTitle(app.status?.replace('-', ' ')) || 'Under Review',
+        status: app.status === 'accepted' ? 'approved' : (app.status || 'pending'),
         experience: toTitle(user.experience_level) || 'Not specified',
         yearsExperience: user.years_experience || 'Not specified',
         currentJobTitle: user.current_job_title || 'Not specified',
@@ -1534,17 +1585,10 @@ const processCertificates = (certificates) => {
         lastLogin: user.last_login,
         profileCompletion,
         avatar: user.profile_image || '',
+        profileImage: user.profile_image ? resolveAssetUrl(user.profile_image) : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop',
         coverLetter: generateCoverLetter(user, app),
         applicationData: app.application_data || {},
         documents: app.documents || [],
-        
-        // Additional comprehensive profile data
-        profileImage: user.profile_image || '',
-        username: user.username || '',
-        bio: user.bio || '',
-        currentJobTitle: user.current_job_title || 'Not specified',
-        yearsExperience: user.years_experience || 'Not specified',
-        employmentStatus: user.employment_status || 'Not specified',
         maritalStatus: user.marital_status || 'Not specified',
         nationality: user.nationality || 'Not specified',
         countryOfResidence: user.country_of_residence || 'Not specified',
@@ -1573,7 +1617,6 @@ const processCertificates = (certificates) => {
         certificatesSummary: generateCertificatesSummary(user.certificates || []),
         
         // Additional comprehensive data
-        profileImage: user.profile_image ? resolveAssetUrl(user.profile_image) : '',
         linkedinUrl: user.linkedin_url || '',
         profileLinks: [
           { name: user.profile_link1_name, url: user.profile_link1_url },
@@ -1613,7 +1656,9 @@ const updateApplicantStatus = async (req, res) => {
     if (!app) return res.status(404).json({ message: 'Application not found' });
 
     const oldStatus = app.status;
-    app.status = status;
+    // Map 'approved' to 'accepted' for database storage
+    const dbStatus = status === 'approved' ? 'accepted' : status;
+    app.status = dbStatus;
     app.reviewed_at = new Date();
     app.reviewed_by = req.user?.id || null;
     await app.save();

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import Post from '../../pages/Post'
 import { apiService, jobsAPI, tendersAPI, opportunitiesAPI } from '../../lib/api-service'
+import { getCountryName } from '../../utils/countries'
 
 const Content = () => {
   // Simple responsive detection
@@ -93,30 +94,30 @@ const Content = () => {
   })
 
   // Load content from admin API
-  useEffect(() => {
     const loadContent = async () => {
       try {
-        console.log('Loading admin content using admin APIs...')
+        console.log('🔄 Loading admin content using admin APIs...', new Date().toISOString())
         console.log('Auth token:', localStorage.getItem('auth-token'))
         console.log('User type:', localStorage.getItem('user-type'))
+        const timestamp = Date.now()
         const [jobs, tenders, opportunities, courses, applications] = await Promise.all([
-          apiService.get('/admin/content', { type: 'jobs', limit: 50 }).catch((err) => {
+          apiService.get('/admin/content', { type: 'jobs', limit: 50, _t: timestamp }).catch((err) => {
             console.log('Jobs API error:', err)
             return { content: [] }
           }),
-          apiService.get('/admin/content', { type: 'tenders', limit: 50 }).catch((err) => {
+          apiService.get('/admin/content', { type: 'tenders', limit: 50, _t: timestamp }).catch((err) => {
             console.log('Tenders API error:', err)
             return { content: [] }
           }),
-          apiService.get('/admin/content', { type: 'opportunities', limit: 50 }).catch((err) => {
+          apiService.get('/admin/content', { type: 'opportunities', limit: 50, _t: timestamp }).catch((err) => {
             console.log('Opportunities API error:', err)
             return { content: [] }
           }),
-          apiService.get('/admin/content', { type: 'courses', limit: 50 }).catch((err) => {
+          apiService.get('/admin/content', { type: 'courses', limit: 50, _t: timestamp }).catch((err) => {
             console.log('Courses API error:', err)
             return { content: [] }
           }),
-          apiService.get('/admin/applications', { limit: 100 }).then((data) => {
+          apiService.get('/admin/applications/overview', { limit: 100 }).then((data) => {
             console.log('Applications API success:', data)
             return data
           }).catch((err) => {
@@ -166,74 +167,21 @@ const Content = () => {
         console.log('Applications type:', typeof applications)
         console.log('Applications success:', applications?.success)
         console.log('Applications message:', applications?.message)
-        const applicationsArr = applications?.applications || applications || []
-        console.log('Applications array length:', applicationsArr.length)
-        console.log('Applications array:', applicationsArr)
+        // Skip applications processing since we're on the content page, not applications page
         const applicantsMap = new Map()
-        
-        applicationsArr.forEach((app, index) => {
-          console.log(`Processing application ${index + 1}:`, app)
-          // Handle the new data structure from /admin/applications endpoint
-          const userId = app.applicant?.id || app.user_id
-          const applicantName = app.applicantName || (app.applicant ? `${app.applicant.first_name} ${app.applicant.last_name}` : 'Unknown')
-          const applicantEmail = app.applicantEmail || app.applicant?.email || 'unknown@email.com'
-          const profileImage = app.applicant?.profile_image || null
-          
-          console.log(`User ID: ${userId}, Name: ${applicantName}, Email: ${applicantEmail}, Username: ${app.applicant?.username}`)
-          
-          if (userId) {
-            if (!applicantsMap.has(userId)) {
-              console.log(`Creating new applicant entry for user ${userId}`)
-              applicantsMap.set(userId, {
-                id: userId,
-                name: applicantName,
-                email: applicantEmail,
-                profileImage: profileImage,
-                username: app.applicant?.username || null,
-                location: app.applicant?.location || 'Not specified',
-                industry: app.applicant?.industry || 'Not specified',
-                currentJobTitle: app.applicant?.current_job_title || 'Not specified',
-                bio: app.applicant?.bio || null,
-                skills: app.applicant?.skills || [],
-                education: app.applicant?.education || [],
-                experience: app.applicant?.experience || [],
-                certificates: app.applicant?.certificates || [],
-                profileCompletion: '85%', // Default value
-                applications: []
-              })
-            }
-            console.log(`Adding application to user ${userId}`)
-            applicantsMap.get(userId).applications.push({
-              id: app.id,
-              type: app.type || app.application_type,
-              status: app.status,
-              appliedAt: app.appliedDate || app.applied_at,
-              job: app.job || { title: app.title, company: app.company, location: app.location, salary: app.salary },
-              tender: app.tender,
-              opportunity: app.opportunity,
-              coverLetter: app.cover_letter
-            })
-          } else {
-            console.log(`No user ID found for application ${app.id}`)
-          }
-        })
-        
-        const applicantsArr = Array.from(applicantsMap.values())
-          .sort((a, b) => new Date(b.applications[0]?.appliedAt || 0) - new Date(a.applications[0]?.appliedAt || 0))
-
-        console.log('Applicants map size:', applicantsMap.size)
-        console.log('Applicants array:', applicantsArr)
-        console.log('First applicant username:', applicantsArr[0]?.username)
-        
+        const applicantsArr = []
         
         console.log('Raw data arrays:', { jobsArr, tendersArr, oppArr, coursesArr, applicantsArr })
 
         // Set real data into state used by the UI
-        setJobsData(jobsArr)
-        setTendersData(tendersArr)
-        setOpportunitiesData(oppArr)
-        setCoursesData(coursesArr)
-        setApplicantsData(applicantsArr)
+        console.log('📊 Setting jobs data:', jobsArr.length, 'jobs')
+        console.log('Job IDs:', jobsArr.map(j => j.id))
+        console.log('First job data:', jobsArr[0])
+        setJobsData([...jobsArr]) // Force new array reference
+        setTendersData([...tendersArr])
+        setOpportunitiesData([...oppArr])
+        setCoursesData([...coursesArr])
+        setApplicantsData([...applicantsArr])
         
         
         console.log('Loaded data:', {
@@ -247,6 +195,8 @@ const Content = () => {
         // Leave arrays as-is if API fails
       }
     }
+
+  useEffect(() => {
     loadContent()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -528,6 +478,54 @@ const Content = () => {
     }
   }
 
+  const handleEdit = (item, type) => {
+    // Transform admin data to match Post form field names
+    const editData = {
+      ...item,
+      type: type,
+      // Map job-specific fields to match Post form expectations
+      title: item.title || '',
+      description: item.description || '',
+      company: item.company || '',
+      location: item.location || '',
+      country: item.country || '',
+      work_type: item.work_type || '',
+      salary_min: item.salary_min || '',
+      salary_max: item.salary_max || '',
+      currency: item.currency || 'USD',
+      job_type: item.job_type || '',
+      experience_level: item.experience_level || '',
+      experience_years: item.experience_years || '',
+      industry: item.industry || '',
+      customIndustry: item.customIndustry || '',
+      skills: Array.isArray(item.skills) ? item.skills.join(', ') : (item.skills || ''),
+      benefits: Array.isArray(item.benefits) ? item.benefits.join(', ') : (item.benefits || ''),
+      application_deadline: item.application_deadline || item.deadline || '',
+      value: item.value || '',
+      organization: item.organization || '',
+      sector: item.sector || '',
+      customSector: item.customSector || '',
+      requirements: Array.isArray(item.requirements) ? item.requirements.join('\n') : (item.requirements || ''),
+      project_scope: Array.isArray(item.project_scope) ? item.project_scope.join('\n') : (item.project_scope || ''),
+      technical_requirements: Array.isArray(item.technical_requirements) ? item.technical_requirements.join('\n') : (item.technical_requirements || ''),
+      submission_process: Array.isArray(item.submission_process) ? item.submission_process.join('\n') : (item.submission_process || ''),
+      evaluation_criteria: Array.isArray(item.evaluation_criteria) ? item.evaluation_criteria.join('\n') : (item.evaluation_criteria || ''),
+      external_url: item.external_url || item.application_url || '',
+      contact_email: item.contact_email || '',
+      price: item.price || '',
+      currency: item.currency || 'USD',
+      tags: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || ''),
+      customTag: '',
+      documents: item.documents || [],
+      companyLogo: null,
+      coverImage: null,
+      is_urgent: item.is_urgent || false
+    }
+    
+    setShowPostPage(true)
+    setSelectedItem(editData)
+  }
+
   const getStatusColor = (status) => {
     switch (status.toLowerCase()) {
       case 'active':
@@ -689,10 +687,17 @@ const Content = () => {
       ...apiJob,
       salary,
       type: apiJob?.job_type ? apiJob.job_type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('-') : 'Not specified',
-      experience: apiJob?.experience_level ? apiJob.experience_level.charAt(0).toUpperCase() + apiJob.experience_level.slice(1) + ' level' : 'Not specified',
+      jobType: apiJob?.job_type ? apiJob.job_type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('-') : 'Not specified',
+      workType: apiJob?.work_type ? apiJob.work_type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('-') : 'Not specified',
+      experience: apiJob?.experience_years ? `${apiJob.experience_years} years` : 'Not specified',
       postedTime: apiJob?.created_at ? new Date(apiJob.created_at).toLocaleDateString() : 'Recently',
+      deadline: apiJob?.application_deadline ? new Date(apiJob.application_deadline).toLocaleDateString() : 'No deadline',
       skills: apiJob.skills || [],
-      description: apiJob.description
+      description: apiJob.description,
+      benefits: Array.isArray(apiJob.benefits) ? apiJob.benefits : (apiJob.benefits ? [apiJob.benefits] : []),
+      tags: Array.isArray(apiJob.tags) ? apiJob.tags : (apiJob.tags ? [apiJob.tags] : []),
+      external_url: apiJob.external_url || '',
+      creator: apiJob.creator
     }
   }
 
@@ -943,6 +948,43 @@ const Content = () => {
           e.currentTarget.style.transform = 'translateY(0)'
         }}>
           
+          {/* Edit Icon - Top Right */}
+          {item.approval_status === 'pending' && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation()
+                handleEdit(item, type)
+              }}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                color: '#3b82f6',
+                cursor: 'pointer',
+                padding: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                zIndex: 10
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#3b82f6'
+                e.target.style.color = 'white'
+                e.target.style.borderColor = '#3b82f6'
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'
+                e.target.style.color = '#3b82f6'
+                e.target.style.borderColor = '#e5e7eb'
+              }}
+            >
+              <Edit size={14} />
+            </button>
+          )}
           
 
           {/* Cover Image */}
@@ -1320,6 +1362,44 @@ const Content = () => {
           e.currentTarget.style.transform = 'translateY(0)'
         }}>
 
+          {/* Edit Icon - Top Right */}
+          {item.approval_status === 'pending' && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation()
+                handleEdit(item, type)
+              }}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                color: '#3b82f6',
+                cursor: 'pointer',
+                padding: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                zIndex: 10
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = '#3b82f6'
+                e.target.style.color = 'white'
+                e.target.style.borderColor = '#3b82f6'
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'
+                e.target.style.color = '#3b82f6'
+                e.target.style.borderColor = '#e5e7eb'
+              }}
+            >
+              <Edit size={14} />
+            </button>
+          )}
+
           {/* Poster Image */}
           <div style={{ position: 'relative' }}>
             <img 
@@ -1642,7 +1722,11 @@ const Content = () => {
         border: '1px solid #f0f0f0',
         position: 'relative',
         transition: 'all 0.2s ease-in-out',
-        cursor: 'pointer'
+        cursor: 'pointer',
+        height: '280px',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}
       onClick={() => handleViewDetails(item, type)}
       onMouseEnter={(e) => {
@@ -1654,6 +1738,43 @@ const Content = () => {
         e.currentTarget.style.transform = 'translateY(0)'
       }}>
         
+        {/* Edit Icon - Top Right */}
+        {item.approval_status === 'pending' && (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation()
+              handleEdit(item, type)
+            }}
+            style={{
+              position: 'absolute',
+              top: '12px',
+              right: '12px',
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              border: '1px solid #e5e7eb',
+              borderRadius: '6px',
+              color: '#3b82f6',
+              cursor: 'pointer',
+              padding: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
+              zIndex: 10
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = '#3b82f6'
+              e.target.style.color = 'white'
+              e.target.style.borderColor = '#3b82f6'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'
+              e.target.style.color = '#3b82f6'
+              e.target.style.borderColor = '#e5e7eb'
+            }}
+          >
+            <Edit size={14} />
+          </button>
+        )}
         
 
         {/* Company Profile Header */}
@@ -1735,7 +1856,7 @@ const Content = () => {
             {item.location}
           </div>
           <span>•</span>
-          <span>{item.postedTime}</span>
+          <span>Deadline: {item.deadline}</span>
           {item.isRemote && (
             <>
               <span>•</span>
@@ -1793,47 +1914,39 @@ const Content = () => {
           </div>
         </div>
 
-        {/* Description */}
-        <p style={{
-          fontSize: '13px',
-          color: '#475569',
-          lineHeight: '1.4',
-          margin: '0 0 8px 0',
-          display: '-webkit-box',
-          WebkitLineClamp: 1,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden'
-        }}>
-          {item.description}
-        </p>
 
-        {/* Skills */}
+        {/* Tags */}
         <div style={{ marginBottom: '10px' }}>
           <div style={{
             display: 'flex',
             flexWrap: 'wrap',
             gap: '4px'
           }}>
-            {item.skills.slice(0, 4).map((skill, index) => (
+            {item.tags && item.tags.slice(0, 2).map((tag, index) => (
               <span key={index} style={{
                 backgroundColor: '#f1f5f9',
                 color: '#475569',
                 padding: '2px 6px',
                 borderRadius: '4px',
                 fontSize: '11px',
-                fontWeight: '500'
+                fontWeight: '500',
+                maxWidth: '120px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                display: 'inline-block'
               }}>
-                {typeof skill === 'string' ? skill : skill?.name || skill?.title || 'Unknown'}
+                {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
               </span>
             ))}
-            {item.skills.length > 4 && (
+            {item.tags && item.tags.length > 2 && (
               <span style={{
                 color: '#64748b',
                 fontSize: '11px',
                 padding: '2px 6px',
                 fontWeight: '500'
               }}>
-                +{item.skills.length - 4} more
+                +{item.tags.length - 2} more
               </span>
             )}
           </div>
@@ -2532,7 +2645,12 @@ const Content = () => {
       </div>
 
       {/* Content */}
-      {showCourseForm ? null : (!showPostPage ? getTabContent() : <Post onClose={() => setShowPostPage(false)} />)}
+      {showCourseForm ? null : (!showPostPage ? getTabContent() : <Post onClose={() => {
+        setShowPostPage(false)
+        setSelectedItem(null)
+        // Always refresh the data after closing the edit modal
+        loadContent()
+      }} editItem={selectedItem} />)}
 
       {/* Course Form Modal */}
       {showCourseForm && (
@@ -3765,10 +3883,259 @@ const Content = () => {
                       }}>
                         <span>{selectedItem.location}</span>
                         <span>•</span>
-                        <span>{selectedItem.type}</span>
+                        <span style={{ fontWeight: '500', color: '#0f172a' }}>Country: </span><span>{getCountryName(selectedItem.country)}</span>
                         <span>•</span>
-                        <span style={{ color: '#16a34a', fontWeight: '600' }}>{selectedItem.salary}</span>
+                        <span>Deadline: {selectedItem.deadline || 'No deadline'}</span>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Complete Job Details */}
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#0f172a',
+                      margin: '0 0 16px 0'
+                    }}>
+                      Complete Job Details
+                    </h3>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                      gap: '16px'
+                    }}>
+                      {/* Basic Information */}
+                      <div>
+                        <label style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Job Type
+                        </label>
+                        <p style={{
+                          fontSize: '14px',
+                          color: '#0f172a',
+                          fontWeight: '500',
+                          margin: 0
+                        }}>
+                          {selectedItem.jobType || selectedItem.type}
+                        </p>
+                      </div>
+                      <div>
+                        <label style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Work Type
+                        </label>
+                        <p style={{
+                          fontSize: '14px',
+                          color: '#0f172a',
+                          fontWeight: '500',
+                          margin: 0
+                        }}>
+                          {selectedItem.workType}
+                        </p>
+                      </div>
+                      <div>
+                        <label style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Experience Level
+                        </label>
+                        <p style={{
+                          fontSize: '14px',
+                          color: '#0f172a',
+                          fontWeight: '500',
+                          margin: 0
+                        }}>
+                          {selectedItem.experience}
+                        </p>
+                      </div>
+                      <div>
+                        <label style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Industry
+                        </label>
+                        <p style={{
+                          fontSize: '14px',
+                          color: '#0f172a',
+                          fontWeight: '500',
+                          margin: 0
+                        }}>
+                          {selectedItem.industry}
+                        </p>
+                      </div>
+                      <div>
+                        <label style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Location
+                        </label>
+                        <p style={{
+                          fontSize: '14px',
+                          color: '#0f172a',
+                          fontWeight: '500',
+                          margin: 0
+                        }}>
+                          {selectedItem.location}
+                        </p>
+                      </div>
+                      <div>
+                        <label style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Country
+                        </label>
+                        <p style={{
+                          fontSize: '14px',
+                          color: '#0f172a',
+                          fontWeight: '500',
+                          margin: 0
+                        }}>
+                          {getCountryName(selectedItem.country)}
+                        </p>
+                      </div>
+                      <div>
+                        <label style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Salary
+                        </label>
+                        <p style={{
+                          fontSize: '14px',
+                          color: '#16a34a',
+                          fontWeight: '600',
+                          margin: 0
+                        }}>
+                          {selectedItem.salary}
+                        </p>
+                      </div>
+                      <div>
+                        <label style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Posted By
+                        </label>
+                        <p style={{
+                          fontSize: '14px',
+                          color: '#0f172a',
+                          fontWeight: '500',
+                          margin: 0
+                        }}>
+                          {selectedItem.creator?.name || selectedItem.postedBy}
+                        </p>
+                      </div>
+                      <div>
+                        <label style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Contact Email
+                        </label>
+                        <a href={`mailto:${selectedItem.creator?.email || 'no-email@example.com'}`} style={{
+                          fontSize: '14px',
+                          color: '#2563eb',
+                          fontWeight: '500',
+                          textDecoration: 'none'
+                        }}>
+                          {selectedItem.creator?.email || 'No email provided'}
+                        </a>
+                      </div>
+                      <div>
+                        <label style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Contact Phone
+                        </label>
+                        <a href={`tel:${selectedItem.creator?.phone || '0000000000'}`} style={{
+                          fontSize: '14px',
+                          color: '#2563eb',
+                          fontWeight: '500',
+                          textDecoration: 'none'
+                        }}>
+                          {selectedItem.creator?.phone || 'No phone provided'}
+                        </a>
+                      </div>
+                      <div>
+                        <label style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          fontWeight: '500',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Approval Status
+                        </label>
+                        <p style={{
+                          fontSize: '14px',
+                          color: selectedItem.approval_status === 'approved' ? '#16a34a' : selectedItem.approval_status === 'rejected' ? '#ef4444' : '#f59e0b',
+                          fontWeight: '500',
+                          margin: 0
+                        }}>
+                          {selectedItem.approval_status}
+                        </p>
+                      </div>
+                      {selectedItem.external_url && (
+                        <div>
+                          <label style={{
+                            fontSize: '12px',
+                            color: '#64748b',
+                            fontWeight: '500',
+                            marginBottom: '4px',
+                            display: 'block'
+                          }}>
+                            Application URL
+                          </label>
+                          <a href={selectedItem.external_url} target="_blank" rel="noopener noreferrer" style={{
+                            fontSize: '14px',
+                            color: '#2563eb',
+                            fontWeight: '500',
+                            textDecoration: 'none'
+                          }}>
+                            {selectedItem.external_url}
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -3791,6 +4158,183 @@ const Content = () => {
                       {selectedItem.description}
                     </p>
                   </div>
+
+                  {/* Skills */}
+                  {selectedItem.skills && selectedItem.skills.length > 0 && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Required Skills
+                      </h3>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        {(Array.isArray(selectedItem.skills) ? selectedItem.skills : 
+                          (selectedItem.skills ? selectedItem.skills.split(',').map(s => s.trim()).filter(Boolean) : [])).map((skill, index) => (
+                          <span key={index} style={{
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '500'
+                          }}>
+                            {typeof skill === 'string' ? skill : skill?.name || skill?.title || 'Unknown'}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Benefits */}
+                  {selectedItem.benefits && selectedItem.benefits.length > 0 && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Benefits
+                      </h3>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        {Array.isArray(selectedItem.benefits) ? selectedItem.benefits.map((benefit, index) => (
+                          <span key={index} style={{
+                            backgroundColor: '#ecfdf5',
+                            color: '#065f46',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '500'
+                          }}>
+                            {benefit}
+                          </span>
+                        )) : (
+                          <span style={{
+                            backgroundColor: '#ecfdf5',
+                            color: '#065f46',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '500'
+                          }}>
+                            {benefit}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  {selectedItem.tags && selectedItem.tags.length > 0 && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Tags
+                      </h3>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        {Array.isArray(selectedItem.tags) ? selectedItem.tags.map((tag, index) => (
+                          <span key={index} style={{
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '500'
+                          }}>
+                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
+                          </span>
+                        )) : (
+                          <span style={{
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '500'
+                          }}>
+                            {selectedItem.tags}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Requirements */}
+                  {selectedItem.requirements && selectedItem.requirements.length > 0 && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#0f172a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Requirements
+                      </h3>
+                      <ul style={{
+                        listStyle: 'none',
+                        padding: 0,
+                        margin: 0
+                      }}>
+                        {Array.isArray(selectedItem.requirements) ? selectedItem.requirements.map((requirement, index) => (
+                          <li key={index} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px',
+                            marginBottom: '8px',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                            color: '#374151'
+                          }}>
+                            <span style={{
+                              color: '#16a34a',
+                              fontSize: '16px',
+                              lineHeight: '1',
+                              marginTop: '2px'
+                            }}>✓</span>
+                            {requirement}
+                          </li>
+                        )) : (
+                          <li style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px',
+                            marginBottom: '8px',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                            color: '#374151'
+                          }}>
+                            <span style={{
+                              color: '#16a34a',
+                              fontSize: '16px',
+                              lineHeight: '1',
+                              marginTop: '2px'
+                            }}>✓</span>
+                            {selectedItem.requirements}
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
 
                   {/* Key Responsibilities */}
                   {selectedItem.responsibilities && (
@@ -3903,69 +4447,7 @@ const Content = () => {
                     </div>
                   )}
 
-                  {/* Required Skills */}
-                  {selectedItem.skills && (
-                    <div style={{ marginBottom: '24px' }}>
-                      <h3 style={{
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        color: '#1a1a1a',
-                        margin: '0 0 12px 0'
-                      }}>
-                        Required Skills
-                      </h3>
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '8px'
-                      }}>
-                        {selectedItem.skills.map((skill, index) => (
-                          <span key={index} style={{
-                            backgroundColor: '#f1f5f9',
-                            color: '#475569',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
-                            fontWeight: '500'
-                          }}>
-                            {typeof skill === 'string' ? skill : skill?.name || skill?.title || 'Unknown'}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Benefits & Perks */}
-                  {selectedItem.benefits && (
-                    <div style={{ marginBottom: '24px' }}>
-                      <h3 style={{
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        color: '#1a1a1a',
-                        margin: '0 0 12px 0'
-                      }}>
-                        Benefits & Perks
-                      </h3>
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '8px'
-                      }}>
-                        {selectedItem.benefits.map((benefit, index) => (
-                          <span key={index} style={{
-                            backgroundColor: '#f0fdf4',
-                            color: '#166534',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
-                            fontWeight: '500'
-                          }}>
-                            {benefit}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Additional Info */}
                   <div style={{
@@ -3983,9 +4465,6 @@ const Content = () => {
                       fontSize: '14px',
                       color: '#64748b'
                     }}>
-                      <span><strong>Posted:</strong> {selectedItem.postedTime}</span>
-                      <span><strong>Applicants:</strong> {selectedItem.applicants}</span>
-                      <span><strong>Status:</strong> {selectedItem.status}</span>
                     </div>
                   </div>
                 </div>
@@ -4348,44 +4827,6 @@ const Content = () => {
                     </div>
                   )}
 
-                  {/* Benefits */}
-                  {selectedItem.benefits && (
-                    <div style={{ marginBottom: '24px' }}>
-                      <h3 style={{
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        color: '#1a1a1a',
-                        margin: '0 0 12px 0'
-                      }}>
-                        Benefits & Support
-                      </h3>
-                      <ul style={{
-                        listStyle: 'none',
-                        padding: 0,
-                        margin: 0
-                      }}>
-                        {selectedItem.benefits.map((benefit, index) => (
-                          <li key={index} style={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: '8px',
-                            marginBottom: '8px',
-                            fontSize: '14px',
-                            lineHeight: '1.5',
-                            color: '#374151'
-                          }}>
-                            <span style={{
-                              color: '#16a34a',
-                              fontSize: '16px',
-                              lineHeight: '1',
-                              marginTop: '2px'
-                            }}>•</span>
-                            {benefit}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
 
                   {/* Application Process */}
                   {selectedItem.applicationProcess && (
@@ -4974,37 +5415,6 @@ const Content = () => {
                     </div>
                   )}
 
-                  {/* Tags */}
-                  {selectedItem.tags && (
-                    <div style={{ marginBottom: '24px' }}>
-                      <h3 style={{
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        color: '#1a1a1a',
-                        margin: '0 0 12px 0'
-                      }}>
-                        Tags
-                      </h3>
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '8px'
-                      }}>
-                        {selectedItem.tags.map((tag, index) => (
-                          <span key={index} style={{
-                            backgroundColor: '#f1f5f9',
-                            color: '#475569',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
-                            fontWeight: '500'
-                          }}>
-                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Additional Info */}
                   <div style={{

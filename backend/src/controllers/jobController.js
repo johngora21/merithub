@@ -120,6 +120,17 @@ const createJob = async (req, res) => {
       approval_status: 'pending'
     };
 
+    // Handle array fields from form data
+    if (req.body.tags && Array.isArray(req.body.tags)) {
+      jobData.tags = req.body.tags;
+    }
+    if (req.body.skills && Array.isArray(req.body.skills)) {
+      jobData.skills = req.body.skills;
+    }
+    if (req.body.benefits && Array.isArray(req.body.benefits)) {
+      jobData.benefits = req.body.benefits;
+    }
+
     // If a logo file was uploaded, save its served URL path
     if (req.file) {
       jobData.company_logo = `/uploads/images/${req.file.filename}`;
@@ -145,17 +156,33 @@ const createJob = async (req, res) => {
 const updateJob = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`[UPDATE JOB] Starting update for job ID: ${id}`);
+    console.log(`[UPDATE JOB] Request body:`, req.body);
+    console.log(`[UPDATE JOB] Request body keys:`, Object.keys(req.body));
+    console.log(`[UPDATE JOB] Location:`, req.body.location);
+    console.log(`[UPDATE JOB] Country:`, req.body.country);
+    
     const job = await Job.findByPk(id);
 
     if (!job) {
+      console.log(`[UPDATE JOB] Job not found for ID: ${id}`);
       return res.status(404).json({
         success: false,
         message: 'Job not found'
       });
     }
 
+    console.log(`[UPDATE JOB] Found job:`, {
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      country: job.country
+    });
+
     // Check if user is the creator or admin
     if (job.created_by !== req.user.id && req.user.subscription_type !== 'enterprise') {
+      console.log(`[UPDATE JOB] Unauthorized update attempt by user ${req.user.id}`);
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this job'
@@ -163,10 +190,35 @@ const updateJob = async (req, res) => {
     }
 
     const updateData = { ...req.body };
+    
+    // Handle array fields from form data
+    if (req.body.tags && Array.isArray(req.body.tags)) {
+      updateData.tags = req.body.tags;
+    }
+    if (req.body.skills && Array.isArray(req.body.skills)) {
+      updateData.skills = req.body.skills;
+    }
+    if (req.body.benefits && Array.isArray(req.body.benefits)) {
+      updateData.benefits = req.body.benefits;
+    }
+    
     if (req.file) {
       updateData.company_logo = `/uploads/images/${req.file.filename}`;
     }
+    
+    console.log(`[UPDATE JOB] Update data:`, updateData);
+    console.log(`[UPDATE JOB] File uploaded:`, req.file ? req.file.filename : 'No file');
+    console.log(`[UPDATE JOB] Company logo will be set to:`, req.file ? `/uploads/images/${req.file.filename}` : 'No change');
+    
     await job.update(updateData);
+    
+    console.log(`[UPDATE JOB] Job updated successfully. New data:`, {
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      country: job.country
+    });
 
     res.json({
       success: true,

@@ -5,7 +5,7 @@ import { useResponsive } from '../hooks/useResponsive'
 import { Bell, User, Bookmark, ArrowLeft, Plus, X, ChevronDown, Briefcase, FileText, GraduationCap, Upload, Trash2 } from 'lucide-react'
 import { countries } from '../utils/countries'
 
-const Post = ({ onClose }) => {
+const Post = ({ onClose, editItem = null }) => {
   // Only use navigate if not in admin context
   let navigate = null
   try {
@@ -18,14 +18,16 @@ const Post = ({ onClose }) => {
   const screenSize = useResponsive()
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
-    type: 'job',
+    type: editItem?.type || 'job',
     title: '',
     description: '',
     company: '',
     location: '',
     country: '',
     workType: '',
-    salary: '',
+    salaryType: 'fixed',
+    salaryMin: '',
+    salaryMax: '',
     jobType: '',
     experience: '',
     industry: '',
@@ -54,6 +56,42 @@ const Post = ({ onClose }) => {
     isUrgent: false
   })
 
+  // Populate form data when editing an item
+  useEffect(() => {
+    if (editItem) {
+      const newFormData = {
+        type: 'job', // Force to job when editing from admin
+        title: editItem.title || '',
+        description: editItem.description || '',
+        company: editItem.company || editItem.organization || '',
+        location: editItem.location || '',
+        country: editItem.country || '',
+        workType: editItem.work_type || '',
+        salaryType: editItem.salary_min && editItem.salary_max && editItem.salary_min !== editItem.salary_max ? 'range' : 'fixed',
+        salaryMin: editItem.salary_min || '',
+        salaryMax: editItem.salary_max || '',
+        jobType: editItem.job_type || '',
+        experience: editItem.experience_years || editItem.experience_level || '',
+        industry: editItem.industry || '',
+        customIndustry: editItem.customIndustry || '',
+        skills: editItem.skills || '',
+        benefits: editItem.benefits || '',
+        deadline: editItem.application_deadline || editItem.deadline || '',
+        applicationUrl: editItem.external_url || editItem.application_url || '',
+        contactEmail: editItem.contact_email || '',
+        price: editItem.price || '',
+        currency: editItem.currency || 'USD',
+        tags: editItem.tags || '',
+        customTag: '',
+        documents: editItem.documents || [],
+        companyLogo: editItem.company_logo || editItem.logo || null,
+        coverImage: null,
+        isUrgent: editItem.is_urgent || false
+      };
+      setFormData(newFormData);
+    }
+  }, [editItem])
+
   // Show the form with a slight delay for animation
   useEffect(() => {
     const timer = setTimeout(() => setShowForm(true), 100)
@@ -78,7 +116,11 @@ const Post = ({ onClose }) => {
       'Full-time': 'full-time',
       'Part-time': 'part-time',
       'Contract': 'contract',
-      'Internship': 'internship'
+      'Internship': 'internship',
+      'full-time': 'full-time',
+      'part-time': 'part-time',
+      'contract': 'contract',
+      'internship': 'internship'
     }
     return map[label] || ''
   }
@@ -87,7 +129,10 @@ const Post = ({ onClose }) => {
     const map = {
       'Remote': 'remote',
       'On-site': 'on-site',
-      'Hybrid': 'hybrid'
+      'Hybrid': 'hybrid',
+      'remote': 'remote',
+      'on-site': 'on-site',
+      'hybrid': 'hybrid'
     }
     return map[label] || ''
   }
@@ -139,22 +184,16 @@ const Post = ({ onClose }) => {
           alert('Please select valid Job Type and Work Type')
           return
         }
-        // Parse salary range like "$80,000 - $120,000" or "80000-120000"
+        // Process salary based on type (fixed or range)
         let salary_min
         let salary_max
-        if (formData.salary) {
-          const nums = (formData.salary.match(/\d[\d,]*/g) || []).map(n => parseInt(n.replace(/[,]/g, ''), 10)).filter(n => !Number.isNaN(n))
-          if (nums.length === 1) {
-            salary_min = nums[0]
-            salary_max = nums[0]
-          } else if (nums.length >= 2) {
-            salary_min = Math.min(nums[0], nums[1])
-            salary_max = Math.max(nums[0], nums[1])
-          }
+        if (formData.salaryType === 'fixed') {
+          salary_min = formData.salaryMin ? parseInt(formData.salaryMin) : undefined
+          salary_max = formData.salaryMin ? parseInt(formData.salaryMin) : undefined
+        } else if (formData.salaryType === 'range') {
+          salary_min = formData.salaryMin ? parseInt(formData.salaryMin) : undefined
+          salary_max = formData.salaryMax ? parseInt(formData.salaryMax) : undefined
         }
-        const skillsFromInput = formData.skills ? formData.skills.split(',').map(s => s.trim()).filter(Boolean) : []
-        const tagsFromChips = Array.isArray(formData.tags) ? formData.tags : []
-        const mergedSkills = Array.from(new Set([...(skillsFromInput || []), ...tagsFromChips]))
         // Submit with multipart form data to support logo upload
         const fd = new FormData()
         const jobBody = {
@@ -163,26 +202,31 @@ const Post = ({ onClose }) => {
           job_type: normalizedJobType,
           work_type: normalizedWork,
           experience_level,
+          experience_years: formData.experience ? parseInt(formData.experience) : undefined,
           industry: formData.industry === 'Other' ? formData.customIndustry : formData.industry,
           salary_min,
           salary_max,
           currency: formData.currency || 'USD',
           application_deadline: formData.deadline || undefined,
           posted_by: 'individual',
-          country: formData.country || 'Global'
+          country: formData.country || 'Global',
         }
         Object.entries(jobBody).forEach(([k, v]) => {
-          if (v !== undefined && v !== null) fd.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
+          if (v !== undefined && v !== null) fd.append(k, String(v))
         })
-        ;(Array.isArray(mergedSkills) ? mergedSkills : []).forEach(s => fd.append('skills[]', s))
         ;(formData.benefits ? formData.benefits.split(',').map(s => s.trim()).filter(Boolean) : []).forEach(b => fd.append('benefits[]', b))
+        ;(formData.skills ? formData.skills.split(',').map(s => s.trim()).filter(Boolean) : []).forEach(s => fd.append('skills[]', s))
+        ;(Array.isArray(formData.tags) ? formData.tags : (formData.tags || '').split(',').map(s => s.trim()).filter(Boolean)).forEach(t => fd.append('tags[]', t))
         if (formData.companyLogo instanceof File) fd.append('companyLogo', formData.companyLogo)
 
-        await fetch('http://localhost:8000/api/jobs', {
-          method: 'POST',
+        const url = editItem ? `http://localhost:8000/api/jobs/${editItem.id}` : 'http://localhost:8000/api/jobs'
+        const method = editItem ? 'PUT' : 'POST'
+        
+        await fetch(url, {
+          method,
           headers: { 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` },
           body: fd
-        }).then(async r => { if (!r.ok) throw new Error((await r.json()).message || 'Failed to create job'); return r.json() })
+        }).then(async r => { if (!r.ok) throw new Error((await r.json()).message || `Failed to ${editItem ? 'update' : 'create'} job`); return r.json() })
       } else if (formData.type === 'tender') {
         if (!payload.location) {
           alert('Location is required for tenders')
@@ -247,6 +291,9 @@ const Post = ({ onClose }) => {
         }).then(async r => { if (!r.ok) throw new Error((await r.json()).message || 'Failed to create opportunity'); return r.json() })
       }
 
+      // Show success message
+      alert(editItem ? 'Job updated successfully!' : 'Job created successfully!')
+      
       if (onClose) {
         onClose()
       } else if (navigate) {
@@ -300,7 +347,7 @@ const Post = ({ onClose }) => {
     if (formData.customTag && formData.customTag.trim() !== '') {
       setFormData(prev => ({
         ...prev,
-        tags: [...(prev.tags || []), prev.customTag.trim()],
+        tags: [...(Array.isArray(prev.tags) ? prev.tags : (prev.tags || '').split(',').filter(t => t.trim())), prev.customTag.trim()],
         customTag: ''
       }))
     }
@@ -309,7 +356,7 @@ const Post = ({ onClose }) => {
   const handleRemoveTag = (tagToRemove) => {
     setFormData(prev => ({
       ...prev,
-      tags: (prev.tags || []).filter(tag => tag !== tagToRemove)
+      tags: (Array.isArray(prev.tags) ? prev.tags : (prev.tags || '').split(',').filter(t => t.trim())).filter(tag => tag !== tagToRemove)
     }))
   }
 
@@ -363,7 +410,7 @@ const Post = ({ onClose }) => {
             color: '#1a1a1a',
             margin: 0
           }}>
-            Create New Post
+            {editItem ? `Edit ${editItem.type.charAt(0).toUpperCase() + editItem.type.slice(1)}` : 'Create New Post'}
           </h2>
           
           {screenSize.isMobile && (
@@ -422,18 +469,21 @@ const Post = ({ onClose }) => {
               }}>
                 Post Type *
               </label>
-              <select
-                value={formData.type}
-                onChange={(e) => handleInputChange('type', e.target.value)}
-                style={{
+                <select
+                  value={formData.type}
+                  onChange={(e) => handleInputChange('type', e.target.value)}
+                  disabled={!!editItem}
+                  style={{
                   width: '100%',
                   padding: '10px 12px',
                   border: '1px solid #e2e8f0',
                   borderRadius: '8px',
                   fontSize: '14px',
                   outline: 'none',
-                  backgroundColor: 'white',
-                  boxSizing: 'border-box'
+                  backgroundColor: editItem ? '#f9fafb' : 'white',
+                  color: editItem ? '#6b7280' : '#374151',
+                  boxSizing: 'border-box',
+                  cursor: editItem ? 'not-allowed' : 'pointer'
                 }}
               >
                 {typeOptions.map(option => (
@@ -536,10 +586,10 @@ const Post = ({ onClose }) => {
                       }}
                     >
                       <option value="">Select job type</option>
-                      <option value="Full-time">Full-time</option>
-                      <option value="Part-time">Part-time</option>
-                      <option value="Contract">Contract</option>
-                      <option value="Internship">Internship</option>
+                      <option value="full-time">Full-time</option>
+                      <option value="part-time">Part-time</option>
+                      <option value="contract">Contract</option>
+                      <option value="internship">Internship</option>
                     </select>
                   </div>
 
@@ -569,9 +619,9 @@ const Post = ({ onClose }) => {
                       }}
                     >
                       <option value="">Select work type</option>
-                      <option value="Remote">Remote</option>
-                      <option value="On-site">On-site</option>
-                      <option value="Hybrid">Hybrid</option>
+                      <option value="remote">Remote</option>
+                      <option value="on-site">On-site</option>
+                      <option value="hybrid">Hybrid</option>
                     </select>
                   </div>
 
@@ -726,7 +776,44 @@ const Post = ({ onClose }) => {
                     />
                   </div>
                 )}
-                
+
+                {/* Location field - conditional for jobs based on work type, excluded for opportunities (they have their own dropdown) */}
+                {((formData.type === 'job' && formData.workType && formData.workType !== 'Remote') || 
+                  (formData.type === 'tender')) && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '6px',
+                      display: 'block'
+                    }}>
+                      Location{formData.type === 'job' ? ' *' : ''}
+                    </label>
+                    <input
+                      type="text"
+                      required={formData.type === 'job'}
+                      value={formData.location}
+                      onChange={(e) => handleInputChange('location', e.target.value)}
+                      placeholder={
+                        formData.type === 'job' 
+                          ? "e.g., New York, NY" 
+                          : "Enter location..."
+                      }
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Country field */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
                     fontSize: '14px',
@@ -735,13 +822,12 @@ const Post = ({ onClose }) => {
                     marginBottom: '6px',
                     display: 'block'
                   }}>
-                    Salary Range
+                    Country *
                   </label>
-                  <input
-                    type="text"
-                    value={formData.salary}
-                    onChange={(e) => handleInputChange('salary', e.target.value)}
-                    placeholder="e.g., $80,000 - $120,000"
+                  <select
+                    required
+                    value={formData.country}
+                    onChange={(e) => handleInputChange('country', e.target.value)}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -749,6 +835,196 @@ const Post = ({ onClose }) => {
                       borderRadius: '8px',
                       fontSize: '14px',
                       outline: 'none',
+                      backgroundColor: 'white',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="">Select country</option>
+                    {countries.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Currency selection */}
+                {(formData.type === 'job' || formData.type === 'tender') && (
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Currency
+                  </label>
+                  <select
+                    value={formData.currency}
+                    onChange={(e) => handleInputChange('currency', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {['TZS','KES','UGX','RWF','BIF','SSP','ETB','SOS','ZAR','ZMW','NGN','USD','EUR','GBP'].map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  </div>
+                )}
+                
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    color: '#64748b',
+                    marginBottom: '4px',
+                    display: 'block'
+                  }}>
+                    Salary Type *
+                  </label>
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="salaryType"
+                        value="fixed"
+                        checked={formData.salaryType === 'fixed'}
+                        onChange={(e) => handleInputChange('salaryType', e.target.value)}
+                        style={{ marginRight: '6px' }}
+                      />
+                      Fixed Salary
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="salaryType"
+                        value="range"
+                        checked={formData.salaryType === 'range'}
+                        onChange={(e) => handleInputChange('salaryType', e.target.value)}
+                        style={{ marginRight: '6px' }}
+                      />
+                      Salary Range
+                    </label>
+                  </div>
+                  
+                  {formData.salaryType === 'fixed' ? (
+                    <div>
+                      <label style={{
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        color: '#64748b',
+                        marginBottom: '4px',
+                        display: 'block'
+                      }}>
+                        Fixed Salary Amount
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.salaryMin || ''}
+                        onChange={(e) => handleInputChange('salaryMin', e.target.value)}
+                        placeholder="e.g., 80000"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          color: '#64748b',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Minimum Salary
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.salaryMin || ''}
+                          onChange={(e) => handleInputChange('salaryMin', e.target.value)}
+                          placeholder="e.g., 80000"
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          color: '#64748b',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Maximum Salary
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.salaryMax || ''}
+                          onChange={(e) => handleInputChange('salaryMax', e.target.value)}
+                          placeholder="e.g., 120000"
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Job Overview *
+                  </label>
+                  <textarea
+                    required
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    placeholder={`Describe the ${formData.type} requirements and details...`}
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      resize: 'vertical',
                       boxSizing: 'border-box'
                     }}
                   />
@@ -1561,41 +1837,6 @@ const Post = ({ onClose }) => {
             )}
 
             {/* Common Fields */}
-            {/* Location field - conditional for jobs based on work type, excluded for opportunities (they have their own dropdown) */}
-            {((formData.type === 'job' && formData.workType && formData.workType !== 'Remote') || 
-              (formData.type === 'tender')) && (
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#374151',
-                  marginBottom: '6px',
-                  display: 'block'
-                }}>
-                  Location{formData.type === 'job' ? ' *' : ''}
-                </label>
-                <input
-                  type="text"
-                  required={formData.type === 'job'}
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  placeholder={
-                    formData.type === 'job' 
-                      ? "e.g., New York, NY" 
-                      : "Enter location..."
-                  }
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-            )}
 
             {/* Company Logo upload (jobs only) */}
             {formData.type === 'job' && (
@@ -1637,8 +1878,14 @@ const Post = ({ onClose }) => {
                 />
                 {formData.companyLogo && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                    <img src={URL.createObjectURL(formData.companyLogo)} alt="company logo" style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '6px' }} />
-                    <div style={{ fontSize: '12px', color: '#374151' }}>{formData.companyLogo.name}</div>
+                    <img 
+                      src={formData.companyLogo instanceof File ? URL.createObjectURL(formData.companyLogo) : formData.companyLogo} 
+                      alt="company logo" 
+                      style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '6px' }} 
+                    />
+                    <div style={{ fontSize: '12px', color: '#374151' }}>
+                      {formData.companyLogo instanceof File ? formData.companyLogo.name : 'Current logo'}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1693,40 +1940,6 @@ const Post = ({ onClose }) => {
               </div>
             )}
 
-            {/* Country field */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '6px',
-                display: 'block'
-              }}>
-                Country *
-              </label>
-              <select
-                required
-                value={formData.country}
-                onChange={(e) => handleInputChange('country', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  outline: 'none',
-                  backgroundColor: 'white',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <option value="">Select country</option>
-                {countries.map((country) => (
-                  <option key={country.code} value={country.code}>
-                    {country.name}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             {/* Urgent flag (jobs and tenders only) */}
             {(formData.type === 'job' || formData.type === 'tender') && (
@@ -1744,101 +1957,8 @@ const Post = ({ onClose }) => {
               </div>
             )}
 
-            {/* Currency selection */}
-            {(formData.type === 'job' || formData.type === 'tender') && (
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '6px',
-                display: 'block'
-              }}>
-                Currency
-              </label>
-              <select
-                value={formData.currency}
-                onChange={(e) => handleInputChange('currency', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  outline: 'none',
-                  backgroundColor: 'white',
-                  boxSizing: 'border-box'
-                }}
-              >
-                {['TZS','KES','UGX','RWF','BIF','SSP','ETB','SOS','ZAR','ZMW','NGN','USD','EUR','GBP'].map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              </div>
-            )}
 
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '6px',
-                display: 'block'
-              }}>
-                Description *
-              </label>
-              <textarea
-                required
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder={`Describe the ${formData.type} requirements and details...`}
-                rows={4}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  outline: 'none',
-                  resize: 'vertical',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
 
-            {/* Price Field - Admin only (shown when onClose prop is provided) */}
-            {onClose && (
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                marginBottom: '6px',
-                display: 'block'
-              }}>
-                Price *
-              </label>
-              <select
-                required
-                value={formData.price || ''}
-                onChange={(e) => handleInputChange('price', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  outline: 'none',
-                  backgroundColor: 'white',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <option value="">Select price</option>
-                <option value="Free">Free</option>
-                <option value="Pro">Pro</option>
-              </select>
-            </div>
-            )}
 
             {/* Tags Section */}
             <div style={{ marginBottom: '16px' }}>
@@ -1893,13 +2013,13 @@ const Post = ({ onClose }) => {
                   Add
                 </button>
               </div>
-              {formData.tags && formData.tags.length > 0 && (
+              {formData.tags && (Array.isArray(formData.tags) ? formData.tags : formData.tags.split(',')).filter(t => t.trim()).length > 0 && (
                 <div style={{
                   display: 'flex',
                   flexWrap: 'wrap',
                   gap: '6px'
                 }}>
-                  {formData.tags.map((tag, index) => (
+                  {(Array.isArray(formData.tags) ? formData.tags : formData.tags.split(',')).filter(t => t.trim()).map((tag, index) => (
                     <span
                       key={index}
                       style={{
@@ -2083,7 +2203,7 @@ const Post = ({ onClose }) => {
                   cursor: 'pointer'
                 }}
               >
-                Post {formData.type.charAt(0).toUpperCase() + formData.type.slice(1)}
+                {editItem ? 'Update' : `Post ${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)}`}
               </button>
             </div>
           </form>
