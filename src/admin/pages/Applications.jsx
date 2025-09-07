@@ -129,26 +129,30 @@ const Applications = () => {
     const normalizedCountry = countryFromList ? countryFromList.name : rawCountry
 
     return {
-    id: t.id || t.tender_id || `TENDER-${t?.id || ''}`,
-    title: t.title || '',
-    company: t.organization || t.company || '',
+      id: t.id || t.tender_id || `TENDER-${t?.id || ''}`,
+      title: t.title || '',
+      company: t.organization || t.company || '',
       industry: t.industry || t.sector || 'Government',
-    location: t.location || t.country || '',
+      location: t.location || t.country || '',
       country: normalizedCountry || '',
       budget: budget,
       deadline: t.deadline ? formatDate(t.deadline) : 'No deadline',
-    postedTime: t.postedTime || t.createdAt ? new Date(t.postedTime || t.createdAt).toLocaleDateString() : 'Recently',
-    applicants: t.applicants || t.applicants_count || 0,
+      postedTime: t.postedTime || t.createdAt ? new Date(t.postedTime || t.createdAt).toLocaleDateString() : 'Recently',
+      applicants: t.applicants || t.applicants_count || 0,
       description: t.description || t.tender_description || '',
-    requirements: Array.isArray(t.requirements) ? t.requirements : [],
+      requirements: Array.isArray(t.requirements) ? t.requirements : [],
+      projectScope: Array.isArray(t.project_scope) ? t.project_scope : (t.project_scope ? [t.project_scope] : []),
+      technicalRequirements: Array.isArray(t.technical_requirements) ? t.technical_requirements : (t.technical_requirements ? [t.technical_requirements] : []),
+      submissionProcess: Array.isArray(t.submission_process) ? t.submission_process : (t.submission_process ? [t.submission_process] : []),
+      evaluationCriteria: Array.isArray(t.evaluation_criteria) ? t.evaluation_criteria : (t.evaluation_criteria ? [t.evaluation_criteria] : []),
       benefits: Array.isArray(t.benefits) ? t.benefits : (t.benefits ? [t.benefits] : []),
       tags: Array.isArray(t.tags) ? t.tags : (t.tags ? [t.tags] : []),
-    logo: t.logo || t.organization_logo || '',
+      logo: t.logo || t.organization_logo || '',
       postedBy: t.posted_by || t.poster || 'government',
       contactEmail: t.contact_email || '',
       contactPhone: t.contact_phone || '',
       externalUrl: t.external_url || '',
-    status: t.status || 'Active'
+      status: t.status || 'Active'
     }
   }
 
@@ -186,27 +190,29 @@ const Applications = () => {
     const normalizedCountry = countryFromList ? countryFromList.name : rawCountry
 
     return {
-    id: o.id || o.opportunity_id || `OPP-${o?.id || ''}`,
-    title: o.title || '',
-    company: o.organization || o.company || '',
-    industry: o.industry || o.category || '',
-    location: o.location || o.country || 'Remote',
+      id: o.id || o.opportunity_id || `OPP-${o?.id || ''}`,
+      title: o.title || '',
+      company: o.organization || o.company || '',
+      industry: o.industry || o.category || '',
+      location: o.location || o.country || 'Remote',
       country: normalizedCountry || '',
-    duration: o.duration || '',
+      duration: o.duration || '',
       stipend: stipend,
       deadline: o.deadline ? formatDate(o.deadline) : 'No deadline',
-    postedTime: o.postedTime || o.createdAt ? new Date(o.postedTime || o.createdAt).toLocaleDateString() : 'Recently',
-    applicants: o.applicants || o.applicants_count || 0,
+      postedTime: o.postedTime || o.createdAt ? new Date(o.postedTime || o.createdAt).toLocaleDateString() : 'Recently',
+      applicants: o.applicants || o.applicants_count || 0,
       description: o.description || o.opportunity_description || '',
       benefits: Array.isArray(o.benefits) ? o.benefits : (o.benefits ? [o.benefits] : []),
       tags: Array.isArray(o.tags) ? o.tags : (o.tags ? [o.tags] : []),
       requirements: Array.isArray(o.requirements) ? o.requirements : (o.requirements ? [o.requirements] : []),
-    logo: o.logo || o.organization_logo || '',
+      eligibility: Array.isArray(o.eligibility) ? o.eligibility : (o.eligibility ? [o.eligibility] : []),
+      applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : (o.applicationProcess ? [o.applicationProcess] : []),
+      logo: o.logo || o.organization_logo || '',
       postedBy: o.posted_by || o.poster || 'institution',
       contactEmail: o.contact_email || '',
       contactPhone: o.contact_phone || '',
       externalUrl: o.external_url || '',
-    status: o.status || 'Active'
+      status: o.status || 'Active'
     }
   }
 
@@ -1560,6 +1566,194 @@ const Applications = () => {
                         fontWeight: '500'
                       }}>
                         {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tender Specific Sections */}
+              {activeTab === 'tenders' && selectedItem.projectScope && selectedItem.projectScope.length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#0f172a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    Project Scope
+                  </h3>
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px'
+                  }}>
+                    {selectedItem.projectScope.map((scope, index) => (
+                      <span key={index} style={{
+                        backgroundColor: '#fef3c7',
+                        color: '#92400e',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '500'
+                      }}>
+                        {scope}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'tenders' && selectedItem.technicalRequirements && selectedItem.technicalRequirements.length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#0f172a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    Technical Requirements
+                  </h3>
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px'
+                  }}>
+                    {selectedItem.technicalRequirements.map((req, index) => (
+                      <span key={index} style={{
+                        backgroundColor: '#fef2f2',
+                        color: '#dc2626',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '500'
+                      }}>
+                        {req}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'tenders' && selectedItem.submissionProcess && selectedItem.submissionProcess.length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#0f172a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    Submission Process
+                  </h3>
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px'
+                  }}>
+                    {selectedItem.submissionProcess.map((step, index) => (
+                      <span key={index} style={{
+                        backgroundColor: '#ecfdf5',
+                        color: '#059669',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '500'
+                      }}>
+                        {step}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'tenders' && selectedItem.evaluationCriteria && selectedItem.evaluationCriteria.length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#0f172a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    Evaluation Criteria
+                  </h3>
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px'
+                  }}>
+                    {selectedItem.evaluationCriteria.map((criteria, index) => (
+                      <span key={index} style={{
+                        backgroundColor: '#f0f9ff',
+                        color: '#0369a1',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '500'
+                      }}>
+                        {criteria}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Opportunity Specific Sections */}
+              {activeTab === 'opportunities' && selectedItem.eligibility && selectedItem.eligibility.length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#0f172a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    Eligibility Criteria
+                  </h3>
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px'
+                  }}>
+                    {selectedItem.eligibility.map((criteria, index) => (
+                      <span key={index} style={{
+                        backgroundColor: '#f0f9ff',
+                        color: '#0369a1',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '500'
+                      }}>
+                        {criteria}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'opportunities' && selectedItem.applicationProcess && selectedItem.applicationProcess.length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#0f172a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    Application Process
+                  </h3>
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px'
+                  }}>
+                    {selectedItem.applicationProcess.map((step, index) => (
+                      <span key={index} style={{
+                        backgroundColor: '#ecfdf5',
+                        color: '#059669',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '500'
+                      }}>
+                        {step}
                       </span>
                     ))}
                   </div>
