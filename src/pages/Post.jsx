@@ -1340,39 +1340,132 @@ const Post = ({ onClose, editItem = null }) => {
                   />
                 </div>
                 
-                <div style={{ 
-                                      display: 'grid', 
-                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
-                    gap: '12px', 
-                  marginBottom: '16px' 
-                }}>
-                  <div>
-                    <label style={{
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#374151',
-                      marginBottom: '6px',
-                      display: 'block'
-                    }}>
-                      Tender Value
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    color: '#64748b',
+                    marginBottom: '4px',
+                    display: 'block'
+                  }}>
+                    Contract Value Type *
+                  </label>
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="salaryType"
+                        value="fixed"
+                        checked={formData.salaryType === 'fixed'}
+                        onChange={(e) => handleInputChange('salaryType', e.target.value)}
+                        style={{ marginRight: '6px' }}
+                      />
+                      Fixed Value
                     </label>
-                    <input
-                      type="text"
-                      value={formData.value}
-                      onChange={(e) => handleInputChange('value', e.target.value)}
-                      placeholder="e.g., $2.5M - $5.2M"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="salaryType"
+                        value="range"
+                        checked={formData.salaryType === 'range'}
+                        onChange={(e) => handleInputChange('salaryType', e.target.value)}
+                        style={{ marginRight: '6px' }}
+                      />
+                      Value Range
+                    </label>
                   </div>
                   
+                  {formData.salaryType === 'fixed' ? (
+                    <div>
+                      <label style={{
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        color: '#64748b',
+                        marginBottom: '4px',
+                        display: 'block'
+                      }}>
+                        Fixed Contract Value
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.salaryMin || ''}
+                        onChange={(e) => handleInputChange('salaryMin', e.target.value)}
+                        placeholder="e.g., 2500000"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          color: '#64748b',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Minimum Value
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.salaryMin || ''}
+                          onChange={(e) => handleInputChange('salaryMin', e.target.value)}
+                          placeholder="e.g., 2500000"
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          color: '#64748b',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Maximum Value
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.salaryMax || ''}
+                          onChange={(e) => handleInputChange('salaryMax', e.target.value)}
+                          placeholder="e.g., 5200000"
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                  gap: '12px', 
+                  marginBottom: '16px' 
+                }}>
                   <div>
                     <label style={{
                       fontSize: '14px',
@@ -1640,6 +1733,126 @@ const Post = ({ onClose, editItem = null }) => {
                     <option value="5 years">5 years</option>
                     <option value="Ongoing">Ongoing</option>
                   </select>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    color: '#64748b',
+                    marginBottom: '4px',
+                    display: 'block'
+                  }}>
+                    Stipend/Amount Type *
+                  </label>
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="salaryType"
+                        value="fixed"
+                        checked={formData.salaryType === 'fixed'}
+                        onChange={(e) => handleInputChange('salaryType', e.target.value)}
+                        style={{ marginRight: '6px' }}
+                      />
+                      Fixed Amount
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="salaryType"
+                        value="range"
+                        checked={formData.salaryType === 'range'}
+                        onChange={(e) => handleInputChange('salaryType', e.target.value)}
+                        style={{ marginRight: '6px' }}
+                      />
+                      Amount Range
+                    </label>
+                  </div>
+                  
+                  {formData.salaryType === 'fixed' ? (
+                    <div>
+                      <label style={{
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        color: '#64748b',
+                        marginBottom: '4px',
+                        display: 'block'
+                      }}>
+                        Fixed Amount
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.salaryMin || ''}
+                        onChange={(e) => handleInputChange('salaryMin', e.target.value)}
+                        placeholder="e.g., 50000"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          color: '#64748b',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Minimum Amount
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.salaryMin || ''}
+                          onChange={(e) => handleInputChange('salaryMin', e.target.value)}
+                          placeholder="e.g., 50000"
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          color: '#64748b',
+                          marginBottom: '4px',
+                          display: 'block'
+                        }}>
+                          Maximum Amount
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.salaryMax || ''}
+                          onChange={(e) => handleInputChange('salaryMax', e.target.value)}
+                          placeholder="e.g., 100000"
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ marginBottom: '16px' }}>
