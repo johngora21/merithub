@@ -11,7 +11,7 @@ router.get('/:id', optionalAuth, jobController.getJobById);
 
 // Protected routes (supports company logo upload)
 router.post('/', authenticateToken, authController.upload.single('companyLogo'), jobController.createJob);
-router.put('/:id', authenticateToken, jobController.updateJob);
+router.put('/:id', authenticateToken, authController.upload.single('companyLogo'), jobController.updateJob);
 router.delete('/:id', authenticateToken, jobController.deleteJob);
 
 module.exports = router;

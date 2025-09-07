@@ -28,6 +28,15 @@ const Applications = () => {
 
   // Map backend payloads to the exact UI fields used by the cards
   const mapJob = (j) => {
+    const formatDate = (value) => {
+      if (!value) return ''
+      const d = new Date(value)
+      if (Number.isNaN(d.getTime())) return String(value)
+      return d.toLocaleDateString()
+    }
+    const toTitleCase = (s) => (typeof s === 'string' && s.length)
+      ? s.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-')
+      : s
     // Use EXACT same salary logic as main Merit app
     const min = j.salary_min != null ? Number(j.salary_min) : undefined
     const max = j.salary_max != null ? Number(j.salary_max) : undefined
@@ -45,23 +54,43 @@ const Applications = () => {
       salary = 'Salary not specified'
     }
 
+    // Normalize country to full name if a code is provided (e.g., TZ -> Tanzania)
+    const rawCountry = j.country || ''
+    const countryFromList = countries.find(c => c.code === rawCountry || c.name === rawCountry)
+    const normalizedCountry = countryFromList ? countryFromList.name : rawCountry
+
+    const years = j.experience_years != null ? Number(j.experience_years) : undefined
+    const experienceText = (typeof years === 'number' && !Number.isNaN(years))
+      ? `${years} years`
+      : (j.experience ? j.experience : (j.experience_level || ''))
+
     return {
       id: j.id || j.job_id || `JOB-${j?.id || ''}`,
       title: j.title || j.position || '',
       company: j.company || j.company_name || '',
       industry: j.industry || j.category || '',
       location: j.location || j.country || '',
-      type: j.type || j.employment_type || '',
-      experience: j.experience || j.experience_level || '',
+      country: normalizedCountry || '',
+      type: toTitleCase(j.job_type || j.type || j.employment_type || ''),
+      experience: experienceText,
       salary: salary,
-      postedTime: j.posted_time || j.created_at || '',
+      postedTime: j.postedTime || j.createdAt ? new Date(j.postedTime || j.createdAt).toLocaleDateString() : 'Recently',
+      // Align with Content page: use application_deadline and format
+      deadline: j.application_deadline ? new Date(j.application_deadline).toLocaleDateString() : 'No deadline',
       applicants: j.applicants || j.applicants_count || 0,
       description: j.description || '',
       skills: Array.isArray(j.skills) ? j.skills : [],
+      tags: Array.isArray(j.tags) ? j.tags : [],
+      benefits: Array.isArray(j.benefits) ? j.benefits : (j.benefits ? [j.benefits] : []),
       logo: j.logo || j.company_logo || '',
       urgentHiring: !!(j.is_urgent || j.urgentHiring),
       isRemote: !!(j.is_remote || j.remote),
-      postedBy: j.posted_by || j.source || 'platform',
+      postedBy: j.posted_by || j.source || (j.creator ? (j.creator.name || j.creator.email) : 'platform'),
+      contactEmail: j.contact_email || (j.creator ? j.creator.email : ''),
+      contactPhone: j.creator ? j.creator.phone : '',
+      approvalStatus: j.approval_status || 'pending',
+      externalUrl: j.external_url || '',
+      workType: toTitleCase(j.work_type) || (j.isRemote ? 'Remote' : ''),
       status: j.status || 'Active'
     }
   }
@@ -74,7 +103,7 @@ const Applications = () => {
     location: t.location || t.country || '',
     budget: t.budget || t.price_range || '',
     deadline: t.deadline || t.closing_date || '',
-    postedTime: t.posted_time || t.created_at || '',
+    postedTime: t.postedTime || t.createdAt ? new Date(t.postedTime || t.createdAt).toLocaleDateString() : 'Recently',
     applicants: t.applicants || t.applicants_count || 0,
     description: t.description || '',
     requirements: Array.isArray(t.requirements) ? t.requirements : [],
@@ -91,7 +120,7 @@ const Applications = () => {
     location: o.location || o.country || 'Remote',
     duration: o.duration || '',
     stipend: o.stipend || o.compensation || '',
-    postedTime: o.posted_time || o.created_at || '',
+    postedTime: o.postedTime || o.createdAt ? new Date(o.postedTime || o.createdAt).toLocaleDateString() : 'Recently',
     applicants: o.applicants || o.applicants_count || 0,
     description: o.description || '',
     benefits: Array.isArray(o.benefits) ? o.benefits : [],
@@ -110,7 +139,38 @@ const Applications = () => {
         const jobs = Array.isArray(payload.jobs) ? payload.jobs : (payload.data?.jobs || [])
         const tenders = Array.isArray(payload.tenders) ? payload.tenders : (payload.data?.tenders || [])
         const opportunities = Array.isArray(payload.opportunities) ? payload.opportunities : (payload.data?.opportunities || [])
-        setJobsState(jobs.map(mapJob))
+
+        // Enrich jobs with application_deadline from content endpoint (same controller)
+        try {
+          const jobsDetailResp = await apiService.get('/admin/content?type=jobs&limit=50')
+          const jobsDetailPayload = jobsDetailResp?.data || jobsDetailResp || {}
+          const detailedJobs = Array.isArray(jobsDetailPayload)
+            ? jobsDetailPayload
+            : (jobsDetailPayload.content || jobsDetailPayload.data || jobsDetailPayload.jobs || [])
+          const byId = new Map()
+          detailedJobs.forEach(dj => { if (dj && dj.id != null) byId.set(dj.id, dj) })
+          const merged = jobs.map(j => {
+            const dj = byId.get(j.id) || {}
+            return {
+              ...j,
+              application_deadline: j.application_deadline || dj.application_deadline || dj.deadline,
+              // enrich missing fields from detailed content
+              benefits: Array.isArray(j.benefits) ? j.benefits : (Array.isArray(dj.benefits) ? dj.benefits : (dj.benefits ? [dj.benefits] : (j.benefits ? [j.benefits] : []))),
+              tags: Array.isArray(j.tags) ? j.tags : (Array.isArray(dj.tags) ? dj.tags : (dj.tags ? [dj.tags] : [])),
+              contact_email: j.contact_email || dj.contact_email,
+              external_url: j.external_url || dj.external_url,
+              job_type: j.job_type || dj.job_type,
+              work_type: j.work_type || dj.work_type,
+              experience_level: j.experience_level || dj.experience_level,
+              experience_years: j.experience_years != null ? j.experience_years : dj.experience_years,
+              approval_status: j.approval_status || dj.approval_status,
+              creator: j.creator || dj.creator
+            }
+          })
+          setJobsState(merged.map(mapJob))
+        } catch (enrichErr) {
+          setJobsState(jobs.map(mapJob))
+        }
         setTendersState(tenders.map(mapTender))
         setOpportunitiesState(opportunities.map(mapOpportunity))
       } catch (e) {
@@ -642,92 +702,59 @@ const Applications = () => {
                 )}
               </h2>
 
-              {/* Job Location and Status */}
+              {/* Removed old location/status and quick info to avoid duplicates */}
+
+              {/* Quick Info: two columns (pairs) */}
               <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                marginBottom: '8px',
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '8px 12px',
+                marginBottom: '10px',
                 fontSize: '12px',
-                color: '#666',
-                flexWrap: 'wrap'
+                color: '#64748b'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                  <MapPin size={11} />
-                  {job.location}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MapPin size={12} />
+                  <span style={{ color: '#0f172a' }}>{job.location}</span>
                 </div>
-                <span>•</span>
-                <span>{job.postedTime}</span>
-                {job.isRemote && (
-                  <>
-                    <span>•</span>
-                    <span style={{
-                      color: '#16a34a',
-                      fontSize: '11px',
-                      fontWeight: '500'
-                    }}>
-                      Remote
-                    </span>
-                  </>
-                )}
-              </div>
-
-              {/* Quick Info */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '8px',
-                flexWrap: 'wrap'
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '3px',
-                  fontSize: '12px',
-                  color: '#16a34a',
-                  fontWeight: '600'
-                }}>
-                  <DollarSign size={12} />
-                  {job.salary}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: '#0f172a' }}>{job.country || '-'}</span>
                 </div>
-                <span style={{ color: '#e2e8f0' }}>•</span>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '3px',
-                  fontSize: '12px',
-                  color: '#64748b'
-                }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <DollarSign size={12} color="#16a34a" />
+                  <span style={{ color: '#16a34a', fontWeight: 600 }}>{job.salary}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Briefcase size={12} />
-                  {job.type}
+                  <span style={{ color: '#0f172a' }}>{job.type}</span>
                 </div>
-                <span style={{ color: '#e2e8f0' }}>•</span>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '3px',
-                  fontSize: '12px',
-                  color: '#64748b'
-                }}>
-                  <Clock size={12} />
-                  {job.experience}
-                </div>
+                {/* Removed deadline here to keep exactly two rows */}
               </div>
 
-              {/* Description */}
-              <p style={{
-                fontSize: '13px',
-                color: '#475569',
-                lineHeight: '1.4',
-                margin: '0 0 8px 0',
-                display: '-webkit-box',
-                WebkitLineClamp: 1,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden'
-              }}>
-                {job.description}
-              </p>
+              {/* Tags */}
+              {job.tags && job.tags.length > 0 && (
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {job.tags.slice(0, 4).map((tag, index) => (
+                      <span key={index} style={{
+                        backgroundColor: '#eef2ff',
+                        color: '#4338ca',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: '500'
+                      }}>
+                        {tag}
+                      </span>
+                    ))}
+                    {job.tags.length > 4 && (
+                      <span style={{ color: '#64748b', fontSize: '11px', padding: '2px 6px', fontWeight: '500' }}>
+                        +{job.tags.length - 4} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Skills */}
               <div style={{ marginBottom: '10px' }}>
@@ -1125,7 +1152,7 @@ const Applications = () => {
           <div style={{
             backgroundColor: 'white',
             borderRadius: '16px',
-            maxWidth: '600px',
+            maxWidth: '800px',
             width: '100%',
             maxHeight: '80vh',
             overflow: 'auto',
@@ -1213,43 +1240,21 @@ const Applications = () => {
                 {selectedItem.title}
               </h1>
 
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-                flexWrap: 'wrap',
-                fontSize: '14px',
-                color: '#64748b',
-                marginBottom: '16px'
-              }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '14px', color: '#64748b', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <MapPin size={16} />
                   {selectedItem.location}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Clock size={16} />
-                  {selectedItem.postedTime}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Users size={16} />
-                  {selectedItem.applicants} applicants
-                </div>
-                <span style={{
-                  padding: '4px 8px',
-                  backgroundColor: selectedItem.status === 'Active' ? '#dcfce7' : '#fef3c7',
-                  color: selectedItem.status === 'Active' ? '#166534' : '#92400e',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  fontWeight: '600'
-                }}>
-                  {selectedItem.status}
-                </span>
+                <span>•</span>
+                <span><strong>Country:</strong> {selectedItem.country}</span>
+                <span>•</span>
+                <span><strong>Deadline:</strong> {selectedItem.deadline}</span>
               </div>
             </div>
 
             {/* Content */}
             <div style={{ padding: '24px' }}>
-              {/* Key Details */}
+              {/* Complete Job Details */}
               <div style={{ marginBottom: '24px' }}>
                 <h3 style={{
                   fontSize: '16px',
@@ -1257,70 +1262,64 @@ const Applications = () => {
                   color: '#0f172a',
                   margin: '0 0 12px 0'
                 }}>
-                  Key Details
+                  Complete Job Details
                 </h3>
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gridTemplateColumns: '1fr 1fr',
                   gap: '12px'
                 }}>
                   {activeTab === 'jobs' && (
                     <>
                       <div>
-                        <label style={{
-                          fontSize: '12px',
-                          color: '#64748b',
-                          fontWeight: '500',
-                          marginBottom: '4px',
-                          display: 'block'
-                        }}>
-                          Job Type
-                        </label>
-                        <p style={{
-                          fontSize: '14px',
-                          color: '#0f172a',
-                          margin: 0,
-                          fontWeight: '500'
-                        }}>
-                          {selectedItem.type}
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Job Type</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.type}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Work Type</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.workType}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Experience Level</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.experience}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.industry}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.location}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Country</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.country}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Salary</label>
+                        <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedItem.salary}</p>
+                      </div>
+                      {/* Remove Deadline from this section to match Content layout */}
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Posted By</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.postedBy}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Email</label>
+                        <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
+                          <a href={`mailto:${selectedItem.contactEmail}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contactEmail}</a>
                         </p>
                       </div>
                       <div>
-                        <label style={{
-                          fontSize: '12px',
-                          color: '#64748b',
-                          fontWeight: '500',
-                          marginBottom: '4px',
-                          display: 'block'
-                        }}>
-                          Experience
-                        </label>
-                        <p style={{
-                          fontSize: '14px',
-                          color: '#0f172a',
-                          margin: 0,
-                          fontWeight: '500'
-                        }}>
-                          {selectedItem.experience}
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Phone</label>
+                        <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
+                          <a href={`tel:${selectedItem.contactPhone}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contactPhone}</a>
                         </p>
                       </div>
                       <div>
-                        <label style={{
-                          fontSize: '12px',
-                          color: '#64748b',
-                          fontWeight: '500',
-                          marginBottom: '4px',
-                          display: 'block'
-                        }}>
-                          Salary
-                        </label>
-                        <p style={{
-                          fontSize: '14px',
-                          color: '#16a34a',
-                          margin: 0,
-                          fontWeight: '600'
-                        }}>
-                          {selectedItem.salary}
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application URL</label>
+                        <p style={{ fontSize: '14px', margin: 0, fontWeight: '500', wordBreak: 'break-all' }}>
+                          <a href={selectedItem.externalUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.externalUrl}</a>
                         </p>
                       </div>
                     </>
@@ -1414,7 +1413,7 @@ const Applications = () => {
                 </div>
               </div>
 
-              {/* Description */}
+              {/* Job Overview */}
               <div style={{ marginBottom: '24px' }}>
                 <h3 style={{
                   fontSize: '16px',
@@ -1422,7 +1421,7 @@ const Applications = () => {
                   color: '#0f172a',
                   margin: '0 0 12px 0'
                 }}>
-                  Description
+                  Job Overview
                 </h3>
                 <p style={{
                   fontSize: '14px',
@@ -1434,7 +1433,7 @@ const Applications = () => {
                 </p>
               </div>
 
-              {/* Skills/Requirements/Benefits */}
+              {/* Required Skills */}
               {selectedItem.skills && (
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{
@@ -1466,43 +1465,8 @@ const Applications = () => {
                 </div>
               )}
 
-              {selectedItem.requirements && (
-                <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#0f172a',
-                    margin: '0 0 12px 0'
-                  }}>
-                    Requirements
-                  </h3>
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px'
-                  }}>
-                    {selectedItem.requirements.map((req, index) => (
-                      <div key={index} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        fontSize: '14px',
-                        color: '#475569'
-                      }}>
-                        <div style={{
-                          width: '6px',
-                          height: '6px',
-                          backgroundColor: '#16a34a',
-                          borderRadius: '50%'
-                        }}></div>
-                        {req}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {selectedItem.benefits && (
+              {/* Benefits */}
+              {selectedItem.benefits && selectedItem.benefits.length > 0 && (
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{
                     fontSize: '16px',
@@ -1514,70 +1478,47 @@ const Applications = () => {
                   </h3>
                   <div style={{
                     display: 'flex',
-                    flexDirection: 'column',
+                    flexWrap: 'wrap',
                     gap: '8px'
                   }}>
                     {selectedItem.benefits.map((benefit, index) => (
-                      <div key={index} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        fontSize: '14px',
-                        color: '#475569'
+                      <span key={index} style={{
+                        backgroundColor: '#f1f5f9',
+                        color: '#475569',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '500'
                       }}>
-                        <div style={{
-                          width: '6px',
-                          height: '6px',
-                          backgroundColor: '#16a34a',
-                          borderRadius: '50%'
-                        }}></div>
                         {benefit}
-                      </div>
+                      </span>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                paddingTop: '20px',
-                borderTop: '1px solid #e2e8f0'
-              }}>
-                <button 
-                  onClick={() => {
-                    setShowOverview(false)
-                    handleViewApplicants(selectedItem)
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: '12px 24px',
-                    backgroundColor: '#ea580c',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}>
-                  View All Applicants
-                </button>
-                <button style={{
-                  padding: '12px 24px',
-                  backgroundColor: 'white',
-                  color: '#64748b',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}>
-                  Edit
-                </button>
-              </div>
+              {/* Tags */}
+              {selectedItem.tags && selectedItem.tags.length > 0 && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: '0 0 12px 0' }}>Tags</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {selectedItem.tags.map((tag, index) => (
+                      <span key={index} style={{
+                        backgroundColor: '#f1f5f9',
+                        color: '#475569',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '500'
+                      }}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer removed to match Content layout */}
             </div>
           </div>
         </div>

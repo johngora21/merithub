@@ -1080,37 +1080,13 @@ const Content = () => {
               {item.organization}
             </div>
 
-            {/* Location and Deadline */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              marginBottom: '12px',
-              flexWrap: 'wrap',
-              flexShrink: 0
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '13px',
-                color: '#64748b'
-              }}>
+            {/* Quick info: exact flow to match Applications (vertical) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px', flexShrink: 0, fontSize: '13px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
                 <MapPin size={14} />
-                {item.location}
+                <span style={{ color: '#0f172a' }}>{item.location}</span>
               </div>
-              <span style={{ color: '#e2e8f0' }}>•</span>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '13px',
-                color: isDeadlineUrgent ? '#dc2626' : '#64748b',
-                fontWeight: isDeadlineUrgent ? '600' : '500'
-              }}>
-                <Calendar size={12} />
-                Due: {new Date(item.deadline).toLocaleDateString()} ({daysUntilDeadline} days)
-              </div>
+              <div style={{ color: '#0f172a' }}>{item.country || '-'}</div>
             </div>
 
             {/* Description */}
@@ -1462,61 +1438,22 @@ const Content = () => {
               {item.organization || item.category}
             </div>
 
-            {/* Key Info Row */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              marginBottom: '12px',
-              flexWrap: 'wrap'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '13px',
-                color: '#16a34a',
-                fontWeight: '600'
-              }}>
+            {/* Salary and Type (vertical) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16a34a', fontWeight: 600 }}>
                 <DollarSign size={14} />
-                {item.amount || item.salary}
+                <span style={{ fontSize: '13px' }}>{item.amount || item.salary}</span>
               </div>
-              <span style={{ color: '#e2e8f0' }}>•</span>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '13px',
-                color: '#64748b'
-              }}>
-                <Clock size={14} />
-                {item.duration}
-              </div>
-              <span style={{ color: '#e2e8f0' }}>•</span>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '13px',
-                color: '#64748b'
-              }}>
-                <MapPin size={14} />
-                {item.location}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+                <Briefcase size={14} />
+                <span style={{ fontSize: '13px' }}>{item.type}</span>
               </div>
             </div>
 
-            {/* Deadline */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '13px',
-              color: '#dc2626',
-              marginBottom: '12px',
-              fontWeight: '600'
-            }}>
+            {/* Deadline (last line) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#dc2626', marginBottom: '12px', fontWeight: 600 }}>
               <Calendar size={12} />
-              Deadline: {new Date(item.deadline).toLocaleDateString()}
+              <span style={{ fontSize: '13px' }}>{new Date(item.deadline).toLocaleDateString()}</span>
             </div>
 
             {/* Description */}
@@ -1841,78 +1778,28 @@ const Content = () => {
           )}
         </h2>
 
-        {/* Job Location and Status */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          marginBottom: '8px',
-          fontSize: '12px',
-          color: '#666',
-          flexWrap: 'wrap'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+        {/* Quick info: pairs + full-width deadline, with country name */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', marginBottom: '8px', fontSize: '12px', color: '#0f172a' }}> 
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#64748b' }}>
             <MapPin size={11} />
-            {item.location}
+            <span>{item.location}</span>
           </div>
-          <span>•</span>
-          <span>Deadline: {item.deadline}</span>
-          {item.isRemote && (
-            <>
-              <span>•</span>
-              <span style={{
-                color: '#16a34a',
-                fontSize: '11px',
-                fontWeight: '500'
-              }}>
-                Remote
-              </span>
-            </>
-          )}
+          <div><span>{getCountryName(item.country) || item.country || ''}</span></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#16a34a', fontWeight: 600 }}>
+            <DollarSign size={12} />
+            <span>{item.salary}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
+            <Briefcase size={12} />
+            <span>{item.type}</span>
+          </div>
+          <div style={{ gridColumn: '1 / span 2', display: 'flex', alignItems: 'center', gap: '6px', color: '#dc2626', fontWeight: 600 }}>
+            <Calendar size={12} />
+            <span>{new Date(item.deadline).toLocaleDateString()}</span>
+          </div>
         </div>
 
-        {/* Quick Info */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '8px',
-          flexWrap: 'wrap'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '3px',
-            fontSize: '12px',
-            color: '#16a34a',
-            fontWeight: '600'
-          }}>
-            <DollarSign size={12} />
-            {item.salary}
-          </div>
-          <span style={{ color: '#e2e8f0' }}>•</span>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '3px',
-            fontSize: '12px',
-            color: '#64748b'
-          }}>
-            <Briefcase size={12} />
-            {item.type}
-          </div>
-          <span style={{ color: '#e2e8f0' }}>•</span>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '3px',
-            fontSize: '12px',
-            color: '#64748b'
-          }}>
-            <Clock size={12} />
-            {item.experience}
-          </div>
-        </div>
+        {/* Quick Info removed to avoid duplicates (salary/type already shown above) */}
 
 
         {/* Tags */}

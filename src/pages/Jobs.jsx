@@ -752,7 +752,7 @@ ${user?.first_name} ${user?.last_name}`
                     {job.location}
                   </div>
                   <span>•</span>
-                <span>{job.postedTime}</span>
+                <span>Deadline: {job.applicationDeadline ? new Date(job.applicationDeadline).toLocaleDateString() : 'No deadline'}</span>
                 {job.isRemote && (
                   <>
                     <span>•</span>
@@ -1526,6 +1526,10 @@ ${user?.first_name} ${user?.last_name}`
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <DollarSign size={14} />
                           {selectedJob.salary}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Calendar size={14} />
+                          Deadline: {selectedJob.applicationDeadline ? new Date(selectedJob.applicationDeadline).toLocaleDateString() : 'No deadline'}
                         </div>
                       </div>
                     </div>

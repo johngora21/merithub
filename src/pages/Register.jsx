@@ -122,11 +122,17 @@ const Register = () => {
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 12px',
-              fontSize: '24px',
-              fontWeight: '600',
-              color: 'white'
+              padding: '8px'
             }}>
-              M
+              <img 
+                src="/assets/images/merit-logo.png" 
+                alt="Merit Logo" 
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain'
+                }}
+              />
             </div>
             <h1 style={{
               fontSize: '24px',

@@ -23,19 +23,19 @@ const Header = ({ setSidebarOpen, isDesktop, isSidebarRoute }) => {
   return (
     <header style={{
       position: 'relative',
-      height: isDesktop ? '60px' : '40px',
+      height: isDesktop ? '100px' : '70px',
       backgroundColor: 'transparent',
       display: 'flex',
       alignItems: 'center',
       paddingLeft: isDesktop ? '32px' : '16px',
       paddingRight: isDesktop ? '32px' : '16px',
-      justifyContent: isDesktop ? 'flex-end' : 'space-between',
+      justifyContent: isDesktop ? 'space-between' : 'space-between',
       marginTop: isDesktop ? '16px' : '12px',
-      marginBottom: '16px'
+      marginBottom: '8px'
     }}>
-      {/* Left Side - Back Arrow (Sidebar routes) or User Menu (Main routes on Mobile) */}
-      {!isDesktop && (
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+      {/* Left Side - Menu Icon and Logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: isDesktop ? '60px' : '80px' }}>
+        {!isDesktop && (
           <button
             onClick={isSidebarRoute ? handleBackClick : () => setSidebarOpen(true)}
             style={{
@@ -57,10 +57,21 @@ const Header = ({ setSidebarOpen, isDesktop, isSidebarRoute }) => {
               <User size={24} color="#262626" />
             )}
           </button>
-        </div>
-      )}
+        )}
+        
+        {/* Merit Logo - Next to menu icon */}
+        <img 
+          src="/assets/images/merit-logo.png" 
+          alt="Merit Logo" 
+          style={{
+            height: isDesktop ? '100px' : '70px',
+            width: 'auto',
+            objectFit: 'contain'
+          }}
+        />
+      </div>
 
-      {/* Right Side - Create, Bookmarks and Notifications (hidden on sidebar routes for clean look) */}
+      {/* Right Side - Create, Bookmarks and Notifications */}
       {!isSidebarRoute && (
         <div style={{
           display: 'flex',

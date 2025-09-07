@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowLeft, Users, MapPin, Mail, Phone, Calendar, Download, Search, Filter, Check, X, MessageSquare } from 'lucide-react'
+import { ArrowLeft, Users, MapPin, Mail, Phone, Calendar, Download, Search, Filter, Check, X, MessageSquare, UserCheck } from 'lucide-react'
 import { apiService } from '../../lib/api-service'
 
 // Helper function to determine education level hierarchy
@@ -79,22 +79,28 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const statusOptions = ['All Status', 'Under Review', 'Shortlisted', 'Rejected', 'Hired', 'Withdrawn']
+  // Get unique statuses from current applicants data
+  const getUniqueStatuses = () => {
+    const statuses = [...new Set(applicantsData.map(applicant => applicant.status))]
+    return ['All Status', ...statuses.sort()]
+  }
+  
+  const statusOptions = getUniqueStatuses()
 
   const getStatusColor = (status) => {
+    console.log('Getting color for status:', status, 'type:', typeof status)
     switch (status) {
-      case 'Under Review':
-        return { backgroundColor: '#fef3c7', color: '#92400e', borderColor: '#fde68a' }
-      case 'Shortlisted':
-        return { backgroundColor: '#dbeafe', color: '#1d4ed8', borderColor: '#93c5fd' }
-      case 'Rejected':
-        return { backgroundColor: '#fee2e2', color: '#dc2626', borderColor: '#fca5a5' }
-      case 'Hired':
-        return { backgroundColor: '#dcfce7', color: '#166534', borderColor: '#86efac' }
-      case 'Withdrawn':
-        return { backgroundColor: '#f3f4f6', color: '#374151', borderColor: '#d1d5db' }
+      case 'pending':
+        return { backgroundColor: '#fed7aa', color: '#ea580c', borderColor: '#fdba74' } // Orange
+      case 'shortlisted':
+        return { backgroundColor: '#dbeafe', color: '#1d4ed8', borderColor: '#93c5fd' } // Blue
+      case 'rejected':
+        return { backgroundColor: '#fee2e2', color: '#dc2626', borderColor: '#fca5a5' } // Red
+      case 'approved':
+        return { backgroundColor: '#dcfce7', color: '#166534', borderColor: '#86efac' } // Green
       default:
-        return { backgroundColor: '#f3f4f6', color: '#374151', borderColor: '#d1d5db' }
+        console.log('Using default color for status:', status)
+        return { backgroundColor: '#f3f4f6', color: '#374151', borderColor: '#d1d5db' } // Gray
     }
   }
 
@@ -121,11 +127,14 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
 
   const handleStatusChange = async (applicationId, newStatus) => {
     try {
-      await apiService.put(`/admin/applications/${applicationId}/status`, { status: newStatus.toLowerCase().replace(' ', '-') })
+      console.log('Updating status:', { applicationId, newStatus })
+      const response = await apiService.put(`/admin/applications/${applicationId}/status`, { status: newStatus })
+      console.log('Status update response:', response)
       setApplicantsData(prev => prev.map(a => a.applicationId === applicationId ? { ...a, status: newStatus } : a))
+      alert(`Status updated to ${newStatus} successfully!`)
     } catch (e) {
-      alert('Failed to update status')
-      console.error(e)
+      alert(`Failed to update status: ${e.message}`)
+      console.error('Status update error:', e)
     }
   }
   useEffect(() => {
@@ -137,7 +146,10 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
         const normalized = type === 'jobs' ? 'job' : (type === 'tenders' ? 'tender' : 'opportunity')
         const resp = await apiService.get(`/admin/applications/applicants?type=${normalized}&id=${selectedItem.id}`)
         const payload = resp?.data || resp || {}
-        setApplicantsData(Array.isArray(payload.applicants) ? payload.applicants : [])
+        const applicants = Array.isArray(payload.applicants) ? payload.applicants : []
+        console.log('Loaded applicants:', applicants)
+        console.log('Sample applicant status:', applicants[0]?.status)
+        setApplicantsData(applicants)
       } catch (e) {
         console.error('Failed to load applicants', e)
         setError(e?.message || 'Failed to load applicants')
@@ -149,11 +161,35 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedItem?.id])
 
+  const getStatusMessage = (applicant, status) => {
+    const baseMessage = `Dear ${applicant.name},\n\nThank you for your interest in the ${selectedItem.title} position at ${selectedItem.company}.\n\n`
+    
+    switch (status) {
+      case 'pending':
+        return baseMessage + `We have received your application and our team is currently reviewing it. We appreciate your patience as we carefully consider all candidates.\n\nWe will be in touch with you soon regarding the next steps in our hiring process.\n\nThank you for considering ${selectedItem.company} as your potential workplace.`
+      
+      case 'shortlisted':
+        return baseMessage + `Great news! We are pleased to inform you that your application has been shortlisted for the ${selectedItem.title} position.\n\nYour qualifications and experience have impressed our team, and we would like to move forward with the next stage of our selection process.\n\nWe will be contacting you soon to schedule an interview and discuss the next steps.\n\nCongratulations and we look forward to speaking with you soon!`
+      
+      case 'rejected':
+        return baseMessage + `After careful consideration, we have decided to move forward with other candidates for the ${selectedItem.title} position.\n\nThis decision was not easy, as we were impressed by many qualified applicants. We encourage you to continue applying for other opportunities that match your skills and interests.\n\nWe will keep your application on file and may contact you if a suitable position becomes available in the future.\n\nThank you for your interest in ${selectedItem.company}, and we wish you the best in your career journey.`
+      
+      case 'approved':
+        return baseMessage + `Congratulations! We are delighted to inform you that your application for the ${selectedItem.title} position has been approved.\n\nWe were impressed by your qualifications, experience, and enthusiasm for this role. We believe you will be a valuable addition to our team.\n\nOur HR team will be contacting you shortly to discuss the next steps, including contract details and your start date.\n\nWelcome to the ${selectedItem.company} family! We look forward to working with you.`
+      
+      default:
+        return baseMessage + `We are currently reviewing your application and will be in touch soon regarding the next steps.\n\nThank you for your patience and interest in joining our team.`
+    }
+  }
+
   const handleContact = (applicant) => {
+    console.log('Selected applicant for contact:', applicant)
+    console.log('Profile image field:', applicant.profileImage)
+    console.log('All applicant fields:', Object.keys(applicant))
     setSelectedApplicant(applicant)
     setShowContactModal(true)
     setContactSubject(`Regarding your application for ${selectedItem.title}`)
-    setContactMessage(`Dear ${applicant.name},\n\nThank you for your interest in the ${selectedItem.title} position at ${selectedItem.company}.\n\n`)
+    setContactMessage(getStatusMessage(applicant, applicant.status))
   }
 
   const handleViewProfile = (applicant) => {
@@ -321,7 +357,7 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
               marginBottom: '4px',
               display: 'block'
             }}>
-              Posted
+              Application Deadline
             </label>
             <p style={{
               fontSize: '14px',
@@ -329,7 +365,7 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
               margin: 0,
               fontWeight: '600'
             }}>
-              {selectedItem.postedTime}
+              {selectedItem.deadline}
             </p>
           </div>
         </div>
@@ -659,49 +695,57 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
                       <MessageSquare size={12} />
                       Contact
                     </button>
-                    {applicant.status === 'Under Review' && (
-                      <>
-                        <button 
-                          onClick={() => handleStatusChange(applicant.id, 'Shortlisted')}
-                          style={{
-                            padding: '8px 16px',
-                            backgroundColor: '#16a34a',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
-                          <Check size={12} />
-                          Approve
-                        </button>
-                        <button 
-                          onClick={() => handleStatusChange(applicant.id, 'Rejected')}
-                          style={{
-                            padding: '8px 16px',
-                            backgroundColor: '#dc2626',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}>
-                          <X size={12} />
-                          Reject
-                        </button>
-                      </>
-                    )}
-                    {applicant.status === 'Shortlisted' && (
+                    
+                    {/* Action Buttons - Hide after action taken */}
+                    {(() => {
+                      const showShortlist = applicant.status !== 'shortlisted' && applicant.status !== 'approved' && applicant.status !== 'rejected'
+                      console.log(`Applicant ${applicant.name} status: ${applicant.status}, showShortlist: ${showShortlist}`)
+                      return showShortlist
+                    })() && (
                       <button 
-                        onClick={() => handleStatusChange(applicant.id, 'Hired')}
+                        onClick={() => handleStatusChange(applicant.applicationId, 'shortlisted')}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#16a34a',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                        <Check size={12} />
+                        Shortlist
+                      </button>
+                    )}
+                    
+                    {applicant.status !== 'rejected' && applicant.status !== 'approved' && (
+                      <button 
+                        onClick={() => handleStatusChange(applicant.applicationId, 'rejected')}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: '#dc2626',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                        <X size={12} />
+                        Reject
+                      </button>
+                    )}
+                    
+                    {applicant.status !== 'approved' && applicant.status !== 'rejected' && (
+                      <button 
+                        onClick={() => handleStatusChange(applicant.applicationId, 'approved')}
                         style={{
                           padding: '8px 16px',
                           backgroundColor: '#0891b2',
@@ -715,8 +759,8 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
                           alignItems: 'center',
                           gap: '4px'
                         }}>
-                        <Check size={12} />
-                        Hire
+                        <UserCheck size={12} />
+                        Approve
                       </button>
                     )}
                   </div>
@@ -728,6 +772,12 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
       </div>
 
       {/* Contact Modal */}
+      {showContactModal && selectedApplicant && (() => {
+        console.log('Contact modal rendering with selectedApplicant:', selectedApplicant);
+        console.log('ProfileImage value:', selectedApplicant.profileImage);
+        console.log('All keys:', Object.keys(selectedApplicant));
+        return null;
+      })()}
       {showContactModal && selectedApplicant && (
         <div style={{
           position: 'fixed',
@@ -793,7 +843,7 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
                 marginBottom: '16px'
               }}>
                 <img
-                  src={selectedApplicant.avatar}
+                  src={selectedApplicant.profileImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop'}
                   alt={selectedApplicant.name}
                   style={{
                     width: '40px',

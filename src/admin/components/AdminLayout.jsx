@@ -42,7 +42,15 @@ const AdminLayout = ({ children, user, onLogout }) => {
         overflow: 'hidden'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '16px', background: '#f97316', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>M</div>
+          <img 
+            src="/assets/images/merit-logo.png" 
+            alt="Merit Logo" 
+            style={{
+              height: '32px',
+              width: 'auto',
+              objectFit: 'contain'
+            }}
+          />
           <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>Merit Admin</div>
         </div>
         

@@ -53,7 +53,12 @@ const MyApplications = () => {
       applicationUrl: apiApplication.application_url,
       documents: apiApplication.documents || [],
       notes: apiApplication.notes || '',
-      deadline: apiApplication.deadline,
+      deadline: (() => {
+        const d = apiApplication.job?.application_deadline 
+          || apiApplication.opportunity?.deadline 
+          || apiApplication.tender?.deadline
+        return d ? new Date(d).toLocaleDateString() : 'No deadline'
+      })(),
       responses: apiApplication.responses || []
     }
   }
@@ -62,7 +67,8 @@ const MyApplications = () => {
     try {
       setLoading(true)
       const response = await apiService.get('/applications/my-applications')
-      const transformedApplications = (response.data.applications || []).map(transformApplicationData)
+      const list = (response?.data?.data?.applications) || (response?.data?.applications) || []
+      const transformedApplications = list.map(transformApplicationData)
       setApplications(transformedApplications)
     } catch (error) {
       console.error('Error fetching applications:', error)
@@ -282,6 +288,10 @@ const MyApplications = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <Calendar size={12} />
                           Applied {application.appliedDate}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Calendar size={12} />
+                          Deadline {application.deadline}
                         </div>
                       </div>
                     </div>

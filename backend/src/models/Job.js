@@ -51,6 +51,10 @@ const Job = sequelize.define('Job', {
     type: DataTypes.ENUM('entry', 'junior', 'mid', 'senior', 'executive'),
     allowNull: false
   },
+  experience_years: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   work_type: {
     type: DataTypes.ENUM('remote', 'hybrid', 'on-site'),
     allowNull: false
@@ -81,6 +85,11 @@ const Job = sequelize.define('Job', {
   external_url: {
     type: DataTypes.STRING(500),
     allowNull: true
+  },
+  tags: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: []
   },
   contact_email: {
     type: DataTypes.STRING(255),

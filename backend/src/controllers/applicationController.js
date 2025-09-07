@@ -264,17 +264,17 @@ const getUserApplications = async (req, res) => {
         {
           model: Job,
           as: 'job',
-          attributes: ['id', 'title', 'company', 'location', 'status']
+          attributes: ['id', 'title', 'company', 'location', 'status', 'application_deadline']
         },
         {
           model: Tender,
           as: 'tender',
-          attributes: ['id', 'title', 'organization', 'location', 'status']
+          attributes: ['id', 'title', 'organization', 'location', 'status', 'deadline']
         },
         {
           model: Opportunity,
           as: 'opportunity',
-          attributes: ['id', 'title', 'organization', 'location', 'status']
+          attributes: ['id', 'title', 'organization', 'location', 'status', 'deadline']
         }
       ],
       order: [['applied_at', 'DESC']],
