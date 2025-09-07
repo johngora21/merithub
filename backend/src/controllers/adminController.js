@@ -1065,11 +1065,15 @@ const getApplicationsOverview = async (req, res) => {
       evaluation_criteria: Array.isArray(t.evaluation_criteria) ? t.evaluation_criteria : [],
       logo: resolveAssetUrl(t.organization_logo),
       coverImage: resolveAssetUrl(t.cover_image),
-      postedBy: t.creator ? `${t.creator.first_name} ${t.creator.last_name}` : 'government',
-      contactEmail: t.creator ? t.creator.email : t.contact_email || '',
-      contactPhone: t.creator ? t.creator.phone : t.contact_phone || '',
-      externalUrl: t.external_url || '',
-      status: t.status && t.status.charAt(0).toUpperCase() + t.status.slice(1)
+      postedBy: t.posted_by,
+      status: t.status && t.status.charAt(0).toUpperCase() + t.status.slice(1),
+      creator: t.creator ? {
+        name: t.creator.first_name && t.creator.last_name ? 
+          `${t.creator.first_name} ${t.creator.last_name}`.trim() : 
+          (t.creator.first_name || t.creator.last_name || 'Unknown'),
+        email: t.creator.email,
+        phone: t.creator.phone
+      } : null
     });
 
     const mapOpportunity = (o) => ({
@@ -1089,11 +1093,15 @@ const getApplicationsOverview = async (req, res) => {
       eligibility: Array.isArray(o.eligibility) ? o.eligibility : [],
       applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : [],
       logo: o.organization_logo || '',
-      postedBy: o.creator ? `${o.creator.first_name} ${o.creator.last_name}` : 'institution',
-      contactEmail: o.creator ? o.creator.email : o.contact_email || '',
-      contactPhone: o.creator ? o.creator.phone : o.contact_phone || '',
-      externalUrl: o.external_url || '',
-      status: o.status && o.status.charAt(0).toUpperCase() + o.status.slice(1)
+      postedBy: o.posted_by,
+      status: o.status && o.status.charAt(0).toUpperCase() + o.status.slice(1),
+      creator: o.creator ? {
+        name: o.creator.first_name && o.creator.last_name ? 
+          `${o.creator.first_name} ${o.creator.last_name}`.trim() : 
+          (o.creator.first_name || o.creator.last_name || 'Unknown'),
+        email: o.creator.email,
+        phone: o.creator.phone
+      } : null
     });
 
     res.json({

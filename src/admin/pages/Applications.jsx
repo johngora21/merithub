@@ -148,9 +148,9 @@ const Applications = () => {
       benefits: Array.isArray(t.benefits) ? t.benefits : (t.benefits ? [t.benefits] : []),
       tags: Array.isArray(t.tags) ? t.tags : (t.tags ? [t.tags] : []),
     logo: t.logo || t.organization_logo || '',
-      postedBy: t.posted_by || t.poster || 'government',
-      contactEmail: t.contact_email || '',
-      contactPhone: t.contact_phone || '',
+    postedBy: t.posted_by || 'government',
+      contactEmail: t.creator ? t.creator.email : t.contact_email || '',
+      contactPhone: t.creator ? t.creator.phone : t.contact_phone || '',
       externalUrl: t.external_url || '',
     status: t.status || 'Active'
     }
@@ -208,9 +208,9 @@ const Applications = () => {
       eligibility: Array.isArray(o.eligibility) ? o.eligibility : (o.eligibility ? [o.eligibility] : []),
       applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : (o.applicationProcess ? [o.applicationProcess] : []),
     logo: o.logo || o.organization_logo || '',
-      postedBy: o.posted_by || o.poster || 'institution',
-      contactEmail: o.contact_email || '',
-      contactPhone: o.contact_phone || '',
+    postedBy: o.posted_by || 'institution',
+      contactEmail: o.creator ? o.creator.email : o.contact_email || '',
+      contactPhone: o.creator ? o.creator.phone : o.contact_phone || '',
       externalUrl: o.external_url || '',
     status: o.status || 'Active'
     }
