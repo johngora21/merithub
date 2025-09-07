@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { RefreshCw, Download, Users, MapPin, DollarSign, Briefcase, Clock, Star, Search, SlidersHorizontal, X, Check, FileText, GraduationCap } from 'lucide-react'
+import { RefreshCw, Download, Users, MapPin, DollarSign, Briefcase, Clock, Star, Search, SlidersHorizontal, X, Check, FileText, GraduationCap, Calendar } from 'lucide-react'
 import { useResponsive, getGridColumns, getGridGap } from '../../hooks/useResponsive'
 import { countries } from '../../utils/countries'
 import ApplicantsList from './ApplicantsList'
@@ -148,9 +148,9 @@ const Applications = () => {
       benefits: Array.isArray(t.benefits) ? t.benefits : (t.benefits ? [t.benefits] : []),
       tags: Array.isArray(t.tags) ? t.tags : (t.tags ? [t.tags] : []),
     logo: t.logo || t.organization_logo || '',
-      postedBy: t.postedBy || 'government',
-      contactEmail: t.contactEmail || '',
-      contactPhone: t.contactPhone || '',
+      postedBy: t.postedBy,
+      contactEmail: t.contactEmail,
+      contactPhone: t.contactPhone,
       externalUrl: t.external_url || '',
     status: t.status || 'Active'
     }
@@ -208,9 +208,9 @@ const Applications = () => {
       eligibility: Array.isArray(o.eligibility) ? o.eligibility : (o.eligibility ? [o.eligibility] : []),
       applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : (o.applicationProcess ? [o.applicationProcess] : []),
     logo: o.logo || o.organization_logo || '',
-      postedBy: o.postedBy || 'institution',
-      contactEmail: o.contactEmail || '',
-      contactPhone: o.contactPhone || '',
+      postedBy: o.postedBy,
+      contactEmail: o.contactEmail,
+      contactPhone: o.contactPhone,
       externalUrl: o.external_url || '',
     status: o.status || 'Active'
     }
@@ -786,7 +786,7 @@ const Applications = () => {
               }}>
                 {job.title}
                 {job.urgentHiring && (
-                  <Star size={14} color="#16a34a" fill="#16a34a" />
+                  <Star size={14} color="#2563eb" fill="#2563eb" />
                 )}
               </h2>
 
@@ -816,7 +816,10 @@ const Applications = () => {
                   <Briefcase size={12} />
                   <span style={{ color: '#0f172a' }}>{job.type}</span>
                 </div>
-                {/* Removed deadline here to keep exactly two rows */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Calendar size={12} />
+                  <span style={{ color: '#dc2626', fontWeight: 600 }}>{job.deadline}</span>
+                </div>
               </div>
 
               {/* Tags */}
@@ -844,67 +847,6 @@ const Applications = () => {
                 </div>
               )}
 
-              {/* Skills */}
-              <div style={{ marginBottom: '10px' }}>
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '4px'
-                }}>
-                  {job.skills && job.skills.slice(0, 4).map((skill, index) => (
-                    <span key={index} style={{
-                      backgroundColor: '#f1f5f9',
-                      color: '#475569',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      fontWeight: '500'
-                    }}>
-                      {skill}
-                    </span>
-                  ))}
-                  {job.requirements && job.requirements.slice(0, 4).map((req, index) => (
-                    <span key={index} style={{
-                      backgroundColor: '#fef3c7',
-                      color: '#92400e',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      fontWeight: '500'
-                    }}>
-                      {req}
-                    </span>
-                  ))}
-                  {job.benefits && job.benefits.slice(0, 4).map((benefit, index) => (
-                    <span key={index} style={{
-                      backgroundColor: '#dcfce7',
-                      color: '#166534',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      fontWeight: '500'
-                    }}>
-                      {benefit}
-                    </span>
-                  ))}
-                  {((job.skills && job.skills.length > 4) || 
-                    (job.requirements && job.requirements.length > 4) || 
-                    (job.benefits && job.benefits.length > 4)) && (
-                    <span style={{
-                      color: '#64748b',
-                      fontSize: '11px',
-                      padding: '2px 6px',
-                      fontWeight: '500'
-                    }}>
-                      +{Math.max(
-                        job.skills ? job.skills.length : 0,
-                        job.requirements ? job.requirements.length : 0,
-                        job.benefits ? job.benefits.length : 0
-                      ) - 4} more
-                    </span>
-                  )}
-                </div>
-              </div>
 
               {/* Footer */}
               <div style={{
@@ -1334,15 +1276,15 @@ const Applications = () => {
                   {selectedItem.location}
                 </div>
                 <span>•</span>
-                <span><strong>Country:</strong> {selectedItem.country}</span>
+                <span><strong>Country:</strong> <span style={{ color: '#2563eb' }}>{selectedItem.country}</span></span>
                 <span>•</span>
-                <span><strong>Deadline:</strong> {selectedItem.deadline}</span>
+                <span><strong>Deadline:</strong> <span style={{ color: '#dc2626' }}>{selectedItem.deadline}</span></span>
               </div>
             </div>
 
             {/* Content */}
             <div style={{ padding: '24px' }}>
-              {/* Complete Job Details */}
+              {/* Complete Details */}
               <div style={{ marginBottom: '24px' }}>
                 <h3 style={{
                   fontSize: '16px',
@@ -1350,7 +1292,10 @@ const Applications = () => {
                   color: '#0f172a',
                   margin: '0 0 12px 0'
                 }}>
-                  Complete Job Details
+                  {selectedItem.type === 'job' ? 'Complete Job Details' : 
+                   selectedItem.type === 'tender' ? 'Complete Tender Details' : 
+                   selectedItem.type === 'opportunity' ? 'Complete Opportunity Details' : 
+                   'Complete Details'}
                 </h3>
                 <div style={{
                   display: 'grid',
@@ -1434,10 +1379,6 @@ const Applications = () => {
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Country</label>
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.country}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Submission Deadline</label>
-                        <p style={{ fontSize: '14px', color: '#dc2626', margin: 0, fontWeight: '500' }}>{selectedItem.deadline}</p>
                       </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Posted By</label>
@@ -1558,16 +1499,13 @@ const Applications = () => {
                     gap: '8px'
                   }}>
                     {(selectedItem.skills || selectedItem.requirements || []).map((skill, index) => (
-                      <span key={index} style={{
-                        backgroundColor: '#f1f5f9',
-                        color: '#475569',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        fontWeight: '500'
+                      <div key={index} style={{
+                        fontSize: '14px',
+                        color: '#0f172a',
+                        marginBottom: '4px'
                       }}>
                         {skill}
-                      </span>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -1591,13 +1529,9 @@ const Applications = () => {
                   }}>
                     {selectedItem.projectScope.map((scope, index) => (
                       <div key={index} style={{
-                        backgroundColor: '#fef3c7',
-                        color: '#92400e',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
                         fontSize: '14px',
-                        fontWeight: '500',
-                        borderLeft: '4px solid #f59e0b'
+                        color: '#0f172a',
+                        marginBottom: '4px'
                       }}>
                         {scope}
                       </div>
@@ -1616,20 +1550,16 @@ const Applications = () => {
                   }}>
                     Technical Requirements
                   </h3>
-                  <div style={{
+                        <div style={{
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '8px'
                   }}>
                     {selectedItem.technicalRequirements.map((req, index) => (
                       <div key={index} style={{
-                        backgroundColor: '#fef2f2',
-                        color: '#dc2626',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
                         fontSize: '14px',
-                        fontWeight: '500',
-                        borderLeft: '4px solid #ef4444'
+                        color: '#0f172a',
+                        marginBottom: '4px'
                       }}>
                         {req}
                       </div>
@@ -1648,20 +1578,16 @@ const Applications = () => {
                   }}>
                     Submission Process
                   </h3>
-              <div style={{
-                display: 'flex',
+                  <div style={{
+                    display: 'flex',
                     flexDirection: 'column',
                     gap: '8px'
                   }}>
                     {selectedItem.submissionProcess.map((step, index) => (
                       <div key={index} style={{
-                        backgroundColor: '#ecfdf5',
-                        color: '#059669',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                    fontSize: '14px',
-                        fontWeight: '500',
-                        borderLeft: '4px solid #10b981'
+                        fontSize: '14px',
+                        color: '#0f172a',
+                        marginBottom: '4px'
                       }}>
                         {index + 1}. {step}
                       </div>
@@ -1680,25 +1606,21 @@ const Applications = () => {
                   }}>
                     Evaluation Criteria
                   </h3>
-                  <div style={{
-                    display: 'flex',
+                        <div style={{
+                display: 'flex',
                     flexDirection: 'column',
                     gap: '8px'
                   }}>
                     {selectedItem.evaluationCriteria.map((criteria, index) => (
                       <div key={index} style={{
-                        backgroundColor: '#f0f9ff',
-                        color: '#0369a1',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                        borderLeft: '4px solid #0ea5e9'
-                }}>
+                    fontSize: '14px',
+                        color: '#0f172a',
+                        marginBottom: '4px'
+                      }}>
                         {criteria}
-              </div>
+                      </div>
                     ))}
-            </div>
+                  </div>
                 </div>
               )}
 
@@ -1713,8 +1635,8 @@ const Applications = () => {
                   }}>
                     Eligibility Criteria
                   </h3>
-                  <div style={{
-                    display: 'flex',
+              <div style={{
+                display: 'flex',
                     flexWrap: 'wrap',
                     gap: '8px'
                   }}>
@@ -1730,8 +1652,8 @@ const Applications = () => {
                         {criteria}
                       </span>
                     ))}
-                  </div>
-                </div>
+              </div>
+            </div>
               )}
 
               {activeTab === 'opportunities' && selectedItem.applicationProcess && selectedItem.applicationProcess.length > 0 && (
@@ -1750,18 +1672,15 @@ const Applications = () => {
                     gap: '8px'
                   }}>
                     {selectedItem.applicationProcess.map((step, index) => (
-                      <span key={index} style={{
-                        backgroundColor: '#ecfdf5',
-                        color: '#059669',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        fontWeight: '500'
-                      }}>
+                      <div key={index} style={{
+                    fontSize: '14px',
+                        color: '#0f172a',
+                        marginBottom: '4px'
+                }}>
                         {step}
-                      </span>
+              </div>
                     ))}
-                  </div>
+            </div>
                 </div>
               )}
 
@@ -1782,18 +1701,15 @@ const Applications = () => {
                     gap: '8px'
                   }}>
                     {selectedItem.benefits.map((benefit, index) => (
-                      <span key={index} style={{
-                        backgroundColor: '#f1f5f9',
-                        color: '#475569',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        fontSize: '13px',
-                        fontWeight: '500'
-                      }}>
+                      <div key={index} style={{
+                  fontSize: '14px',
+                        color: '#0f172a',
+                        marginBottom: '4px'
+                }}>
                         {benefit}
-                      </span>
-                    ))}
               </div>
+                    ))}
+            </div>
             </div>
               )}
 

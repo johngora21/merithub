@@ -6,7 +6,7 @@ const { validationResult } = require('express-validator');
 const resolveAssetUrl = (path) => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
-  const baseUrl = process.env.API_BASE_URL || 'http://localhost:8000';
+  const baseUrl = process.env.API_BASE_URL || 'http://localhost:8001';
   return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
 };
 // Create user (admin)
@@ -1053,6 +1053,7 @@ const getApplicationsOverview = async (req, res) => {
       company: t.organization,
       industry: t.sector,
       location: t.location,
+      country: t.country,
       budget: t.contract_value_min && t.contract_value_max ? `${t.currency} ${t.contract_value_min} - ${t.currency} ${t.contract_value_max}` : 'Value not specified',
       deadline: t.deadline || null,
       postedTime: t.createdAt,
@@ -1065,6 +1066,7 @@ const getApplicationsOverview = async (req, res) => {
       evaluation_criteria: Array.isArray(t.evaluation_criteria) ? t.evaluation_criteria : [],
       logo: resolveAssetUrl(t.organization_logo),
       coverImage: resolveAssetUrl(t.cover_image),
+      external_url: t.external_url,
       postedBy: t.creator ? 
         `${t.creator.first_name || ''} ${t.creator.last_name || ''}`.trim() || 'Unknown' : 
         'government',
@@ -1086,6 +1088,7 @@ const getApplicationsOverview = async (req, res) => {
       company: o.organization,
       industry: o.category,
       location: o.location || o.country || 'Remote',
+      country: o.country,
       duration: o.duration || '',
       stipend: o.amount_min && o.amount_max ? `${o.currency} ${o.amount_min} - ${o.currency} ${o.amount_max}` : '',
       postedTime: o.createdAt,
@@ -1097,10 +1100,12 @@ const getApplicationsOverview = async (req, res) => {
       eligibility: Array.isArray(o.eligibility) ? o.eligibility : [],
       applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : [],
       logo: o.organization_logo || '',
+      contact_email: o.contact_email,
+      external_url: o.external_url,
       postedBy: o.creator ? 
         `${o.creator.first_name || ''} ${o.creator.last_name || ''}`.trim() || 'Unknown' : 
         'institution',
-      contactEmail: o.creator ? o.creator.email : '',
+      contactEmail: o.contact_email || (o.creator ? o.creator.email : ''),
       contactPhone: o.creator ? o.creator.phone : '',
       status: o.status && o.status.charAt(0).toUpperCase() + o.status.slice(1),
       creator: o.creator ? {

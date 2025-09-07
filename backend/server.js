@@ -11,7 +11,7 @@ const { syncDatabase } = require('./src/models');
 const routes = require('./src/routes');
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8001;
 
 // Security middleware (allow cross-origin resource loading for images)
 app.use(helmet({
