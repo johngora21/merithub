@@ -1585,20 +1585,21 @@ const Applications = () => {
                   </h3>
                   <div style={{
                     display: 'flex',
-                    flexWrap: 'wrap',
+                    flexDirection: 'column',
                     gap: '8px'
                   }}>
                     {selectedItem.projectScope.map((scope, index) => (
-                      <span key={index} style={{
+                      <div key={index} style={{
                         backgroundColor: '#fef3c7',
                         color: '#92400e',
-                        padding: '6px 12px',
+                        padding: '8px 12px',
                         borderRadius: '6px',
-                        fontSize: '13px',
-                        fontWeight: '500'
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        borderLeft: '4px solid #f59e0b'
                       }}>
                         {scope}
-                      </span>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -1614,22 +1615,23 @@ const Applications = () => {
                   }}>
                     Technical Requirements
                   </h3>
-                        <div style={{
+                  <div style={{
                     display: 'flex',
-                    flexWrap: 'wrap',
+                    flexDirection: 'column',
                     gap: '8px'
                   }}>
                     {selectedItem.technicalRequirements.map((req, index) => (
-                      <span key={index} style={{
+                      <div key={index} style={{
                         backgroundColor: '#fef2f2',
                         color: '#dc2626',
-                        padding: '6px 12px',
+                        padding: '8px 12px',
                         borderRadius: '6px',
-                        fontSize: '13px',
-                        fontWeight: '500'
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        borderLeft: '4px solid #ef4444'
                       }}>
                         {req}
-                      </span>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -1645,22 +1647,23 @@ const Applications = () => {
                   }}>
                     Submission Process
                   </h3>
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
+              <div style={{
+                display: 'flex',
+                    flexDirection: 'column',
                     gap: '8px'
                   }}>
                     {selectedItem.submissionProcess.map((step, index) => (
-                      <span key={index} style={{
+                      <div key={index} style={{
                         backgroundColor: '#ecfdf5',
                         color: '#059669',
-                        padding: '6px 12px',
+                        padding: '8px 12px',
                         borderRadius: '6px',
-                        fontSize: '13px',
-                        fontWeight: '500'
+                    fontSize: '14px',
+                        fontWeight: '500',
+                        borderLeft: '4px solid #10b981'
                       }}>
-                        {step}
-                      </span>
+                        {index + 1}. {step}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -1676,24 +1679,25 @@ const Applications = () => {
                   }}>
                     Evaluation Criteria
                   </h3>
-                        <div style={{
+                  <div style={{
                     display: 'flex',
-                    flexWrap: 'wrap',
+                    flexDirection: 'column',
                     gap: '8px'
                   }}>
                     {selectedItem.evaluationCriteria.map((criteria, index) => (
-                      <span key={index} style={{
+                      <div key={index} style={{
                         backgroundColor: '#f0f9ff',
                         color: '#0369a1',
-                        padding: '6px 12px',
+                        padding: '8px 12px',
                         borderRadius: '6px',
-                        fontSize: '13px',
-                        fontWeight: '500'
-                      }}>
+                  fontSize: '14px',
+                  fontWeight: '500',
+                        borderLeft: '4px solid #0ea5e9'
+                }}>
                         {criteria}
-                      </span>
+              </div>
                     ))}
-                      </div>
+            </div>
                 </div>
               )}
 
