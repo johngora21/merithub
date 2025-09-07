@@ -129,30 +129,30 @@ const Applications = () => {
     const normalizedCountry = countryFromList ? countryFromList.name : rawCountry
 
     return {
-      id: t.id || t.tender_id || `TENDER-${t?.id || ''}`,
-      title: t.title || '',
-      company: t.organization || t.company || '',
+    id: t.id || t.tender_id || `TENDER-${t?.id || ''}`,
+    title: t.title || '',
+    company: t.organization || t.company || '',
       industry: t.industry || t.sector || 'Government',
-      location: t.location || t.country || '',
+    location: t.location || t.country || '',
       country: normalizedCountry || '',
       budget: budget,
       deadline: t.deadline ? formatDate(t.deadline) : 'No deadline',
-      postedTime: t.postedTime || t.createdAt ? new Date(t.postedTime || t.createdAt).toLocaleDateString() : 'Recently',
-      applicants: t.applicants || t.applicants_count || 0,
+    postedTime: t.postedTime || t.createdAt ? new Date(t.postedTime || t.createdAt).toLocaleDateString() : 'Recently',
+    applicants: t.applicants || t.applicants_count || 0,
       description: t.description || t.tender_description || '',
-      requirements: Array.isArray(t.requirements) ? t.requirements : [],
+    requirements: Array.isArray(t.requirements) ? t.requirements : [],
       projectScope: Array.isArray(t.project_scope) ? t.project_scope : (t.project_scope ? [t.project_scope] : []),
       technicalRequirements: Array.isArray(t.technical_requirements) ? t.technical_requirements : (t.technical_requirements ? [t.technical_requirements] : []),
       submissionProcess: Array.isArray(t.submission_process) ? t.submission_process : (t.submission_process ? [t.submission_process] : []),
       evaluationCriteria: Array.isArray(t.evaluation_criteria) ? t.evaluation_criteria : (t.evaluation_criteria ? [t.evaluation_criteria] : []),
       benefits: Array.isArray(t.benefits) ? t.benefits : (t.benefits ? [t.benefits] : []),
       tags: Array.isArray(t.tags) ? t.tags : (t.tags ? [t.tags] : []),
-      logo: t.logo || t.organization_logo || '',
+    logo: t.logo || t.organization_logo || '',
       postedBy: t.posted_by || t.poster || 'government',
       contactEmail: t.contact_email || '',
       contactPhone: t.contact_phone || '',
       externalUrl: t.external_url || '',
-      status: t.status || 'Active'
+    status: t.status || 'Active'
     }
   }
 
@@ -190,29 +190,29 @@ const Applications = () => {
     const normalizedCountry = countryFromList ? countryFromList.name : rawCountry
 
     return {
-      id: o.id || o.opportunity_id || `OPP-${o?.id || ''}`,
-      title: o.title || '',
-      company: o.organization || o.company || '',
-      industry: o.industry || o.category || '',
-      location: o.location || o.country || 'Remote',
+    id: o.id || o.opportunity_id || `OPP-${o?.id || ''}`,
+    title: o.title || '',
+    company: o.organization || o.company || '',
+    industry: o.industry || o.category || '',
+    location: o.location || o.country || 'Remote',
       country: normalizedCountry || '',
-      duration: o.duration || '',
+    duration: o.duration || '',
       stipend: stipend,
       deadline: o.deadline ? formatDate(o.deadline) : 'No deadline',
-      postedTime: o.postedTime || o.createdAt ? new Date(o.postedTime || o.createdAt).toLocaleDateString() : 'Recently',
-      applicants: o.applicants || o.applicants_count || 0,
+    postedTime: o.postedTime || o.createdAt ? new Date(o.postedTime || o.createdAt).toLocaleDateString() : 'Recently',
+    applicants: o.applicants || o.applicants_count || 0,
       description: o.description || o.opportunity_description || '',
       benefits: Array.isArray(o.benefits) ? o.benefits : (o.benefits ? [o.benefits] : []),
       tags: Array.isArray(o.tags) ? o.tags : (o.tags ? [o.tags] : []),
       requirements: Array.isArray(o.requirements) ? o.requirements : (o.requirements ? [o.requirements] : []),
       eligibility: Array.isArray(o.eligibility) ? o.eligibility : (o.eligibility ? [o.eligibility] : []),
       applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : (o.applicationProcess ? [o.applicationProcess] : []),
-      logo: o.logo || o.organization_logo || '',
+    logo: o.logo || o.organization_logo || '',
       postedBy: o.posted_by || o.poster || 'institution',
       contactEmail: o.contact_email || '',
       contactPhone: o.contact_phone || '',
       externalUrl: o.external_url || '',
-      status: o.status || 'Active'
+    status: o.status || 'Active'
     }
   }
 
@@ -1520,7 +1520,7 @@ const Applications = () => {
                 </div>
               </div>
 
-              {/* Job Overview */}
+              {/* Description/Overview */}
               <div style={{ marginBottom: '24px' }}>
                 <h3 style={{
                   fontSize: '16px',
@@ -1528,7 +1528,7 @@ const Applications = () => {
                   color: '#0f172a',
                   margin: '0 0 12px 0'
                 }}>
-                  Job Overview
+                  {activeTab === 'jobs' ? 'Job Overview' : activeTab === 'tenders' ? 'Tender Description' : 'Opportunity Description'}
                 </h3>
                 <p style={{
                   fontSize: '14px',
@@ -1540,7 +1540,7 @@ const Applications = () => {
                 </p>
               </div>
 
-              {/* Required Skills */}
+              {/* Required Skills/Requirements */}
               {(selectedItem.skills || selectedItem.requirements) && (
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{
@@ -1549,7 +1549,7 @@ const Applications = () => {
                     color: '#0f172a',
                     margin: '0 0 12px 0'
                   }}>
-                    Required Skills
+                    {activeTab === 'jobs' ? 'Required Skills' : activeTab === 'tenders' ? 'Requirements & Qualifications' : 'Eligibility & Requirements'}
                   </h3>
                   <div style={{
                     display: 'flex',
@@ -1614,7 +1614,7 @@ const Applications = () => {
                   }}>
                     Technical Requirements
                   </h3>
-                  <div style={{
+                        <div style={{
                     display: 'flex',
                     flexWrap: 'wrap',
                     gap: '8px'
@@ -1676,7 +1676,7 @@ const Applications = () => {
                   }}>
                     Evaluation Criteria
                   </h3>
-                  <div style={{
+                        <div style={{
                     display: 'flex',
                     flexWrap: 'wrap',
                     gap: '8px'
@@ -1693,7 +1693,7 @@ const Applications = () => {
                         {criteria}
                       </span>
                     ))}
-                  </div>
+                      </div>
                 </div>
               )}
 
@@ -1739,8 +1739,8 @@ const Applications = () => {
                   }}>
                     Application Process
                   </h3>
-                  <div style={{
-                    display: 'flex',
+              <div style={{
+                display: 'flex',
                     flexWrap: 'wrap',
                     gap: '8px'
                   }}>
@@ -1788,8 +1788,8 @@ const Applications = () => {
                         {benefit}
                       </span>
                     ))}
-                  </div>
-                </div>
+              </div>
+            </div>
               )}
 
               {/* Tags */}
