@@ -46,6 +46,7 @@ const Post = ({ onClose, editItem = null }) => {
     evaluationCriteria: '',
     applicationUrl: '',
     contactEmail: '',
+    contactPhone: '',
     price: '',
     currency: 'USD',
     tags: [],
@@ -317,7 +318,8 @@ const Post = ({ onClose, editItem = null }) => {
           price: formData.price || 'Free',
           currency: formData.currency || 'USD',
           external_url: formData.applicationUrl || undefined,
-          contact_email: formData.contactEmail || undefined
+          contact_email: formData.contactEmail || undefined,
+          contact_phone: formData.contactPhone || undefined
         }
         Object.entries(tenderBody).forEach(([k, v]) => {
           if (v !== undefined && v !== null) fd2.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
@@ -1342,6 +1344,34 @@ const Post = ({ onClose, editItem = null }) => {
                   </select>
                 </div>
                 
+                {/* Location - Tender specific (City/Town) */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    City/Town
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => handleInputChange('location', e.target.value)}
+                    placeholder="Enter city/town..."
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
                 {/* Duration */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
@@ -1454,6 +1484,34 @@ const Post = ({ onClose, editItem = null }) => {
                     value={formData.contactEmail}
                     onChange={(e) => handleInputChange('contactEmail', e.target.value)}
                     placeholder="procurement@organization.gov"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                {/* Contact Phone */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Contact Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.contactPhone}
+                    onChange={(e) => handleInputChange('contactPhone', e.target.value)}
+                    placeholder="+255 123 456 789"
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -1985,6 +2043,34 @@ const Post = ({ onClose, editItem = null }) => {
                   />
                 </div>
 
+                {/* Contact Phone */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Contact Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.contactPhone}
+                    onChange={(e) => handleInputChange('contactPhone', e.target.value)}
+                    placeholder="+255 123 456 789"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
                 {/* Application URL */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
@@ -2374,7 +2460,7 @@ const Post = ({ onClose, editItem = null }) => {
                 />
                 {formData.coverImage && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                    <img src={URL.createObjectURL(formData.coverImage)} alt="cover image" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
+                    <img src={formData.coverImage instanceof File ? URL.createObjectURL(formData.coverImage) : (formData.coverImage || '')} alt="cover image" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
                     <div style={{ fontSize: '12px', color: '#374151' }}>{formData.coverImage.name}</div>
                   </div>
                 )}
@@ -2479,7 +2565,7 @@ const Post = ({ onClose, editItem = null }) => {
                 />
                 {formData.coverImage && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                    <img src={URL.createObjectURL(formData.coverImage)} alt="cover image" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
+                    <img src={formData.coverImage instanceof File ? URL.createObjectURL(formData.coverImage) : (formData.coverImage || '')} alt="cover image" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
                     <div style={{ fontSize: '12px', color: '#374151' }}>{formData.coverImage.name}</div>
                   </div>
                 )}

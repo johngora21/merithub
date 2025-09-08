@@ -77,16 +77,6 @@ const Tender = sequelize.define('Tender', {
     allowNull: true,
     defaultValue: []
   },
-  project_scope: {
-    type: DataTypes.JSON,
-    allowNull: true,
-    defaultValue: []
-  },
-  technical_requirements: {
-    type: DataTypes.JSON,
-    allowNull: true,
-    defaultValue: []
-  },
   organization_info: {
     type: DataTypes.JSON,
     allowNull: true
@@ -165,6 +155,19 @@ const Tender = sequelize.define('Tender', {
     type: DataTypes.ENUM('Free', 'Pro'),
     defaultValue: 'Free',
     allowNull: false
+  },
+  contact_email: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  contact_phone: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  tags: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: []
   }
 }, {
   tableName: 'tenders',

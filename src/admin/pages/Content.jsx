@@ -514,7 +514,6 @@ const Content = () => {
       external_url: item.external_url || item.application_url || '',
       contact_email: item.contact_email || '',
       price: item.price || '',
-      currency: item.currency || 'USD',
       tags: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || ''),
       customTag: '',
       documents: item.documents || [],
@@ -714,25 +713,30 @@ const Content = () => {
 
   // Normalize tenders to show contract value like salary and keep labels
   const transformTenderAdminItem = (apiTender) => {
-    const currency = apiTender?.currency || 'USD'
-    const min = apiTender?.contract_value_min != null ? Number(apiTender.contract_value_min) : undefined
-    const max = apiTender?.contract_value_max != null ? Number(apiTender.contract_value_max) : undefined
-    let amount
-    if (min != null && max != null) {
-      amount = min === max
-        ? `${currency} ${formatNumber(min)}`
-        : `${currency} ${formatNumber(min)} - ${currency} ${formatNumber(max)}`
-    } else if (min != null) {
-      amount = `${currency} ${formatNumber(min)}`
-    } else if (max != null) {
-      amount = `${currency} ${formatNumber(max)}`
-    } else if (apiTender?.contract_value != null) {
-      amount = `${currency} ${formatNumber(apiTender.contract_value)}`
-    } else if (apiTender?.value != null) {
-      amount = `${currency} ${formatNumber(apiTender.value)}`
-    } else {
-      amount = 'Value not specified'
+    // Use the contractValue from backend if available, otherwise compute it
+    let amount = apiTender?.contractValue || 'Value not specified'
+    
+    // If contractValue is not available, try to compute it from raw fields
+    if (amount === 'Value not specified') {
+      const currency = apiTender?.currency || 'USD'
+      const min = apiTender?.contract_value_min != null ? Number(apiTender.contract_value_min) : undefined
+      const max = apiTender?.contract_value_max != null ? Number(apiTender.contract_value_max) : undefined
+      
+      if (min != null && max != null) {
+        amount = min === max
+          ? `${currency} ${formatNumber(min)}`
+          : `${currency} ${formatNumber(min)} - ${currency} ${formatNumber(max)}`
+      } else if (min != null) {
+        amount = `${currency} ${formatNumber(min)}`
+      } else if (max != null) {
+        amount = `${currency} ${formatNumber(max)}`
+      } else if (apiTender?.contract_value != null) {
+        amount = `${currency} ${formatNumber(apiTender.contract_value)}`
+      } else if (apiTender?.value != null) {
+        amount = `${currency} ${formatNumber(apiTender.value)}`
+      }
     }
+    
     return {
       ...apiTender,
       amount,
@@ -1104,7 +1108,7 @@ const Content = () => {
               marginBottom: '12px',
               fontWeight: '500'
             }}>
-              {item.organization}
+              {item.organization || item.company}
             </div>
 
             {/* Contract Value */}
@@ -1118,7 +1122,7 @@ const Content = () => {
               marginBottom: '12px'
             }}>
               <DollarSign size={14} />
-              {item.amount || 'Value not specified'}
+              {item.amount || item.contractValue || item.salary || 'Not specified'}
             </div>
 
             {/* Location and Deadline */}
@@ -1127,21 +1131,18 @@ const Content = () => {
               alignItems: 'center',
               gap: '12px',
               marginBottom: '12px',
-              flexWrap: 'wrap',
-              flexShrink: 0
+              flexWrap: 'wrap'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748b' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <MapPin size={14} />
-                  <span>{item.location}</span>
-                </div>
-                {item.country && (
-                  <>
-                    <span style={{ color: '#e2e8f0' }}>•</span>
-                    <span>{item.country}</span>
-                  </>
-                )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#64748b' }}>
+                <MapPin size={14} />
+                <span>{item.location || 'Not specified'}</span>
               </div>
+              {item.country && (
+                <>
+                  <span style={{ color: '#e2e8f0' }}>•</span>
+                  <span style={{ fontSize: '13px', color: '#64748b' }}>{item.country}</span>
+                </>
+              )}
               <span style={{ color: '#e2e8f0' }}>•</span>
               <div style={{
                 display: 'flex',
@@ -1152,40 +1153,41 @@ const Content = () => {
                 fontWeight: isDeadlineUrgent ? '600' : '500'
               }}>
                 <Calendar size={12} />
-                Due: {new Date(item.deadline).toLocaleDateString()} ({daysUntilDeadline} days)
+                {item.deadline ? new Date(item.deadline).toLocaleDateString() : 'No deadline'}
               </div>
             </div>
 
-            {/* Tags - More prominent display */}
-            <div style={{ marginBottom: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <div style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '6px'
-              }}>
-                {item.tags.slice(0, 2).map((tag, index) => (
-                  <span key={index} style={{
-                    backgroundColor: '#f1f5f9',
-                    color: '#475569',
-                    padding: '6px 10px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: '500'
-                  }}>
-                    {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
-                  </span>
-                ))}
-                {item.tags.length > 2 && (
-                  <span style={{
-                    color: '#64748b',
-                    fontSize: '12px',
-                    padding: '4px 8px',
-                    fontWeight: '500'
-                  }}>
-                    +{item.tags.length - 2} more
-                  </span>
-                )}
-              </div>
+            {/* Tags */}
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '6px',
+              marginBottom: '12px'
+            }}>
+              {item.tags.slice(0, 2).map((tag, index) => (
+                <span key={index} style={{
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
+                  padding: '6px 10px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: '500'
+                }}>
+                  {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
+                </span>
+              ))}
+              {item.tags.length > 2 && (
+                <span style={{
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
+                  padding: '4px 8px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: '500'
+                }}>
+                  +{item.tags.length - 2} more
+                </span>
+              )}
             </div>
 
             {/* Footer */}
@@ -2554,7 +2556,10 @@ const Content = () => {
           Add Course
         </button>
         <button
-          onClick={() => setShowPostPage(true)}
+          onClick={() => {
+            setShowPostPage(true)
+            setSelectedItem(null)
+          }}
           style={{
             padding: '12px 24px',
             backgroundColor: '#f97316',
@@ -4186,6 +4191,84 @@ const Content = () => {
                     </p>
                   </div>
 
+                  {/* Detailed Information */}
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 16px 0'
+                    }}>
+                      Job Details
+                    </h3>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '12px'
+                    }}>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Job Type</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.jobType || 'Full-time'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Work Type</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.workType || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Experience Level</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.experience || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.industry}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.location}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Country</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{getCountryName(selectedItem.country) || selectedItem.country}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Salary</label>
+                        <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedItem.salary || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application Deadline</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.application_deadline ? new Date(selectedItem.application_deadline).toLocaleDateString() : 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Posted By</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.postedBy || 'Admin'}</p>
+                      </div>
+                      {selectedItem.contact_email && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Email</label>
+                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
+                            <a href={`mailto:${selectedItem.contact_email}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contact_email}</a>
+                          </p>
+                        </div>
+                      )}
+                      {selectedItem.contact_phone && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Phone</label>
+                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
+                            <a href={`tel:${selectedItem.contact_phone}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contact_phone}</a>
+                          </p>
+                        </div>
+                      )}
+                      {selectedItem.external_url && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application URL</label>
+                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500', wordBreak: 'break-all' }}>
+                            <a href={selectedItem.external_url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.external_url}</a>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Skills */}
                   {selectedItem.skills && selectedItem.skills.length > 0 && (
                     <div style={{ marginBottom: '24px' }}>
@@ -4509,7 +4592,7 @@ const Content = () => {
                     borderBottom: '1px solid #e5e7eb'
                   }}>
                     <img 
-                      src={selectedItem.logo} 
+                      src={selectedItem.coverImage || selectedItem.logo} 
                       alt={selectedItem.organization}
                       style={{
                         width: '60px',
@@ -4546,35 +4629,88 @@ const Content = () => {
                       }}>
                         <span>{selectedItem.location}</span>
                         <span>•</span>
-                        <span style={{ color: '#16a34a', fontWeight: '600' }}>{selectedItem.value}</span>
+                        <span>{selectedItem.country}</span>
                         <span>•</span>
-                        <span>{selectedItem.category}</span>
+                        <span style={{ color: '#dc2626', fontWeight: '600' }}>
+                          Deadline: {selectedItem.deadline ? new Date(selectedItem.deadline).toLocaleDateString() : 'Not specified'}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Project Overview */}
+
+                  {/* Detailed Information */}
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{
                       fontSize: '18px',
                       fontWeight: '600',
                       color: '#1a1a1a',
-                      margin: '0 0 12px 0'
+                      margin: '0 0 16px 0'
                     }}>
-                      Project Overview
+                      Tender Details
                     </h3>
-                    <p style={{
-                      fontSize: '15px',
-                      lineHeight: '1.6',
-                      color: '#374151',
-                      margin: 0
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '12px'
                     }}>
-                      {selectedItem.description}
-                    </p>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Organization</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.organization}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Sector</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.sector || selectedItem.industry}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contract Value</label>
+                        <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedItem.amount || selectedItem.value || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.location}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Country</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.country}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Duration</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.duration || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Posted By</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.postedBy || 'Admin'}</p>
+                      </div>
+                      {selectedItem.contact_email && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Email</label>
+                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
+                            <a href={`mailto:${selectedItem.contact_email}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contact_email}</a>
+                          </p>
+                        </div>
+                      )}
+                      {selectedItem.contact_phone && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Phone</label>
+                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
+                            <a href={`tel:${selectedItem.contact_phone}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contact_phone}</a>
+                          </p>
+                        </div>
+                      )}
+                      {selectedItem.external_url && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application URL</label>
+                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500', wordBreak: 'break-all' }}>
+                            <a href={selectedItem.external_url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.external_url}</a>
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Requirements */}
-                  {selectedItem.requirements && (
+                  {/* Tender Description */}
+                  {(selectedItem.description && selectedItem.description.trim() !== '') && (
                     <div style={{ marginBottom: '24px' }}>
                       <h3 style={{
                         fontSize: '18px',
@@ -4582,14 +4718,36 @@ const Content = () => {
                         color: '#1a1a1a',
                         margin: '0 0 12px 0'
                       }}>
-                        Requirements
+                        Tender Description
+                      </h3>
+                      <div style={{
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                        color: '#374151',
+                        whiteSpace: 'pre-line'
+                      }}>
+                        {selectedItem.description}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Requirements */}
+                  {(selectedItem.requirements && (Array.isArray(selectedItem.requirements) ? selectedItem.requirements.length > 0 && selectedItem.requirements.some(item => item && item.trim() !== '') : selectedItem.requirements.trim() !== '')) && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Requirements & Qualifications
                       </h3>
                       <ul style={{
                         listStyle: 'none',
                         padding: 0,
                         margin: 0
                       }}>
-                        {selectedItem.requirements.map((requirement, index) => (
+                        {Array.isArray(selectedItem.requirements) ? selectedItem.requirements.map((requirement, index) => (
                           <li key={index} style={{
                             display: 'flex',
                             alignItems: 'flex-start',
@@ -4607,29 +4765,8 @@ const Content = () => {
                             }}>✓</span>
                             {requirement}
                           </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Deliverables */}
-                  {selectedItem.deliverables && (
-                    <div style={{ marginBottom: '24px' }}>
-                      <h3 style={{
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        color: '#1a1a1a',
-                        margin: '0 0 12px 0'
-                      }}>
-                        Deliverables
-                      </h3>
-                      <ul style={{
-                        listStyle: 'none',
-                        padding: 0,
-                        margin: 0
-                      }}>
-                        {selectedItem.deliverables.map((deliverable, index) => (
-                          <li key={index} style={{
+                        )) : (
+                          <li style={{
                             display: 'flex',
                             alignItems: 'flex-start',
                             gap: '8px',
@@ -4643,16 +4780,82 @@ const Content = () => {
                               fontSize: '16px',
                               lineHeight: '1',
                               marginTop: '2px'
-                            }}>•</span>
-                            {deliverable}
+                            }}>✓</span>
+                            {selectedItem.requirements}
                           </li>
-                        ))}
+                        )}
                       </ul>
                     </div>
                   )}
 
+                  {/* Project Scope */}
+                  {(selectedItem.project_scope && (Array.isArray(selectedItem.project_scope) ? selectedItem.project_scope.length > 0 && selectedItem.project_scope.some(item => item && item.trim() !== '') : selectedItem.project_scope.trim() !== '')) && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Project Scope
+                      </h3>
+                      <div style={{
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                        color: '#374151',
+                        whiteSpace: 'pre-line'
+                      }}>
+                        {Array.isArray(selectedItem.project_scope) ? selectedItem.project_scope.join('\n') : selectedItem.project_scope}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Technical Requirements */}
+                  {(selectedItem.technical_requirements && (Array.isArray(selectedItem.technical_requirements) ? selectedItem.technical_requirements.length > 0 && selectedItem.technical_requirements.some(item => item && item.trim() !== '') : selectedItem.technical_requirements.trim() !== '')) && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Technical Requirements
+                      </h3>
+                      <div style={{
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                        color: '#374151',
+                        whiteSpace: 'pre-line'
+                      }}>
+                        {Array.isArray(selectedItem.technical_requirements) ? selectedItem.technical_requirements.join('\n') : selectedItem.technical_requirements}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submission Process */}
+                  {(selectedItem.submission_process && (Array.isArray(selectedItem.submission_process) ? selectedItem.submission_process.length > 0 && selectedItem.submission_process.some(item => item && item.trim() !== '') : selectedItem.submission_process.trim() !== '')) && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Submission Process
+                      </h3>
+                      <div style={{
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                        color: '#374151',
+                        whiteSpace: 'pre-line'
+                      }}>
+                        {Array.isArray(selectedItem.submission_process) ? selectedItem.submission_process.join('\n') : selectedItem.submission_process}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Evaluation Criteria */}
-                  {selectedItem.evaluationCriteria && (
+                  {(selectedItem.evaluation_criteria && (Array.isArray(selectedItem.evaluation_criteria) ? selectedItem.evaluation_criteria.length > 0 && selectedItem.evaluation_criteria.some(item => item && item.trim() !== '') : selectedItem.evaluation_criteria.trim() !== '')) && (
                     <div style={{ marginBottom: '24px' }}>
                       <h3 style={{
                         fontSize: '18px',
@@ -4663,22 +4866,12 @@ const Content = () => {
                         Evaluation Criteria
                       </h3>
                       <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '8px'
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                        color: '#374151',
+                        whiteSpace: 'pre-line'
                       }}>
-                        {selectedItem.evaluationCriteria.map((criteria, index) => (
-                          <span key={index} style={{
-                            backgroundColor: '#f1f5f9',
-                            color: '#475569',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
-                            fontWeight: '500'
-                          }}>
-                            {criteria}
-                          </span>
-                        ))}
+                        {Array.isArray(selectedItem.evaluation_criteria) ? selectedItem.evaluation_criteria.join('\n') : selectedItem.evaluation_criteria}
                       </div>
                     </div>
                   )}
@@ -4713,27 +4906,6 @@ const Content = () => {
                     </div>
                   )}
 
-                  {/* Additional Info */}
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '16px',
-                    backgroundColor: '#f8fafc',
-                    borderRadius: '12px',
-                    marginTop: '16px'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      gap: '16px',
-                      fontSize: '14px',
-                      color: '#64748b'
-                    }}>
-                      <span><strong>Deadline:</strong> {selectedItem.deadline}</span>
-                      <span><strong>Posted:</strong> {selectedItem.postedTime}</span>
-                      <span><strong>Status:</strong> {selectedItem.status}</span>
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -4813,6 +4985,80 @@ const Content = () => {
                     }}>
                       {selectedItem.description}
                     </p>
+                  </div>
+
+                  {/* Detailed Information */}
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 16px 0'
+                    }}>
+                      Opportunity Details
+                    </h3>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '12px'
+                    }}>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Organization</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.organization}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Opportunity Type</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.type}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Amount</label>
+                        <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedItem.amount || selectedItem.value || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Duration</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.duration || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.location}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Country</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.country}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Deadline</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.deadline ? new Date(selectedItem.deadline).toLocaleDateString() : 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Posted By</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.postedBy || 'Admin'}</p>
+                      </div>
+                      {selectedItem.contact_email && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Email</label>
+                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
+                            <a href={`mailto:${selectedItem.contact_email}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contact_email}</a>
+                          </p>
+                        </div>
+                      )}
+                      {selectedItem.contact_phone && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Phone</label>
+                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
+                            <a href={`tel:${selectedItem.contact_phone}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contact_phone}</a>
+                          </p>
+                        </div>
+                      )}
+                      {selectedItem.external_url && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application URL</label>
+                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500', wordBreak: 'break-all' }}>
+                            <a href={selectedItem.external_url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.external_url}</a>
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Eligibility */}

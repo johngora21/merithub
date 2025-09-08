@@ -112,28 +112,96 @@ const createTender = async (req, res) => {
   try {
     console.log('Creating tender with data:', req.body);
     console.log('Files received:', req.files);
+    console.log('Contract value fields:', {
+      contract_value_min: req.body.contract_value_min,
+      contract_value_max: req.body.contract_value_max,
+      salaryMin: req.body.salaryMin,
+      salaryMax: req.body.salaryMax,
+      salaryType: req.body.salaryType
+    });
+    console.log('Array fields received:', {
+      requirements: req.body.requirements,
+      'requirements[]': req.body['requirements[]'],
+      project_scope: req.body.project_scope,
+      'project_scope[]': req.body['project_scope[]'],
+      technical_requirements: req.body.technical_requirements,
+      'technical_requirements[]': req.body['technical_requirements[]'],
+      submission_process: req.body.submission_process,
+      'submission_process[]': req.body['submission_process[]'],
+      evaluation_criteria: req.body.evaluation_criteria,
+      'evaluation_criteria[]': req.body['evaluation_criteria[]']
+    });
+    console.log('Contact fields received:', {
+      contact_email: req.body.contact_email,
+      contact_phone: req.body.contact_phone
+    });
     
     const tenderData = {
-      ...req.body,
+      title: req.body.title,
+      description: req.body.description,
+      organization: req.body.organization,
+      location: req.body.location,
+      country: req.body.country,
+      deadline: req.body.deadline,
+      sector: req.body.sector,
+      category: req.body.category || 'general',
+      currency: req.body.currency || 'USD',
+      duration: req.body.duration || req.body.experience,
+      price: req.body.price || 'Free',
+      external_url: req.body.external_url,
+      contact_email: req.body.contact_email,
+      contact_phone: req.body.contact_phone,
+      submission_type: req.body.submission_type || 'electronic',
+      is_urgent: req.body.is_urgent || false,
       created_by: req.user.id,
       approval_status: 'pending'
     };
 
+    // Handle contract value fields specifically
+    if (req.body.contract_value_min !== undefined) {
+      tenderData.contract_value_min = req.body.contract_value_min ? parseFloat(req.body.contract_value_min) : null;
+    } else {
+      tenderData.contract_value_min = null;
+    }
+    if (req.body.contract_value_max !== undefined) {
+      tenderData.contract_value_max = req.body.contract_value_max ? parseFloat(req.body.contract_value_max) : null;
+    } else {
+      tenderData.contract_value_max = null;
+    }
+
     // Handle array fields that come as individual form fields (requirements[], project_scope[], etc.)
+    // Check both with and without [] suffix
     if (req.body.requirements && Array.isArray(req.body.requirements)) {
       tenderData.requirements = req.body.requirements;
+    } else if (req.body['requirements[]'] && Array.isArray(req.body['requirements[]'])) {
+      tenderData.requirements = req.body['requirements[]'];
+    } else {
+      tenderData.requirements = [];
     }
-    if (req.body.project_scope && Array.isArray(req.body.project_scope)) {
-      tenderData.project_scope = req.body.project_scope;
-    }
-    if (req.body.technical_requirements && Array.isArray(req.body.technical_requirements)) {
-      tenderData.technical_requirements = req.body.technical_requirements;
-    }
+    
     if (req.body.submission_process && Array.isArray(req.body.submission_process)) {
       tenderData.submission_process = req.body.submission_process;
+    } else if (req.body['submission_process[]'] && Array.isArray(req.body['submission_process[]'])) {
+      tenderData.submission_process = req.body['submission_process[]'];
+    } else {
+      tenderData.submission_process = [];
     }
+    
     if (req.body.evaluation_criteria && Array.isArray(req.body.evaluation_criteria)) {
       tenderData.evaluation_criteria = req.body.evaluation_criteria;
+    } else if (req.body['evaluation_criteria[]'] && Array.isArray(req.body['evaluation_criteria[]'])) {
+      tenderData.evaluation_criteria = req.body['evaluation_criteria[]'];
+    } else {
+      tenderData.evaluation_criteria = [];
+    }
+
+    // Handle tags field
+    if (req.body.tags && Array.isArray(req.body.tags)) {
+      tenderData.tags = req.body.tags;
+    } else if (req.body['tags[]'] && Array.isArray(req.body['tags[]'])) {
+      tenderData.tags = req.body['tags[]'];
+    } else {
+      tenderData.tags = [];
     }
 
     // Handle cover image
@@ -154,6 +222,18 @@ const createTender = async (req, res) => {
       console.log('Documents set to:', documents);
     }
 
+    console.log('Final tenderData being saved:', {
+      title: tenderData.title,
+      organization: tenderData.organization,
+      requirements: tenderData.requirements,
+      project_scope: tenderData.project_scope,
+      technical_requirements: tenderData.technical_requirements,
+      submission_process: tenderData.submission_process,
+      evaluation_criteria: tenderData.evaluation_criteria,
+      contact_email: tenderData.contact_email,
+      contact_phone: tenderData.contact_phone
+    });
+    
     const tender = await Tender.create(tenderData);
     console.log('Tender created successfully:', tender.id);
 
@@ -175,6 +255,14 @@ const createTender = async (req, res) => {
 const updateTender = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log('Updating tender:', id, 'with data:', req.body);
+    console.log('Contract value fields:', {
+      contract_value_min: req.body.contract_value_min,
+      contract_value_max: req.body.contract_value_max,
+      salaryMin: req.body.salaryMin,
+      salaryMax: req.body.salaryMax,
+      salaryType: req.body.salaryType
+    });
     const tender = await Tender.findByPk(id);
 
     if (!tender) {
@@ -194,12 +282,37 @@ const updateTender = async (req, res) => {
 
     const updateData = { ...req.body };
 
+    // Handle contract value fields specifically
+    if (req.body.contract_value_min !== undefined) {
+      updateData.contract_value_min = req.body.contract_value_min ? parseFloat(req.body.contract_value_min) : null;
+    } else {
+      updateData.contract_value_min = null;
+    }
+    if (req.body.contract_value_max !== undefined) {
+      updateData.contract_value_max = req.body.contract_value_max ? parseFloat(req.body.contract_value_max) : null;
+    } else {
+      updateData.contract_value_max = null;
+    }
+
     // Normalize array fields (support both arrays and repeated fields)
-    if (req.body.requirements && Array.isArray(req.body.requirements)) updateData.requirements = req.body.requirements;
-    if (req.body.project_scope && Array.isArray(req.body.project_scope)) updateData.project_scope = req.body.project_scope;
-    if (req.body.technical_requirements && Array.isArray(req.body.technical_requirements)) updateData.technical_requirements = req.body.technical_requirements;
-    if (req.body.submission_process && Array.isArray(req.body.submission_process)) updateData.submission_process = req.body.submission_process;
-    if (req.body.evaluation_criteria && Array.isArray(req.body.evaluation_criteria)) updateData.evaluation_criteria = req.body.evaluation_criteria;
+    // Check both with and without [] suffix
+    if (req.body.requirements && Array.isArray(req.body.requirements)) {
+      updateData.requirements = req.body.requirements;
+    } else if (req.body['requirements[]'] && Array.isArray(req.body['requirements[]'])) {
+      updateData.requirements = req.body['requirements[]'];
+    }
+    
+    if (req.body.submission_process && Array.isArray(req.body.submission_process)) {
+      updateData.submission_process = req.body.submission_process;
+    } else if (req.body['submission_process[]'] && Array.isArray(req.body['submission_process[]'])) {
+      updateData.submission_process = req.body['submission_process[]'];
+    }
+    
+    if (req.body.evaluation_criteria && Array.isArray(req.body.evaluation_criteria)) {
+      updateData.evaluation_criteria = req.body.evaluation_criteria;
+    } else if (req.body['evaluation_criteria[]'] && Array.isArray(req.body['evaluation_criteria[]'])) {
+      updateData.evaluation_criteria = req.body['evaluation_criteria[]'];
+    }
     if (req.body['tags[]']) {
       const tags = Array.isArray(req.body['tags[]']) ? req.body['tags[]'] : [req.body['tags[]']]
       updateData.tags = tags
