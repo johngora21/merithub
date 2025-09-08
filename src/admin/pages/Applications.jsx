@@ -28,6 +28,13 @@ const Applications = () => {
 
   // Map backend payloads to the exact UI fields used by the cards
   const mapJob = (j) => {
+    const resolveAssetUrl = (path) => {
+      if (!path) return ''
+      if (typeof path !== 'string') return ''
+      if (path.startsWith('http')) return path
+      const baseUrl = 'http://localhost:8000'
+      return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`
+    }
     const formatDate = (value) => {
       if (!value) return ''
       const d = new Date(value)
@@ -82,7 +89,12 @@ const Applications = () => {
       skills: Array.isArray(j.skills) ? j.skills : [],
       tags: Array.isArray(j.tags) ? j.tags : [],
       benefits: Array.isArray(j.benefits) ? j.benefits : (j.benefits ? [j.benefits] : []),
-      logo: j.logo || j.company_logo || '',
+      price: j.price || 'Free',
+      logo: (() => {
+        const resolved = resolveAssetUrl(j.logo || j.company_logo);
+        console.log('Job logo resolved:', { original: j.logo || j.company_logo, resolved });
+        return resolved;
+      })(),
       urgentHiring: !!(j.is_urgent || j.urgentHiring),
       isRemote: !!(j.is_remote || j.remote),
       postedBy: j.posted_by || j.source || (j.creator ? (j.creator.name || j.creator.email) : 'platform'),
@@ -91,11 +103,19 @@ const Applications = () => {
       approvalStatus: j.approval_status || 'pending',
       externalUrl: j.external_url || '',
       workType: toTitleCase(j.work_type) || (j.isRemote ? 'Remote' : 'Not specified'),
-      status: j.status || 'Active'
+      status: j.status || 'Active',
+      type: 'Job'
     }
   }
 
   const mapTender = (t) => {
+    const resolveAssetUrl = (path) => {
+      if (!path) return ''
+      if (typeof path !== 'string') return ''
+      if (path.startsWith('http')) return path
+      const baseUrl = 'http://localhost:8000'
+      return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`
+    }
     const formatDate = (value) => {
       if (!value) return ''
       const d = new Date(value)
@@ -148,16 +168,24 @@ const Applications = () => {
       evaluationCriteria: Array.isArray(t.evaluation_criteria) ? t.evaluation_criteria : (t.evaluation_criteria ? [t.evaluation_criteria] : []),
       benefits: Array.isArray(t.benefits) ? t.benefits : (t.benefits ? [t.benefits] : []),
       tags: Array.isArray(t.tags) ? t.tags : (t.tags ? [t.tags] : []),
-    logo: t.logo || t.organization_logo || '',
+    logo: resolveAssetUrl(t.logo || t.organization_logo),
       postedBy: t.postedBy,
       contactEmail: t.contactEmail,
       contactPhone: t.contactPhone,
       externalUrl: t.external_url || '',
-    status: t.status || 'Active'
+    status: t.status || 'Active',
+    type: 'Tender'
     }
   }
 
   const mapOpportunity = (o) => {
+    const resolveAssetUrl = (path) => {
+      if (!path) return ''
+      if (typeof path !== 'string') return ''
+      if (path.startsWith('http')) return path
+      const baseUrl = 'http://localhost:8000'
+      return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`
+    }
     const formatDate = (value) => {
       if (!value) return ''
       const d = new Date(value)
@@ -209,13 +237,14 @@ const Applications = () => {
       requirements: Array.isArray(o.requirements) ? o.requirements : (o.requirements ? [o.requirements] : []),
       eligibility: Array.isArray(o.eligibility) ? o.eligibility : (o.eligibility ? [o.eligibility] : []),
       applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : (o.applicationProcess ? [o.applicationProcess] : []),
-    logo: o.logo || o.organization_logo || '',
-      poster: o.poster || o.cover_image || o.coverImage || o.logo || o.organization_logo || '',
+    logo: resolveAssetUrl(o.logo || o.organization_logo),
+      poster: resolveAssetUrl(o.poster || o.cover_image || o.coverImage || o.logo || o.organization_logo),
       postedBy: o.postedBy,
       contactEmail: o.contactEmail,
       contactPhone: o.contactPhone,
       externalUrl: o.external_url || '',
-    status: o.status || 'Active'
+    status: o.status || 'Active',
+    type: 'Opportunity'
     }
   }
 
@@ -225,10 +254,22 @@ const Applications = () => {
         setLoadingData(true)
         setLoadError('')
         const resp = await apiService.get('/admin/applications/overview')
+        console.log('API Response:', resp)
         const payload = resp?.data || resp || {}
+        console.log('Payload:', payload)
         const jobs = Array.isArray(payload.jobs) ? payload.jobs : (payload.data?.jobs || [])
         const tenders = Array.isArray(payload.tenders) ? payload.tenders : (payload.data?.tenders || [])
         const opportunities = Array.isArray(payload.opportunities) ? payload.opportunities : (payload.data?.opportunities || [])
+        
+        // Debug: Check job data
+        console.log('All jobs data:', jobs.map(j => ({ 
+          id: j.id, 
+          title: j.title, 
+          type: j.type, 
+          price: j.price,
+          logo: j.logo,
+          company_logo: j.company_logo
+        })))
 
         // Enrich all data with detailed information from content endpoint
         let enrichedJobs = jobs
@@ -899,7 +940,7 @@ const Applications = () => {
                       </div>
                       
                       {/* PRO Badge - Top Right */}
-                      {item.postedBy === 'platform' && (
+                      {item.type === 'Job' && item.price === 'Pro' && (
                         <span style={{
                           fontSize: '10px',
                           color: 'white',
@@ -1220,7 +1261,7 @@ const Applications = () => {
                       </div>
                       
                       {/* PRO Badge - Top Right */}
-                      {item.postedBy === 'platform' && (
+                      {item.type === 'Job' && item.price === 'Pro' && (
                         <span style={{
                           fontSize: '10px',
                           color: 'white',
@@ -1433,7 +1474,7 @@ const Applications = () => {
             onClick={() => handleItemClick(item)}>
               
               {/* PRO Badge - Top Right */}
-              {item.postedBy === 'platform' && (
+              {item.type === 'Job' && item.price === 'Pro' && (
                 <div style={{
                   position: 'absolute',
                   top: '12px',

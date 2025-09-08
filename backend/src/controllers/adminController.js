@@ -949,11 +949,16 @@ const getAllApplications = async (req, res) => {
 // Applications overview for admin: return jobs, tenders, opportunities with counts
 const getApplicationsOverview = async (req, res) => {
   try {
+    console.log('🔍 getApplicationsOverview called');
     // Pull latest 50 of each with counts; adjust as needed via query
     const limit = parseInt(req.query.limit, 10) || 50;
 
     const [jobs, tenders, opportunities] = await Promise.all([
       Job.findAll({
+        where: {
+          approval_status: 'approved',
+          status: 'active'
+        },
         order: [['createdAt', 'DESC']],
         limit,
           include: [
@@ -972,6 +977,10 @@ const getApplicationsOverview = async (req, res) => {
           ]
       }),
       Tender.findAll({
+        where: {
+          approval_status: 'approved',
+          status: 'active'
+        },
         order: [['createdAt', 'DESC']],
         limit,
         include: [
@@ -990,6 +999,10 @@ const getApplicationsOverview = async (req, res) => {
         ]
       }),
       Opportunity.findAll({
+        where: {
+          approval_status: 'approved',
+          status: 'active'
+        },
         order: [['createdAt', 'DESC']],
         limit,
         include: [
@@ -1010,36 +1023,37 @@ const getApplicationsOverview = async (req, res) => {
     ]);
 
     const mapJob = (j) => ({
-      id: j.id,
-      title: j.title,
-      company: j.company,
-      industry: j.industry,
-      location: j.location,
-      country: j.country,
-      type: j.job_type,
-      experience: j.experience_level,
-      salary: j.salary_min && j.salary_max ? `${j.currency} ${j.salary_min} - ${j.currency} ${j.salary_max}` : 'Salary not specified',
-      salary_min: j.salary_min,
-      salary_max: j.salary_max,
-      currency: j.currency,
-      postedTime: j.createdAt,
-      application_deadline: j.application_deadline || null,
-      applicants: j.applications ? j.applications.length : (j.applications_count || 0),
-      description: j.description || '',
-      skills: Array.isArray(j.skills) ? j.skills : [],
-      benefits: j.benefits || [],
-      external_url: j.external_url,
-      contact_email: j.contact_email,
-      logo: resolveAssetUrl(j.company_logo),
-      urgentHiring: !!j.is_urgent,
-      isRemote: j.work_type === 'remote',
-      postedBy: j.posted_by,
-      status: j.status && j.status.charAt(0).toUpperCase() + j.status.slice(1),
-      creator: j.creator ? {
-        name: j.creator.first_name && j.creator.last_name ? 
-          `${j.creator.first_name} ${j.creator.last_name}`.trim() : 
-          (j.creator.first_name || j.creator.last_name || 'Unknown'),
-        email: j.creator.email,
+        id: j.id,
+        title: j.title,
+        company: j.company,
+        industry: j.industry,
+        location: j.location,
+        country: j.country,
+        type: j.job_type,
+        experience: j.experience_level,
+        salary: j.salary_min && j.salary_max ? `${j.currency} ${j.salary_min} - ${j.currency} ${j.salary_max}` : 'Salary not specified',
+        salary_min: j.salary_min,
+        salary_max: j.salary_max,
+        currency: j.currency,
+        postedTime: j.createdAt,
+        application_deadline: j.application_deadline || null,
+        applicants: j.applications ? j.applications.length : (j.applications_count || 0),
+        description: j.description || '',
+        skills: Array.isArray(j.skills) ? j.skills : [],
+        benefits: j.benefits || [],
+        external_url: j.external_url,
+        contact_email: j.contact_email,
+        logo: resolveAssetUrl(j.company_logo),
+        urgentHiring: !!j.is_urgent,
+        isRemote: j.work_type === 'remote',
+        postedBy: j.posted_by || 'platform',
+        price: j.price || 'Free',
+        status: j.status && j.status.charAt(0).toUpperCase() + j.status.slice(1),
+        creator: j.creator ? {
+          name: j.creator.first_name && j.creator.last_name ? 
+            `${j.creator.first_name} ${j.creator.last_name}`.trim() : 
+            (j.creator.first_name || j.creator.last_name || 'Unknown'),
+          email: j.creator.email,
         phone: j.creator.phone
       } : null
     });
@@ -1066,7 +1080,7 @@ const getApplicationsOverview = async (req, res) => {
       external_url: t.external_url,
       postedBy: t.creator ? 
         `${t.creator.first_name || ''} ${t.creator.last_name || ''}`.trim() || 'Unknown' : 
-        'government',
+        'platform',
       contactEmail: t.creator ? t.creator.email : '',
       contactPhone: t.creator ? t.creator.phone : '',
       status: t.status && t.status.charAt(0).toUpperCase() + t.status.slice(1),
@@ -1097,12 +1111,12 @@ const getApplicationsOverview = async (req, res) => {
       requirements: Array.isArray(o.requirements) ? o.requirements : [],
       eligibility: Array.isArray(o.eligibility) ? o.eligibility : [],
       applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : [],
-      logo: o.organization_logo || '',
+      logo: resolveAssetUrl(o.organization_logo) || '',
       contact_email: o.contact_email,
       external_url: o.external_url,
       postedBy: o.creator ? 
         `${o.creator.first_name || ''} ${o.creator.last_name || ''}`.trim() || 'Unknown' : 
-        'institution',
+        'platform',
       contactEmail: o.contact_email || (o.creator ? o.creator.email : ''),
       contactPhone: o.creator ? o.creator.phone : '',
       status: o.status && o.status.charAt(0).toUpperCase() + o.status.slice(1),

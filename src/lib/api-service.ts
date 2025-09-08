@@ -1,5 +1,5 @@
 // API Service for Merit Platform - Connected to Node.js Backend
-const API_BASE_URL = 'http://localhost:8001/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 // Derive asset base (server root) from API base so we can build absolute URLs for uploads
 const ASSET_BASE_URL = API_BASE_URL.replace(/\/?api\/?$/, '');
 

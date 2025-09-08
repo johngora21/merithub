@@ -555,48 +555,9 @@ const Opportunities = () => {
                       }}>
                         {opportunity.type}
                       </span>
-                      {opportunity.price === 'Pro' && (
-                        <span style={{
-                          fontSize: '10px',
-                          color: 'white',
-                          backgroundColor: '#3b82f6',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontWeight: '700',
-                          letterSpacing: '0.5px'
-                        }}>
-                          PRO
-                        </span>
-                      )}
-                      {opportunity.price === 'Free' && (
-                        <span style={{
-                          fontSize: '10px',
-                          color: 'white',
-                          backgroundColor: '#16a34a',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          fontWeight: '700'
-                        }}>
-                          Free
-                        </span>
-                      )}
                       {/* Urgent badge intentionally not shown for opportunities */}
                     </div>
                     
-                    {/* PRO Badge - Top Right */}
-                    {opportunity.postedBy === 'platform' && (
-                      <span style={{
-                        fontSize: '10px',
-                        color: 'white',
-                        backgroundColor: '#3b82f6',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        fontWeight: '600',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                      }}>
-                        PRO
-                      </span>
-                    )}
                     
                     <button
                       onClick={(e) => {
@@ -737,32 +698,12 @@ const Opportunities = () => {
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
+                    justifyContent: 'flex-end',
                     paddingTop: '12px',
                     borderTop: '1px solid #f1f5f9',
                     marginTop: 'auto',
                     flexShrink: 0
                   }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}>
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: '700',
-                        color: '#16a34a',
-                        backgroundColor: '#dcfce7',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #bbf7d0',
-                        letterSpacing: '0.5px'
-                      }}>
-                        FREE
-                      </span>
-                      
-                    </div>
-
                     <button
                       style={{
                         backgroundColor: '#16a34a',

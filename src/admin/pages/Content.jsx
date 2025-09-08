@@ -1190,6 +1190,7 @@ const Content = () => {
               marginTop: 'auto',
               flexShrink: 0
             }}>
+              {type === 'jobs' && (
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1207,7 +1208,8 @@ const Content = () => {
                   {item.price || 'Free'}
                 </span>
                 
-                {/* Switch Toggle */}
+                {/* Switch Toggle - only for non-rejected jobs */}
+                {item.approval_status !== 'rejected' && (
                 <div
                   onClick={(e) => {
                     e.stopPropagation()
@@ -1236,7 +1238,9 @@ const Content = () => {
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
                   }} />
                 </div>
+                )}
               </div>
+              )}
 
               <div style={{
                 display: 'flex',
@@ -1899,6 +1903,7 @@ const Content = () => {
           paddingTop: '8px',
           borderTop: '1px solid #f1f5f9'
         }}>
+          {type === 'jobs' && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -1916,7 +1921,8 @@ const Content = () => {
               {item.price || 'Free'}
             </span>
             
-            {/* Switch Toggle */}
+            {/* Switch Toggle - only for non-rejected jobs */}
+            {item.approval_status !== 'rejected' && (
             <div
               onClick={(e) => {
                 e.stopPropagation()
@@ -1945,7 +1951,9 @@ const Content = () => {
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
               }} />
             </div>
+            )}
           </div>
+          )}
 
           {item.approval_status === 'pending' ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -675,32 +675,12 @@ const Tenders = () => {
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
+                    justifyContent: 'flex-end',
                     paddingTop: '12px',
                     borderTop: '1px solid #f1f5f9',
                     marginTop: 'auto',
                     flexShrink: 0
                   }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}>
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: '700',
-                        color: '#16a34a',
-                        backgroundColor: '#dcfce7',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #bbf7d0',
-                        letterSpacing: '0.5px'
-                      }}>
-                        FREE
-                      </span>
-                      
-                    </div>
-
                     <button
                       style={{
                         backgroundColor: '#16a34a',
