@@ -482,7 +482,7 @@ const Content = () => {
     // Transform admin data to match Post form field names
     const editData = {
       ...item,
-      type: type,
+      type: type === 'tenders' ? 'tender' : type === 'opportunities' ? 'opportunity' : type,
       // Map job-specific fields to match Post form expectations
       title: item.title || '',
       description: item.description || '',
@@ -1026,15 +1026,15 @@ const Content = () => {
             }}>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={{
-                  fontSize: '14px',
+                  fontSize: '11px',
                   color: 'white',
                   backgroundColor: sectorColor,
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  fontWeight: '700',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  fontWeight: '600',
                   backdropFilter: 'blur(10px)',
                   textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                  minHeight: '32px',
+                  minHeight: '20px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
@@ -1133,48 +1133,33 @@ const Content = () => {
               </div>
             </div>
 
-            {/* Description */}
-            <p style={{
-              fontSize: '14px',
-              color: '#475569',
-              lineHeight: '1.5',
-              margin: '0 0 12px 0',
-              display: '-webkit-box',
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              flex: 1
-            }}>
-              {item.description}
-            </p>
-
-            {/* Tags */}
-            <div style={{ marginBottom: '16px', flexShrink: 0 }}>
+            {/* Tags - More prominent display */}
+            <div style={{ marginBottom: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <div style={{
                 display: 'flex',
                 flexWrap: 'wrap',
                 gap: '6px'
               }}>
-                {item.tags.slice(0, 3).map((tag, index) => (
+                {item.tags.slice(0, 6).map((tag, index) => (
                   <span key={index} style={{
                     backgroundColor: '#f1f5f9',
                     color: '#475569',
-                    padding: '4px 8px',
-                    borderRadius: '6px',
+                    padding: '6px 10px',
+                    borderRadius: '8px',
                     fontSize: '12px',
                     fontWeight: '500'
                   }}>
                     {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
                   </span>
                 ))}
-                {item.tags.length > 3 && (
+                {item.tags.length > 6 && (
                   <span style={{
                     color: '#64748b',
                     fontSize: '12px',
-                    padding: '4px 8px',
+                    padding: '6px 10px',
                     fontWeight: '500'
                   }}>
-                    +{item.tags.length - 3} more
+                    +{item.tags.length - 6} more
                   </span>
                 )}
               </div>
@@ -1546,19 +1531,37 @@ const Content = () => {
               Deadline: {new Date(item.deadline).toLocaleDateString()}
             </div>
 
-            {/* Description */}
-            <p style={{
-              fontSize: '14px',
-              color: '#475569',
-              lineHeight: '1.5',
-              margin: '0 0 12px 0',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden'
-            }}>
-              {item.detailedDescription || item.description}
-            </p>
+            {/* Tags - More prominent display */}
+            <div style={{ marginBottom: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '6px'
+              }}>
+                {item.tags.slice(0, 6).map((tag, index) => (
+                  <span key={index} style={{
+                    backgroundColor: '#f1f5f9',
+                    color: '#475569',
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: '500'
+                  }}>
+                    {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
+                  </span>
+                ))}
+                {item.tags.length > 6 && (
+                  <span style={{
+                    color: '#64748b',
+                    fontSize: '12px',
+                    padding: '6px 10px',
+                    fontWeight: '500'
+                  }}>
+                    +{item.tags.length - 6} more
+                  </span>
+                )}
+              </div>
+            </div>
 
 
             {/* Footer */}

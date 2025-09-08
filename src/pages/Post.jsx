@@ -60,7 +60,8 @@ const Post = ({ onClose, editItem = null }) => {
   useEffect(() => {
     if (editItem) {
       const newFormData = {
-        type: 'job', // Force to job when editing from admin
+        // Use the provided type from editItem; normalize to expected singular lowercase values
+        type: (editItem.type || 'job').toString().toLowerCase().replace(/s$/, ''),
         title: editItem.title || '',
         description: editItem.description || '',
         company: editItem.company || editItem.organization || '',
