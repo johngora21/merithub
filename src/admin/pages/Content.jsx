@@ -28,7 +28,7 @@ import {
 } from 'lucide-react'
 import Post from '../../pages/Post'
 import { apiService, jobsAPI, tendersAPI, opportunitiesAPI } from '../../lib/api-service'
-import { getCountryName } from '../../utils/countries'
+import { countries, getCountryName, getCountryCode } from '../../utils/countries'
 
 const Content = () => {
   // Simple responsive detection
@@ -51,6 +51,7 @@ const Content = () => {
 
   const [activeTab, setActiveTab] = useState('jobs')
   const [searchTerm, setSearchTerm] = useState('')
+  const [countryFilter, setCountryFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedItems, setSelectedItems] = useState([])
   const [showPostPage, setShowPostPage] = useState(false)
@@ -666,6 +667,16 @@ const Content = () => {
     return s.charAt(0).toUpperCase() + s.slice(1)
   }
 
+  // Ensure tags are always an array of strings
+  const normalizeTags = (input) => {
+    if (!input) return []
+    if (Array.isArray(input)) return input.filter(Boolean).map(String)
+    return String(input)
+      .split(',')
+      .map(t => t.trim())
+      .filter(Boolean)
+  }
+
   // Match merit app card data for jobs
   const transformJobAdminItem = (apiJob) => {
     const min = apiJob?.salary_min != null ? Number(apiJob.salary_min) : undefined
@@ -703,17 +714,22 @@ const Content = () => {
 
   // Normalize tenders to show contract value like salary and keep labels
   const transformTenderAdminItem = (apiTender) => {
+    const currency = apiTender?.currency || 'USD'
     const min = apiTender?.contract_value_min != null ? Number(apiTender.contract_value_min) : undefined
     const max = apiTender?.contract_value_max != null ? Number(apiTender.contract_value_max) : undefined
     let amount
     if (min != null && max != null) {
       amount = min === max
-        ? `${apiTender.currency} ${formatNumber(min)}`
-        : `${apiTender.currency} ${formatNumber(min)} - ${apiTender.currency} ${formatNumber(max)}`
+        ? `${currency} ${formatNumber(min)}`
+        : `${currency} ${formatNumber(min)} - ${currency} ${formatNumber(max)}`
     } else if (min != null) {
-      amount = `${apiTender.currency} ${formatNumber(min)}`
+      amount = `${currency} ${formatNumber(min)}`
     } else if (max != null) {
-      amount = `${apiTender.currency} ${formatNumber(max)}`
+      amount = `${currency} ${formatNumber(max)}`
+    } else if (apiTender?.contract_value != null) {
+      amount = `${currency} ${formatNumber(apiTender.contract_value)}`
+    } else if (apiTender?.value != null) {
+      amount = `${currency} ${formatNumber(apiTender.value)}`
     } else {
       amount = 'Value not specified'
     }
@@ -723,23 +739,28 @@ const Content = () => {
       sector: (apiTender?.sector || '').split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('-'),
       postedTime: apiTender?.created_at ? new Date(apiTender.created_at).toLocaleDateString() : 'Recently',
       description: apiTender?.description || apiTender?.tender_description || '',
-      tags: Array.isArray(apiTender?.tags) ? apiTender.tags : []
+      tags: normalizeTags(apiTender?.tags || apiTender?.tag_list || apiTender?.categories)
     }
   }
 
   // Normalize opportunities for amount and type casing
   const transformOpportunityAdminItem = (apiOpp) => {
+    const currency = apiOpp?.currency || 'USD'
     const min = apiOpp?.amount_min != null ? Number(apiOpp.amount_min) : undefined
     const max = apiOpp?.amount_max != null ? Number(apiOpp.amount_max) : undefined
     let amount
     if (min != null && max != null) {
       amount = min === max
-        ? `${apiOpp.currency} ${formatNumber(min)}`
-        : `${apiOpp.currency} ${formatNumber(min)} - ${apiOpp.currency} ${formatNumber(max)}`
+        ? `${currency} ${formatNumber(min)}`
+        : `${currency} ${formatNumber(min)} - ${currency} ${formatNumber(max)}`
     } else if (min != null) {
-      amount = `${apiOpp.currency} ${formatNumber(min)}`
+      amount = `${currency} ${formatNumber(min)}`
     } else if (max != null) {
-      amount = `${apiOpp.currency} ${formatNumber(max)}`
+      amount = `${currency} ${formatNumber(max)}`
+    } else if (apiOpp?.amount != null) {
+      amount = `${currency} ${formatNumber(apiOpp.amount)}`
+    } else if (apiOpp?.value != null) {
+      amount = `${currency} ${formatNumber(apiOpp.value)}`
     } else {
       amount = 'Amount not specified'
     }
@@ -754,8 +775,8 @@ const Content = () => {
       applicationProcess: apiOpp?.applicationProcess || [],
       benefits: apiOpp?.benefits || [],
       requirements: apiOpp?.requirements || [],
-      tags: Array.isArray(apiOpp?.tags) ? apiOpp.tags : [],
-      poster: apiOpp?.poster, // Include the poster field from backend
+      tags: normalizeTags(apiOpp?.tags || apiOpp?.tag_list || apiOpp?.categories),
+      poster: apiOpp?.poster,
       external_url: apiOpp?.external_url,
       contact_email: apiOpp?.contact_email,
       documents: apiOpp?.documents || []
@@ -921,7 +942,7 @@ const Content = () => {
     // Render different card types
     if (type === 'tenders') {
       const SectorIcon = getSectorIcon(item.sector || item.industry)
-      const sectorColor = getSectorColor(item.sector || item.industry)
+      const sectorColor = '#16a34a'
       const daysUntilDeadline = getDaysUntilDeadline(item.deadline)
       const isDeadlineUrgent = daysUntilDeadline <= 7
 
@@ -996,14 +1017,14 @@ const Content = () => {
                 alt={item.title}
                 style={{
                   width: '100%',
-                  height: '200px',
+                  height: '250px',
                   objectFit: 'cover'
                 }}
               />
             ) : (
               <div style={{
                 width: '100%',
-                height: '200px',
+                height: '250px',
                 backgroundColor: '#f8f9fa',
                 display: 'flex',
                 alignItems: 'center',
@@ -1140,7 +1161,7 @@ const Content = () => {
                 flexWrap: 'wrap',
                 gap: '6px'
               }}>
-                {item.tags.slice(0, 6).map((tag, index) => (
+                {item.tags.slice(0, 2).map((tag, index) => (
                   <span key={index} style={{
                     backgroundColor: '#f1f5f9',
                     color: '#475569',
@@ -1152,14 +1173,14 @@ const Content = () => {
                     {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
                   </span>
                 ))}
-                {item.tags.length > 6 && (
+                {item.tags.length > 2 && (
                   <span style={{
                     color: '#64748b',
                     fontSize: '12px',
-                    padding: '6px 10px',
+                    padding: '4px 8px',
                     fontWeight: '500'
                   }}>
-                    +{item.tags.length - 6} more
+                    +{item.tags.length - 2} more
                   </span>
                 )}
               </div>
@@ -1230,7 +1251,8 @@ const Content = () => {
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                gap: '8px',
+                ...(type !== 'jobs' ? { marginLeft: 'auto' } : {})
               }}>
                 <button
                   onClick={(e) => {
@@ -1419,7 +1441,7 @@ const Content = () => {
               alt={item.title}
               style={{
                 width: '100%',
-                height: '200px',
+                height: '250px',
                 objectFit: 'cover'
               }}
             />
@@ -1538,7 +1560,7 @@ const Content = () => {
                 flexWrap: 'wrap',
                 gap: '6px'
               }}>
-                {item.tags.slice(0, 6).map((tag, index) => (
+                {item.tags.slice(0, 2).map((tag, index) => (
                   <span key={index} style={{
                     backgroundColor: '#f1f5f9',
                     color: '#475569',
@@ -1550,14 +1572,14 @@ const Content = () => {
                     {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
                   </span>
                 ))}
-                {item.tags.length > 6 && (
+                {item.tags.length > 2 && (
                   <span style={{
                     color: '#64748b',
                     fontSize: '12px',
                     padding: '6px 10px',
                     fontWeight: '500'
                   }}>
-                    +{item.tags.length - 6} more
+                    +{item.tags.length - 2} more
                   </span>
                 )}
               </div>
@@ -1719,7 +1741,7 @@ const Content = () => {
         position: 'relative',
         transition: 'all 0.2s ease-in-out',
         cursor: 'pointer',
-        height: '280px',
+        height: 'auto',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden'
@@ -1838,7 +1860,7 @@ const Content = () => {
         </h2>
 
         {/* Quick info: pairs + full-width deadline, with country name */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', marginBottom: '8px', fontSize: '12px', color: '#0f172a' }}> 
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 10px', marginBottom: '4px', fontSize: '12px', color: '#0f172a' }}> 
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#64748b' }}>
             <MapPin size={11} />
             <span>{item.location}</span>
@@ -1862,7 +1884,7 @@ const Content = () => {
 
 
         {/* Tags */}
-        <div style={{ marginBottom: '10px' }}>
+        <div style={{ marginBottom: '4px' }}>
           <div style={{
             display: 'flex',
             flexWrap: 'wrap',
@@ -1903,7 +1925,7 @@ const Content = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingTop: '8px',
+          paddingTop: '4px',
           borderTop: '1px solid #f1f5f9'
         }}>
           {type === 'jobs' && (
@@ -2036,20 +2058,21 @@ const Content = () => {
 
   const ContentTable = ({ type, data, columns }) => (
     <div style={{
-      backgroundColor: 'white',
-      borderRadius: '16px',
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-      overflow: 'hidden'
+      backgroundColor: 'transparent',
+      borderRadius: 0,
+      boxShadow: 'none',
+      overflow: 'visible'
     }}>
       <div style={{
-        padding: '24px',
-        borderBottom: '1px solid #e2e8f0'
+        padding: 0,
+        borderBottom: 'none',
+        marginBottom: '12px'
       }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '16px'
+          marginBottom: '12px'
         }}>
           <h3 style={{
             fontSize: '18px',
@@ -2060,27 +2083,7 @@ const Content = () => {
           }}>
             {type} Management
           </h3>
-          <div style={{
-            display: 'flex',
-            gap: '12px'
-          }}>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{
-                padding: '8px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px'
-              }}
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="pending">Pending</option>
-              <option value="expired">Expired</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
+          
         </div>
 
         <div style={{
@@ -2088,7 +2091,7 @@ const Content = () => {
           alignItems: 'center',
           gap: '16px'
         }}>
-          <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
             <Search style={{
               position: 'absolute',
               left: '12px',
@@ -2115,38 +2118,53 @@ const Content = () => {
               }}
             />
           </div>
-          {selectedItems.length > 0 && (
-            <div style={{
-              display: 'flex',
-              gap: '8px'
-            }}>
-              <button style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                backgroundColor: '#16a34a',
-                color: 'white',
-                border: 'none',
+          {/* Country Filter */}
+          <div>
+            <select
+              value={countryFilter}
+              onChange={(e) => setCountryFilter(e.target.value)}
+              style={{
                 padding: '8px 12px',
+                border: '1px solid #d1d5db',
                 borderRadius: '8px',
                 fontSize: '14px',
-                cursor: 'pointer'
-              }}>
+                minWidth: '180px',
+                backgroundColor: 'white'
+              }}
+            >
+              <option value="">All Countries</option>
+              {countries.map((c) => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          {/* Status Filter */}
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '14px',
+                backgroundColor: 'white'
+              }}
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="expired">Expired</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          {selectedItems.length > 0 && (
+            <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+              <button style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#16a34a', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer' }}>
                 <CheckCircle size={16} />
                 Approve ({selectedItems.length})
               </button>
-              <button style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                backgroundColor: '#dc2626',
-                color: 'white',
-                border: 'none',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                fontSize: '14px',
-                cursor: 'pointer'
-              }}>
+              <button style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#dc2626', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer' }}>
                 <XCircle size={16} />
                 Reject ({selectedItems.length})
               </button>
@@ -2157,7 +2175,7 @@ const Content = () => {
 
       {/* Card Grid */}
       <div style={{
-        padding: '24px',
+        padding: 0,
         display: 'grid',
         gridTemplateColumns: screenSize.isMobile 
           ? '1fr' 
@@ -2189,13 +2207,32 @@ const Content = () => {
     </div>
   )
 
+  const applyFilters = (items) => {
+    let out = items
+    if (countryFilter) {
+      out = out.filter(i => {
+        const itemCode = getCountryCode(i.country || '')
+        return (itemCode || '').toString().toLowerCase() === countryFilter.toLowerCase()
+      })
+    }
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase()
+      out = out.filter(i => (
+        (i.title || '').toLowerCase().includes(q) ||
+        (i.company || i.organization || '').toLowerCase().includes(q) ||
+        (i.location || '').toLowerCase().includes(q)
+      ))
+    }
+    return out
+  }
+
   const getTabContent = () => {
     switch (activeTab) {
       case 'jobs':
         return (
           <ContentTable
             type="jobs"
-            data={filterDataByStatus(jobsData, statusFilter)}
+            data={applyFilters(filterDataByStatus(jobsData, statusFilter))}
             columns={[
               { key: 'title', label: 'Job Title' },
               { key: 'company', label: 'Company' },
@@ -2233,7 +2270,7 @@ const Content = () => {
         return (
           <ContentTable
             type="tenders"
-            data={filterDataByStatus(tendersData, statusFilter)}
+            data={applyFilters(filterDataByStatus(tendersData, statusFilter))}
             columns={[
               { key: 'title', label: 'Tender Title' },
               { key: 'organization', label: 'Organization' },
@@ -2271,7 +2308,7 @@ const Content = () => {
         return (
           <ContentTable
             type="opportunities"
-            data={filterDataByStatus(opportunitiesData, statusFilter)}
+            data={applyFilters(filterDataByStatus(opportunitiesData, statusFilter))}
             columns={[
               { key: 'title', label: 'Opportunity Title' },
               { key: 'type', label: 'Type' },
@@ -2474,9 +2511,7 @@ const Content = () => {
 
   return (
     <div style={{
-      maxWidth: '1280px',
-      margin: '0 auto',
-      padding: screenSize.isMobile ? '20px' : '32px'
+      padding: 0
     }}>
       {/* Action Buttons */}
       <div style={{ 
@@ -3710,6 +3745,46 @@ const Content = () => {
                 </div>
               </form>
             </div>
+          </div>
+          {/* Country Filter */}
+          <div>
+            <select
+              value={countryFilter}
+              onChange={(e) => setCountryFilter(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '14px',
+                minWidth: '180px',
+                backgroundColor: 'white'
+              }}
+            >
+              <option value="">All Countries</option>
+              {countries.map((c) => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          {/* Status Filter */}
+          <div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '14px',
+                backgroundColor: 'white'
+              }}
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="expired">Expired</option>
+              <option value="rejected">Rejected</option>
+            </select>
           </div>
         </div>
       )}

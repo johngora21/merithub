@@ -59,6 +59,27 @@ const Post = ({ onClose, editItem = null }) => {
   // Populate form data when editing an item
   useEffect(() => {
     if (editItem) {
+      const normalizeCountryToCode = (input) => {
+        if (!input) return ''
+        const match = countries.find(c => c.code === input || c.name === input)
+        return match ? match.code : input
+      }
+
+      const ensureArrayTags = (input) => {
+        if (!input) return []
+        if (Array.isArray(input)) return input
+        return String(input)
+          .split(',')
+          .map(t => t.trim())
+          .filter(Boolean)
+      }
+
+      const ensureMultiline = (input) => {
+        if (!input) return ''
+        if (Array.isArray(input)) return input.join('\n')
+        return String(input)
+      }
+
       const newFormData = {
         // Use the provided type from editItem; normalize to expected singular lowercase values
         type: (editItem.type || 'job').toString().toLowerCase().replace(/s$/, ''),
@@ -66,7 +87,7 @@ const Post = ({ onClose, editItem = null }) => {
         description: editItem.description || '',
         company: editItem.company || editItem.organization || '',
         location: editItem.location || '',
-        country: editItem.country || '',
+        country: normalizeCountryToCode(editItem.country || ''),
         workType: editItem.work_type || '',
         salaryType: editItem.salary_min && editItem.salary_max && editItem.salary_min !== editItem.salary_max ? 'range' : 'fixed',
         salaryMin: editItem.salary_min || '',
@@ -75,19 +96,31 @@ const Post = ({ onClose, editItem = null }) => {
         experience: editItem.experience_years || editItem.experience_level || '',
         industry: editItem.industry || '',
         customIndustry: editItem.customIndustry || '',
-        skills: editItem.skills || '',
-        benefits: editItem.benefits || '',
+        skills: Array.isArray(editItem.skills) ? editItem.skills.join(', ') : (editItem.skills || ''),
+        benefits: Array.isArray(editItem.benefits) ? editItem.benefits.join(', ') : (editItem.benefits || ''),
         deadline: editItem.application_deadline || editItem.deadline || '',
         applicationUrl: editItem.external_url || editItem.application_url || '',
         contactEmail: editItem.contact_email || '',
         price: editItem.price || '',
         currency: editItem.currency || 'USD',
-        tags: editItem.tags || '',
+        tags: ensureArrayTags(editItem.tags),
         customTag: '',
         documents: editItem.documents || [],
         companyLogo: editItem.company_logo || editItem.logo || null,
         coverImage: null,
-        isUrgent: editItem.is_urgent || false
+        isUrgent: editItem.is_urgent || false,
+        // Tender-specific fields
+        value: editItem.value || editItem.amount || '',
+        sector: editItem.sector || '',
+        customSector: editItem.customSector || '',
+        requirements: ensureMultiline(editItem.requirements),
+        projectScope: ensureMultiline(editItem.project_scope),
+        technicalRequirements: ensureMultiline(editItem.technical_requirements),
+        submissionProcess: ensureMultiline(editItem.submission_process),
+        evaluationCriteria: ensureMultiline(editItem.evaluation_criteria),
+        // Opportunity-specific fields
+        duration: editItem.duration || '',
+        category: editItem.category || ''
       };
       setFormData(newFormData);
     }
@@ -1237,6 +1270,41 @@ const Post = ({ onClose, editItem = null }) => {
                     />
                   </div>
                 )}
+
+                {/* Country - Tender specific */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Country *
+                  </label>
+                  <select
+                    required
+                    value={formData.country}
+                    onChange={(e) => handleInputChange('country', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="">Select country</option>
+                    {countries.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 
                 {/* Duration */}
                 <div style={{ marginBottom: '16px' }}>

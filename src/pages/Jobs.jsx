@@ -807,21 +807,21 @@ ${user?.first_name} ${user?.last_name}`
                   {job.tags && job.tags.length > 0 && (
                     <div style={{ marginBottom: '10px' }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {job.tags.slice(0, 4).map((tag, index) => (
+                        {job.tags.slice(0, 2).map((tag, index) => (
                           <span key={index} style={{
-                            backgroundColor: '#dbeafe',
-                            color: '#1d4ed8',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            fontSize: '11px',
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
                             fontWeight: '500'
                           }}>
                             {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Not specified'}
                           </span>
                         ))}
-                        {job.tags.length > 4 && (
+                        {job.tags.length > 2 && (
                           <span style={{ color: '#64748b', fontSize: '11px', padding: '2px 6px', fontWeight: '500' }}>
-                            +{job.tags.length - 4} more
+                            +{job.tags.length - 2} more
                           </span>
                         )}
                       </div>

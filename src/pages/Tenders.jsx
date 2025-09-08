@@ -645,7 +645,7 @@ const Tenders = () => {
                         flexWrap: 'wrap',
                         gap: '6px'
                       }}>
-                        {tender.tags.slice(0, 4).map((tag, index) => (
+                        {tender.tags.slice(0, 2).map((tag, index) => (
                           <span key={index} style={{
                             backgroundColor: '#f1f5f9',
                             color: '#475569',
@@ -657,14 +657,14 @@ const Tenders = () => {
                             {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Not specified'}
                           </span>
                         ))}
-                        {tender.tags.length > 4 && (
+                        {tender.tags.length > 2 && (
                           <span style={{
                             color: '#64748b',
                             fontSize: '12px',
                             padding: '4px 8px',
                             fontWeight: '500'
                           }}>
-                            +{tender.tags.length - 4} more
+                            +{tender.tags.length - 2} more
                           </span>
                         )}
                       </div>
