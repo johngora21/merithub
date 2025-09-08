@@ -827,7 +827,7 @@ const Applications = () => {
                             alt={item.title || 'Tender'}
                             style={{
                               width: '100%',
-                              height: '200px',
+                              height: '250px',
                               objectFit: 'cover'
                             }}
                             onError={(e) => {
@@ -841,7 +841,7 @@ const Applications = () => {
                     })()}
                     <div style={{
                       width: '100%',
-                      height: '200px',
+                      height: '250px',
                       backgroundColor: '#f8f9fa',
                       display: (item.coverImage || item.cover_image || item.logo || item.organization_logo) ? 'none' : 'flex',
                       alignItems: 'center',
@@ -1146,7 +1146,7 @@ const Applications = () => {
                             alt={item.title || 'Opportunity'}
                             style={{
                               width: '100%',
-                              height: '200px',
+                              height: '250px',
                               objectFit: 'cover'
                             }}
                             onError={(e) => {
@@ -1160,7 +1160,7 @@ const Applications = () => {
                     })()}
                     <div style={{
                       width: '100%',
-                      height: '200px',
+                      height: '250px',
                       backgroundColor: '#f8f9fa',
                       display: (item.poster || item.cover_image || item.coverImage || item.logo || item.organization_logo) ? 'none' : 'flex',
                       alignItems: 'center',

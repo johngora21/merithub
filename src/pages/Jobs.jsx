@@ -98,12 +98,29 @@ const Jobs = () => {
       salary = 'Salary not specified'
     }
 
+    // Convert country code to full country name
+    const getCountryName = (countryCode) => {
+      if (!countryCode) return 'Not specified'
+      const country = countries.find(c => c.code === countryCode)
+      return country ? country.name : countryCode
+    }
+
+    // Format deadline
+    const formatDeadline = (deadline) => {
+      if (!deadline) return 'Not specified'
+      try {
+        return new Date(deadline).toLocaleDateString()
+      } catch {
+        return deadline
+      }
+    }
+
     return {
       id: apiJob.id.toString(),
       company: apiJob.company,
       industry: apiJob.industry,
       companyLocation: apiJob.location,
-      country: apiJob.country,
+      country: getCountryName(apiJob.country),
       logo,
       title: apiJob.title,
       location: apiJob.location,
@@ -111,6 +128,7 @@ const Jobs = () => {
       type: apiJob.job_type ? apiJob.job_type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('-') : 'Not specified',
       experience: apiJob.experience_level ? apiJob.experience_level.charAt(0).toUpperCase() + apiJob.experience_level.slice(1) + ' level' : 'Not specified',
       skills: apiJob.skills || [],
+      tags: apiJob.tags || [],
       description: apiJob.description,
       benefits: apiJob.benefits || [],
       postedTime: apiJob.created_at ? new Date(apiJob.created_at).toLocaleDateString() : 'Recently',
@@ -122,8 +140,10 @@ const Jobs = () => {
       externalUrl: apiJob.external_url,
       contactEmail: apiJob.contact_email,
       applicationDeadline: apiJob.application_deadline,
+      deadline: formatDeadline(apiJob.application_deadline),
       isFeatured: apiJob.is_featured || false,
-      status: apiJob.status || 'active'
+      status: apiJob.status || 'active',
+      applicants: apiJob.applicants || 0
     }
   }
 
@@ -595,289 +615,245 @@ ${user?.first_name} ${user?.last_name}`
               </p>
             </div>
           ) : (
-            filteredJobs.map((job) => (
-              <div key={job.id} style={{
-                backgroundColor: 'white',
-                borderRadius: '12px',
-              padding: '16px 12px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                border: '1px solid #f0f0f0',
-                position: 'relative',
-                transition: 'all 0.2s ease-in-out',
-              cursor: 'pointer'
-              }}
-              onClick={() => handleJobClick(job)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
-                e.currentTarget.style.transform = 'translateY(-2px)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
-                e.currentTarget.style.transform = 'translateY(0)'
-              }}>
-                
-              {/* Company Profile Header */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                marginBottom: '10px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                  <img 
-                    src={job.logo} 
-                    alt={job.company}
-                    style={{
-                      width: '44px',
-                      height: '44px',
-                      borderRadius: '22px',
-                      objectFit: 'cover',
-                      border: '2px solid #f8f9fa'
-                    }}
-                  />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h3 style={{
-                      fontSize: '14px',
+            filteredJobs.map((job) => {
+              return (
+                <div key={job.id} style={{
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  padding: '16px 12px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  border: '1px solid #f0f0f0',
+                  position: 'relative',
+                  transition: 'all 0.2s ease-in-out',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                }}
+                onClick={() => handleJobClick(job)}>
+                  
+                  {/* PRO Badge and Save Button - Top Right */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '12px',
+                    right: '12px',
+                    zIndex: 10,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    {job.postedBy === 'platform' && (
+                      <span style={{
+                        fontSize: '10px',
+                        color: 'white',
+                        backgroundColor: '#3b82f6',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
                         fontWeight: '600',
-                        color: '#1a1a1a',
-                      margin: '0 0 1px 0',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                       }}>
-                        {job.company}
-                      </h3>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                      gap: '6px'
-                      }}>
-                        <span style={{
-                        fontSize: '12px',
-                          fontWeight: '500',
+                        PRO
+                      </span>
+                    )}
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleSave(job.id)
+                      }}
+                      style={{
+                        background: savedJobs.has(job.id) ? '#f0fdf4' : '#f8f9fa',
+                        border: savedJobs.has(job.id) ? '1px solid #16a34a' : '1px solid #e2e8f0',
+                        padding: '6px',
+                        cursor: 'pointer',
+                        borderRadius: '6px',
+                        transition: 'all 0.2s ease-in-out'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = savedJobs.has(job.id) ? '#dcfce7' : '#f1f5f9'
+                        e.target.style.transform = 'translateY(-1px)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = savedJobs.has(job.id) ? '#f0fdf4' : '#f8f9fa'
+                        e.target.style.transform = 'translateY(0)'
+                      }}
+                    >
+                      <Bookmark 
+                        size={16} 
+                        color={savedJobs.has(job.id) ? '#16a34a' : '#64748b'}
+                        fill={savedJobs.has(job.id) ? '#16a34a' : 'none'}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Company Profile Header */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    marginBottom: '10px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                      {job.logo && job.logo.trim() !== '' ? (
+                        <img 
+                          src={resolveAssetUrl(job.logo)} 
+                          alt={job.company}
+                          style={{
+                            width: '44px',
+                            height: '44px',
+                            borderRadius: '22px',
+                            objectFit: 'cover',
+                            border: '2px solid #f8f9fa'
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '22px',
+                          backgroundColor: '#f8f9fa',
+                          border: '2px solid #e2e8f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '16px',
+                          fontWeight: '600',
                           color: '#64748b'
                         }}>
-                          {job.industry}
-                        </span>
-                      {(job.price === 'Pro' || job.postedBy === 'platform') && (
-                        <span style={{
-                          fontSize: '10px',
-                          color: 'white',
-                          backgroundColor: '#3b82f6',
-                          padding: '1px 4px',
-                          borderRadius: '3px',
-                          fontWeight: '600'
-                        }}>
-                          PRO
-                        </span>
+                          {job.company ? job.company.charAt(0).toUpperCase() : '?'}
+                        </div>
                       )}
-                      {job.price === 'Free' && (
-                        <span style={{
-                          fontSize: '10px',
-                          color: '#16a34a',
-                          backgroundColor: '#f0fdf4',
-                          padding: '1px 4px',
-                          borderRadius: '3px',
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h3 style={{
+                          fontSize: '14px',
                           fontWeight: '600',
-                          border: '1px solid #bbf7d0'
+                          color: '#1a1a1a',
+                          margin: '0 0 1px 0',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
                         }}>
-                          FREE
-                        </span>
-                      )}
+                          {job.company}
+                        </h3>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          <span style={{
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            color: '#64748b'
+                          }}>
+                            {job.industry || 'Not specified'}
+                          </span>
+                        </div>
                       </div>
-
                     </div>
                   </div>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      toggleSave(job.id)
-                    }}
-                    style={{
-                      background: savedJobs.has(job.id) ? '#f0fdf4' : '#f8f9fa',
-                      border: savedJobs.has(job.id) ? '1px solid #16a34a' : '1px solid #e2e8f0',
-                      padding: '8px',
-                      cursor: 'pointer',
-                      borderRadius: '8px',
-                      flexShrink: 0,
-                      marginLeft: '8px',
-                      transition: 'all 0.2s ease-in-out'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = savedJobs.has(job.id) ? '#dcfce7' : '#f1f5f9'
-                      e.target.style.transform = 'scale(1.05)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = savedJobs.has(job.id) ? '#f0fdf4' : '#f8f9fa'
-                      e.target.style.transform = 'scale(1)'
-                    }}
-                  >
-                    <Bookmark 
-                      size={20} 
-                      color={savedJobs.has(job.id) ? '#16a34a' : '#64748b'}
-                      fill={savedJobs.has(job.id) ? '#16a34a' : 'none'}
-                    />
-                  </button>
-                </div>
+                  {/* Job Title */}
+                  <h2 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 8px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    {job.title}
+                    {job.urgentHiring && (
+                      <Star size={14} color="#2563eb" fill="#2563eb" />
+                    )}
+                  </h2>
 
-              {/* Job Title */}
-                <h2 style={{
-                fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#1a1a1a',
-                margin: '0 0 8px 0',
-                  display: 'flex',
-                  alignItems: 'center',
-                gap: '4px'
-                }}>
-                  {job.title}
-                {job.urgentHiring && (
-                  <Star size={14} color="#3b82f6" fill="#3b82f6" />
+                  {/* Quick Info: two columns (pairs) */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '8px 12px',
+                    marginBottom: '10px',
+                    fontSize: '12px',
+                    color: '#64748b'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <MapPin size={12} />
+                      <span style={{ color: '#0f172a' }}>{job.location}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ color: '#0f172a' }}>{job.country || '-'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <DollarSign size={12} color="#16a34a" />
+                      <span style={{ color: '#16a34a', fontWeight: 600 }}>{job.salary || 'Not specified'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Briefcase size={12} />
+                      <span style={{ color: '#0f172a' }}>{job.type || 'Not specified'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={12} />
+                      <span style={{ color: '#dc2626', fontWeight: 600 }}>{job.deadline || 'Not specified'}</span>
+                    </div>
+                  </div>
+
+                  {/* Tags */}
+                  {job.tags && job.tags.length > 0 && (
+                    <div style={{ marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {job.tags.slice(0, 4).map((tag, index) => (
+                          <span key={index} style={{
+                            backgroundColor: '#dbeafe',
+                            color: '#1d4ed8',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: '500'
+                          }}>
+                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Not specified'}
+                          </span>
+                        ))}
+                        {job.tags.length > 4 && (
+                          <span style={{ color: '#64748b', fontSize: '11px', padding: '2px 6px', fontWeight: '500' }}>
+                            +{job.tags.length - 4} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   )}
-                </h2>
 
-              {/* Job Location and Status */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                gap: '6px',
-                marginBottom: '8px',
-                fontSize: '12px',
-                  color: '#666',
-                  flexWrap: 'wrap'
-                }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                  <MapPin size={11} />
-                    {job.location}
-                  </div>
-                  <span>•</span>
-                <span>Deadline: {job.applicationDeadline ? new Date(job.applicationDeadline).toLocaleDateString() : 'No deadline'}</span>
-                {job.isRemote && (
-                  <>
-                    <span>•</span>
-                    <span style={{
-                      color: '#16a34a',
-                      fontSize: '11px',
-                      fontWeight: '500'
-                    }}>
-                      Remote
-                    </span>
-                  </>
-                )}
-                
-                </div>
-
-              {/* Quick Info */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                gap: '8px',
-                marginBottom: '8px',
-                  flexWrap: 'wrap'
-                }}>
+                  {/* Footer */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                  gap: '3px',
-                  fontSize: '12px',
-                    color: '#16a34a',
-                    fontWeight: '600'
+                    justifyContent: 'space-between',
+                    paddingTop: '8px',
+                    borderTop: '1px solid #f1f5f9'
                   }}>
-                  <DollarSign size={12} />
-                  {job.salary}
-                  </div>
-                  <span style={{ color: '#e2e8f0' }}>•</span>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                  gap: '3px',
-                  fontSize: '12px',
-                    color: '#64748b'
-                  }}>
-                  <Briefcase size={12} />
-                  {job.type}
-                  </div>
-                  <span style={{ color: '#e2e8f0' }}>•</span>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                  gap: '3px',
-                  fontSize: '12px',
-                    color: '#64748b'
-                  }}>
-                  <Clock size={12} />
-                  {job.experience}
-                  </div>
-                </div>
-
-                {/* Description */}
-                <p style={{
-                fontSize: '13px',
-                  color: '#475569',
-                lineHeight: '1.4',
-                margin: '0 0 8px 0',
-                  display: '-webkit-box',
-                WebkitLineClamp: 1,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden'
-                }}>
-                  {job.description}
-                </p>
-
-                {/* Skills */}
-              <div style={{ marginBottom: '10px' }}>
                     <div style={{
                       display: 'flex',
-                      flexWrap: 'wrap',
-                  gap: '4px'
+                      alignItems: 'center',
+                      gap: '8px'
                     }}>
-                      {job.skills.slice(0, 4).map((skill, index) => (
-                        <span key={index} style={{
-                          backgroundColor: '#f1f5f9',
-                          color: '#475569',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                          fontWeight: '500'
-                        }}>
-                          {skill}
-                        </span>
-                      ))}
-                      {job.skills.length > 4 && (
-                        <span style={{
-                          color: '#64748b',
-                      fontSize: '11px',
-                      padding: '2px 6px',
-                          fontWeight: '500'
-                        }}>
-                          +{job.skills.length - 4} more
-                        </span>
-                      )}
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        color: '#16a34a',
+                        backgroundColor: '#dcfce7',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid #bbf7d0',
+                        letterSpacing: '0.5px'
+                      }}>
+                        FREE
+                      </span>
                     </div>
-                  </div>
-
-                {/* Footer */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                paddingTop: '8px',
-                borderTop: '1px solid #f1f5f9'
-                }}>
-                  {/* FREE/PRO Badge */}
-                  <span style={{
-                    fontSize: '11px',
-                    fontWeight: '700',
-                    color: job.price === 'Pro' ? '#3b82f6' : '#16a34a',
-                    backgroundColor: job.price === 'Pro' ? '#dbeafe' : '#dcfce7',
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    border: `1px solid ${job.price === 'Pro' ? '#93c5fd' : '#bbf7d0'}`,
-                    letterSpacing: '0.5px'
-                  }}>
-                    {job.price || 'FREE'}
-                  </span>
 
                     <button
                       onClick={(e) => {
@@ -888,9 +864,9 @@ ${user?.first_name} ${user?.last_name}`
                         backgroundColor: '#16a34a',
                         color: 'white',
                         border: 'none',
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
                         fontWeight: '600',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease-in-out'
@@ -904,14 +880,17 @@ ${user?.first_name} ${user?.last_name}`
                         e.target.style.transform = 'translateY(0)'
                       }}
                     >
-                  Apply Now
+                      Apply Now
                     </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
-
+      </div>
+      </div>
+  ) 
         {/* Filter Modal */}
         {showFilters && (
           <div style={{
@@ -1915,9 +1894,10 @@ ${user?.first_name} ${user?.last_name}`
             </div>
           </div>
         )}
-      </div>
-    </div>
-  )
-}
+      
+    }
+      
+      
+
 
 export default Jobs

@@ -474,14 +474,14 @@ const Tenders = () => {
                       alt={tender.title}
                       style={{
                         width: '100%',
-                        height: '200px',
+                        height: '250px',
                         objectFit: 'cover'
                       }}
                     />
                   ) : (
                 <div style={{
                       width: '100%',
-                      height: '200px',
+                      height: '250px',
                       backgroundColor: '#f8f9fa',
                   display: 'flex',
                       alignItems: 'center',
@@ -590,6 +590,20 @@ const Tenders = () => {
                     {tender.organization}
                   </div>
 
+                  {/* Contract Value */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '13px',
+                    color: '#16a34a',
+                    fontWeight: '600',
+                    marginBottom: '12px'
+                  }}>
+                    <DollarSign size={14} />
+                    {tender.contractValue || tender.budget || 'Not specified'}
+                  </div>
+
                   {/* Location and Deadline */}
                   <div style={{
                     display: 'flex',
@@ -607,7 +621,7 @@ const Tenders = () => {
                       color: '#64748b'
                     }}>
                       <MapPin size={14} />
-                      {tender.location}
+                      {tender.location}{tender.country && `, ${tender.country}`}
                     </div>
                     <span style={{ color: '#e2e8f0' }}>•</span>
                     <div style={{
@@ -619,56 +633,43 @@ const Tenders = () => {
                       fontWeight: isDeadlineUrgent ? '600' : '500'
                     }}>
                       <Calendar size={12} />
-                      Due: {new Date(tender.deadline).toLocaleDateString()} ({daysUntilDeadline} days)
+                      {new Date(tender.deadline).toLocaleDateString()}
                     </div>
                   </div>
-
-                  {/* Description */}
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#475569',
-                    lineHeight: '1.5',
-                    margin: '0 0 12px 0',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    flex: 1
-                  }}>
-                    {tender.description}
-                  </p>
 
                   {/* Tags */}
-                  <div style={{ marginBottom: '16px', flexShrink: 0 }}>
-                    <div style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '6px'
-                    }}>
-                      {tender.tags.slice(0, 3).map((tag, index) => (
-                        <span key={index} style={{
-                          backgroundColor: '#f1f5f9',
-                          color: '#475569',
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: '500'
-                        }}>
-                          {tag}
-                        </span>
-                      ))}
-                      {tender.tags.length > 3 && (
-                        <span style={{
-                          color: '#64748b',
-                          fontSize: '12px',
-                          padding: '4px 8px',
-                          fontWeight: '500'
-                        }}>
-                          +{tender.tags.length - 3} more
-                        </span>
-                      )}
+                  {tender.tags && tender.tags.length > 0 && (
+                    <div style={{ marginBottom: '12px', flex: 1 }}>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '6px'
+                      }}>
+                        {tender.tags.slice(0, 4).map((tag, index) => (
+                          <span key={index} style={{
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '500'
+                          }}>
+                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Not specified'}
+                          </span>
+                        ))}
+                        {tender.tags.length > 4 && (
+                          <span style={{
+                            color: '#64748b',
+                            fontSize: '12px',
+                            padding: '4px 8px',
+                            fontWeight: '500'
+                          }}>
+                            +{tender.tags.length - 4} more
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Footer */}
                   <div style={{
@@ -680,87 +681,43 @@ const Tenders = () => {
                     marginTop: 'auto',
                     flexShrink: 0
                   }}>
-                    {/* FREE/PRO Badge */}
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      color: tender.price === 'Pro' ? '#3b82f6' : '#16a34a',
-                      backgroundColor: tender.price === 'Pro' ? '#dbeafe' : '#dcfce7',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      border: `1px solid ${tender.price === 'Pro' ? '#93c5fd' : '#bbf7d0'}`,
-                      letterSpacing: '0.5px'
-                    }}>
-                      {tender.price || 'FREE'}
-                    </span>
-
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px'
                     }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDownloadDocs(tender.id)
-                        }}
-                        style={{
-                          backgroundColor: 'white',
-                          color: '#64748b',
-                          border: '1px solid #e2e8f0',
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease-in-out',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = '#f8f9fa'
-                          e.target.style.borderColor = '#16a34a'
-                          e.target.style.color = '#16a34a'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = 'white'
-                          e.target.style.borderColor = '#e2e8f0'
-                          e.target.style.color = '#64748b'
-                        }}
-                      >
-                        <Download size={12} />
-                        Docs
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleApply(tender.id)
-                        }}
-                        style={{
-                          backgroundColor: '#16a34a',
-                          color: 'white',
-                          border: 'none',
-                          padding: '8px 16px',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease-in-out'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = '#15803d'
-                          e.target.style.transform = 'translateY(-1px)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = '#16a34a'
-                          e.target.style.transform = 'translateY(0)'
-                        }}
-                      >
-                        Apply Now
-                      </button>
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        color: '#16a34a',
+                        backgroundColor: '#dcfce7',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid #bbf7d0',
+                        letterSpacing: '0.5px'
+                      }}>
+                        FREE
+                      </span>
+                      
                     </div>
+
+                    <button
+                      style={{
+                        backgroundColor: '#16a34a',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s'
+                      }}
+                      onMouseOver={(e) => e.target.style.backgroundColor = '#15803d'}
+                      onMouseOut={(e) => e.target.style.backgroundColor = '#16a34a'}
+                    >
+                      Apply Now
+                    </button>
                   </div>
                 </div>
               </div>

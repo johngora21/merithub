@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { countries } from '../utils/countries'
-import { opportunitiesAPI, apiService } from '../lib/api-service'
+import { opportunitiesAPI, apiService, resolveAssetUrl } from '../lib/api-service'
 
 import { 
   Bookmark, 
@@ -484,7 +484,10 @@ const Opportunities = () => {
                 border: '1px solid #f0f0f0',
                 position: 'relative',
                 transition: 'all 0.2s ease-in-out',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                height: '480px',
+                display: 'flex',
+                flexDirection: 'column'
               }}
               onClick={() => handleOpportunityClick(opportunity)}
               onMouseEnter={(e) => {
@@ -498,15 +501,32 @@ const Opportunities = () => {
                 
                 {/* Poster Image */}
                 <div style={{ position: 'relative' }}>
-                  <img 
-                    src={opportunity.poster} 
-                    alt={opportunity.title}
-                    style={{
-                      width: '100%',
-                      height: '200px',
-                      objectFit: 'cover'
-                    }}
-                  />
+                  {opportunity.poster ? (
+                    <img 
+                      src={resolveAssetUrl(opportunity.poster)} 
+                      alt={opportunity.title || 'Opportunity'}
+                      style={{
+                        width: '100%',
+                        height: '250px',
+                        objectFit: 'cover'
+                      }}
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                  ) : null}
+                  <div style={{
+                    width: '100%',
+                    height: '250px',
+                    backgroundColor: '#f8f9fa',
+                    display: opportunity.poster ? 'none' : 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#64748b'
+                  }}>
+                    <GraduationCap size={48} color={typeColor} />
+                  </div>
                   
                   {/* Overlay badges */}
                   <div style={{
@@ -526,7 +546,12 @@ const Opportunities = () => {
                         padding: '4px 8px',
                         borderRadius: '6px',
                         fontWeight: '600',
-                        backdropFilter: 'blur(10px)'
+                        backdropFilter: 'blur(10px)',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                        minHeight: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}>
                         {opportunity.type}
                       </span>
@@ -557,6 +582,21 @@ const Opportunities = () => {
                       )}
                       {/* Urgent badge intentionally not shown for opportunities */}
                     </div>
+                    
+                    {/* PRO Badge - Top Right */}
+                    {opportunity.postedBy === 'platform' && (
+                      <span style={{
+                        fontSize: '10px',
+                        color: 'white',
+                        backgroundColor: '#3b82f6',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        fontWeight: '600',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}>
+                        PRO
+                      </span>
+                    )}
                     
                     <button
                       onClick={(e) => {
@@ -592,7 +632,7 @@ const Opportunities = () => {
                 </div>
 
                 {/* Content */}
-                <div style={{ padding: '20px' }}>
+                <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
                   {/* Title */}
                   <h2 style={{
                     fontSize: '18px',
@@ -604,14 +644,14 @@ const Opportunities = () => {
                     {opportunity.title}
                   </h2>
 
-                  {/* Organization (fallback to category) */}
+                  {/* Organization */}
                   <div style={{
                     fontSize: '13px',
                     color: '#64748b',
                     marginBottom: '12px',
                     fontWeight: '500'
                   }}>
-                    {opportunity.organization || opportunity.category}
+                    {opportunity.organization || opportunity.company || opportunity.category}
                   </div>
 
                   {/* Key Info Row */}
@@ -627,22 +667,10 @@ const Opportunities = () => {
                       alignItems: 'center',
                       gap: '4px',
                       fontSize: '13px',
-                      color: '#16a34a',
-                      fontWeight: '600'
-                    }}>
-                      <DollarSign size={14} />
-                      {opportunity.amount}
-                    </div>
-                    <span style={{ color: '#e2e8f0' }}>•</span>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      fontSize: '13px',
                       color: '#64748b'
                     }}>
                       <Clock size={14} />
-                      {opportunity.duration}
+                      {opportunity.duration || 'Not specified'}
                     </div>
                     <span style={{ color: '#e2e8f0' }}>•</span>
                     <div style={{
@@ -668,54 +696,42 @@ const Opportunities = () => {
                     fontWeight: '600'
                   }}>
                     <Calendar size={12} />
-                    Deadline: {new Date(opportunity.deadline).toLocaleDateString()}
+                    {new Date(opportunity.deadline).toLocaleDateString()}
                   </div>
-
-                  {/* Description */}
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#475569',
-                    lineHeight: '1.5',
-                    margin: '0 0 12px 0',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden'
-                  }}>
-                    {opportunity.description}
-                  </p>
 
                   {/* Tags */}
-                  <div style={{ marginBottom: '16px' }}>
-                    <div style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '6px'
-                    }}>
-                      {(opportunity.tags || []).slice(0, 4).map((tag, index) => (
-                        <span key={index} style={{
-                          backgroundColor: '#f1f5f9',
-                          color: '#475569',
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: '500'
-                        }}>
-                          {tag}
-                        </span>
-                      ))}
-                      {opportunity.tags.length > 4 && (
-                        <span style={{
-                          color: '#64748b',
-                          fontSize: '12px',
-                          padding: '4px 8px',
-                          fontWeight: '500'
-                        }}>
-                          +{opportunity.tags.length - 4} more
-                        </span>
-                      )}
+                  {opportunity.tags && opportunity.tags.length > 0 && (
+                    <div style={{ marginBottom: '12px', flex: 1 }}>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '6px'
+                      }}>
+                        {opportunity.tags.slice(0, 4).map((tag, index) => (
+                          <span key={index} style={{
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '500'
+                          }}>
+                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Not specified'}
+                          </span>
+                        ))}
+                        {opportunity.tags.length > 4 && (
+                          <span style={{
+                            color: '#64748b',
+                            fontSize: '12px',
+                            padding: '4px 8px',
+                            fontWeight: '500'
+                          }}>
+                            +{opportunity.tags.length - 4} more
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Footer */}
                   <div style={{
@@ -723,54 +739,57 @@ const Opportunities = () => {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     paddingTop: '12px',
-                    borderTop: '1px solid #f1f5f9'
+                    borderTop: '1px solid #f1f5f9',
+                    marginTop: 'auto',
+                    flexShrink: 0
                   }}>
-                    {/* FREE/PRO Badge */}
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      color: opportunity.price === 'Pro' ? '#3b82f6' : '#16a34a',
-                      backgroundColor: opportunity.price === 'Pro' ? '#dbeafe' : '#dcfce7',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      border: `1px solid ${opportunity.price === 'Pro' ? '#93c5fd' : '#bbf7d0'}`,
-                      letterSpacing: '0.5px'
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
                     }}>
-                      {opportunity.price || 'FREE'}
-                    </span>
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        color: '#16a34a',
+                        backgroundColor: '#dcfce7',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid #bbf7d0',
+                        letterSpacing: '0.5px'
+                      }}>
+                        FREE
+                      </span>
+                      
+                    </div>
 
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleApply(opportunity.id)
-                      }}
                       style={{
                         backgroundColor: '#16a34a',
                         color: 'white',
                         border: 'none',
                         padding: '8px 16px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
+                        borderRadius: '6px',
+                        fontSize: '14px',
                         fontWeight: '600',
                         cursor: 'pointer',
-                        transition: 'all 0.2s ease-in-out'
+                        transition: 'background-color 0.2s'
                       }}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = '#15803d'
-                        e.target.style.transform = 'translateY(-1px)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = '#16a34a'
-                        e.target.style.transform = 'translateY(0)'
-                      }}
+                      onMouseOver={(e) => e.target.style.backgroundColor = '#15803d'}
+                      onMouseOut={(e) => e.target.style.backgroundColor = '#16a34a'}
                     >
                       Apply Now
                     </button>
                   </div>
                 </div>
-              </div>
-            )
-          }))}
+                  </div>
+                )
+              }))}
+
+
+
+    
+    
         </div>
 
         {/* Filter Modal */}
