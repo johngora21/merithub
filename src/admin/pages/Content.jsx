@@ -1130,15 +1130,17 @@ const Content = () => {
               flexWrap: 'wrap',
               flexShrink: 0
             }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                fontSize: '13px',
-                color: '#64748b'
-              }}>
-                <MapPin size={14} />
-                {item.location}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748b' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <MapPin size={14} />
+                  <span>{item.location}</span>
+                </div>
+                {item.country && (
+                  <>
+                    <span style={{ color: '#e2e8f0' }}>•</span>
+                    <span>{item.country}</span>
+                  </>
+                )}
               </div>
               <span style={{ color: '#e2e8f0' }}>•</span>
               <div style={{

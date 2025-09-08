@@ -168,6 +168,10 @@ const updateOpportunity = async (req, res) => {
     }
 
     const updateData = { ...req.body };
+    // Normalize tags array support from 'tags[]'
+    if (req.body['tags[]']) {
+      updateData.tags = Array.isArray(req.body['tags[]']) ? req.body['tags[]'] : [req.body['tags[]']]
+    }
     if (req.files) {
       if (req.files.organizationLogo && req.files.organizationLogo[0]) {
         updateData.organization_logo = `/uploads/images/${req.files.organizationLogo[0].filename}`;

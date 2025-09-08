@@ -193,8 +193,32 @@ const updateTender = async (req, res) => {
     }
 
     const updateData = { ...req.body };
-    if (req.file) {
-      updateData.organization_logo = `/uploads/images/${req.file.filename}`;
+
+    // Normalize array fields (support both arrays and repeated fields)
+    if (req.body.requirements && Array.isArray(req.body.requirements)) updateData.requirements = req.body.requirements;
+    if (req.body.project_scope && Array.isArray(req.body.project_scope)) updateData.project_scope = req.body.project_scope;
+    if (req.body.technical_requirements && Array.isArray(req.body.technical_requirements)) updateData.technical_requirements = req.body.technical_requirements;
+    if (req.body.submission_process && Array.isArray(req.body.submission_process)) updateData.submission_process = req.body.submission_process;
+    if (req.body.evaluation_criteria && Array.isArray(req.body.evaluation_criteria)) updateData.evaluation_criteria = req.body.evaluation_criteria;
+    if (req.body['tags[]']) {
+      const tags = Array.isArray(req.body['tags[]']) ? req.body['tags[]'] : [req.body['tags[]']]
+      updateData.tags = tags
+    } else if (Array.isArray(req.body.tags)) {
+      updateData.tags = req.body.tags
+    }
+
+    // Handle file uploads (cover + documents) via multer .fields
+    if (req.files && req.files.coverImage && req.files.coverImage[0]) {
+      updateData.cover_image = `/uploads/images/${req.files.coverImage[0].filename}`
+    }
+    if (req.files && req.files.documents && req.files.documents.length > 0) {
+      const docs = req.files.documents.map(file => ({
+        name: file.originalname,
+        url: `/uploads/images/${file.filename}`,
+        size: file.size,
+        type: file.mimetype
+      }))
+      updateData.documents = docs
     }
     await tender.update(updateData);
 

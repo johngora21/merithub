@@ -67,7 +67,13 @@ const Post = ({ onClose, editItem = null }) => {
 
       const ensureArrayTags = (input) => {
         if (!input) return []
-        if (Array.isArray(input)) return input
+        if (Array.isArray(input)) {
+          return input.map(t => {
+            if (typeof t === 'string') return t
+            if (t && typeof t === 'object') return t.name || t.title || t.label || ''
+            return String(t)
+          }).filter(Boolean)
+        }
         return String(input)
           .split(',')
           .map(t => t.trim())
@@ -80,18 +86,39 @@ const Post = ({ onClose, editItem = null }) => {
         return String(input)
       }
 
+      const isTender = ((editItem.type || '').toString().toLowerCase().replace(/s$/, '') === 'tender')
+      const isOpportunity = ((editItem.type || '').toString().toLowerCase().replace(/s$/, '') === 'opportunity')
+
+      const tenderMin = editItem.contract_value_min ?? editItem.min_value ?? null
+      const tenderMax = editItem.contract_value_max ?? editItem.max_value ?? null
+      const oppMin = editItem.amount_min ?? null
+      const oppMax = editItem.amount_max ?? null
+      const derivedSalaryType = isTender
+        ? (tenderMin != null && tenderMax != null && tenderMin !== tenderMax ? 'range' : 'fixed')
+        : isOpportunity
+          ? (oppMin != null && oppMax != null && oppMin !== oppMax ? 'range' : 'fixed')
+          : (editItem.salary_min && editItem.salary_max && editItem.salary_min !== editItem.salary_max ? 'range' : 'fixed')
+
+      const initialMin = isTender ? (tenderMin ?? (editItem.value || ''))
+                        : isOpportunity ? (oppMin ?? '')
+                        : (editItem.salary_min || '')
+      const initialMax = isTender ? (tenderMax ?? '')
+                        : isOpportunity ? (oppMax ?? '')
+                        : (editItem.salary_max || '')
+
       const newFormData = {
         // Use the provided type from editItem; normalize to expected singular lowercase values
         type: (editItem.type || 'job').toString().toLowerCase().replace(/s$/, ''),
         title: editItem.title || '',
         description: editItem.description || '',
         company: editItem.company || editItem.organization || '',
+        organization: editItem.organization || editItem.company || '',
         location: editItem.location || '',
         country: normalizeCountryToCode(editItem.country || ''),
         workType: editItem.work_type || '',
-        salaryType: editItem.salary_min && editItem.salary_max && editItem.salary_min !== editItem.salary_max ? 'range' : 'fixed',
-        salaryMin: editItem.salary_min || '',
-        salaryMax: editItem.salary_max || '',
+        salaryType: derivedSalaryType,
+        salaryMin: initialMin,
+        salaryMax: initialMax,
         jobType: editItem.job_type || '',
         experience: editItem.experience_years || editItem.experience_level || '',
         industry: editItem.industry || '',
@@ -103,21 +130,21 @@ const Post = ({ onClose, editItem = null }) => {
         contactEmail: editItem.contact_email || '',
         price: editItem.price || '',
         currency: editItem.currency || 'USD',
-        tags: ensureArrayTags(editItem.tags),
+        tags: ensureArrayTags(editItem.tags || editItem.benefits || []),
         customTag: '',
-        documents: editItem.documents || [],
+        documents: Array.isArray(editItem.documents) ? editItem.documents : [],
         companyLogo: editItem.company_logo || editItem.logo || null,
-        coverImage: null,
+        coverImage: editItem.cover_image || editItem.coverImage || editItem.poster || null,
         isUrgent: editItem.is_urgent || false,
         // Tender-specific fields
-        value: editItem.value || editItem.amount || '',
-        sector: editItem.sector || '',
+        value: editItem.value || editItem.contract_value_min || editItem.contractValue || editItem.amount || '',
+        sector: (editItem.sector || editItem.industry || ''),
         customSector: editItem.customSector || '',
-        requirements: ensureMultiline(editItem.requirements),
-        projectScope: ensureMultiline(editItem.project_scope),
-        technicalRequirements: ensureMultiline(editItem.technical_requirements),
-        submissionProcess: ensureMultiline(editItem.submission_process),
-        evaluationCriteria: ensureMultiline(editItem.evaluation_criteria),
+        requirements: ensureMultiline(editItem.requirements || editItem.requirements_summary),
+        projectScope: ensureMultiline(editItem.project_scope || editItem.scope),
+        technicalRequirements: ensureMultiline(editItem.technical_requirements || editItem.technicalSpecs),
+        submissionProcess: ensureMultiline(editItem.submission_process || editItem.submission),
+        evaluationCriteria: ensureMultiline(editItem.evaluation_criteria || editItem.criteria),
         // Opportunity-specific fields
         duration: editItem.duration || '',
         category: editItem.category || ''
@@ -295,18 +322,23 @@ const Post = ({ onClose, editItem = null }) => {
         Object.entries(tenderBody).forEach(([k, v]) => {
           if (v !== undefined && v !== null) fd2.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
         })
+        ;(Array.isArray(formData.tags) ? formData.tags : (formData.tags || '').split(',').map(s => s.trim()).filter(Boolean)).forEach(t => fd2.append('tags[]', t))
         ;(formData.requirements ? formData.requirements.split('\n').filter(Boolean) : []).forEach(r => fd2.append('requirements[]', r))
         ;(formData.projectScope ? formData.projectScope.split('\n').filter(Boolean) : []).forEach(s => fd2.append('project_scope[]', s))
         ;(formData.technicalRequirements ? formData.technicalRequirements.split('\n').filter(Boolean) : []).forEach(t => fd2.append('technical_requirements[]', t))
         ;(formData.submissionProcess ? formData.submissionProcess.split('\n').filter(Boolean) : []).forEach(sp => fd2.append('submission_process[]', sp))
         ;(formData.evaluationCriteria ? formData.evaluationCriteria.split('\n').filter(Boolean) : []).forEach(ec => fd2.append('evaluation_criteria[]', ec))
         if (formData.coverImage instanceof File) fd2.append('coverImage', formData.coverImage)
+        if (typeof formData.coverImage === 'string' && formData.coverImage) fd2.append('cover_image', formData.coverImage)
         ;(formData.documents || []).forEach(doc => {
           if (doc instanceof File) fd2.append('documents', doc)
+          else if (typeof doc === 'string') fd2.append('documents[]', doc)
         })
 
-        await fetch('http://localhost:8000/api/tenders', {
-          method: 'POST',
+        const tenderUrl = editItem ? `http://localhost:8000/api/tenders/${editItem.id}` : 'http://localhost:8000/api/tenders'
+        const tenderMethod = editItem ? 'PUT' : 'POST'
+        await fetch(tenderUrl, {
+          method: tenderMethod,
           headers: { 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` },
           body: fd2
         }).then(async r => { if (!r.ok) throw new Error((await r.json()).message || 'Failed to create tender'); return r.json() })
@@ -328,11 +360,15 @@ const Post = ({ onClose, editItem = null }) => {
         Object.entries(oppBody).forEach(([k, v]) => {
           if (v !== undefined && v !== null) fd3.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
         })
+        ;(Array.isArray(formData.tags) ? formData.tags : (formData.tags || '').split(',').map(s => s.trim()).filter(Boolean)).forEach(t => fd3.append('tags[]', t))
         if (formData.organizationLogo instanceof File) fd3.append('organizationLogo', formData.organizationLogo)
         if (formData.coverImage instanceof File) fd3.append('coverImage', formData.coverImage)
+        if (typeof formData.coverImage === 'string' && formData.coverImage) fd3.append('cover_image', formData.coverImage)
 
-        await fetch('http://localhost:8000/api/opportunities', {
-          method: 'POST',
+        const oppUrl = editItem ? `http://localhost:8000/api/opportunities/${editItem.id}` : 'http://localhost:8000/api/opportunities'
+        const oppMethod = editItem ? 'PUT' : 'POST'
+        await fetch(oppUrl, {
+          method: oppMethod,
           headers: { 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` },
           body: fd3
         }).then(async r => { if (!r.ok) throw new Error((await r.json()).message || 'Failed to create opportunity'); return r.json() })
