@@ -542,6 +542,9 @@ const getAllContent = async (req, res) => {
           country: getCountryName(item.country) || 'Unknown',
           sector: item.sector || 'Unknown',
           category: item.category || 'Unknown',
+          contract_value_min: item.contract_value_min || null,
+          contract_value_max: item.contract_value_max || null,
+          currency: item.currency || 'USD',
           contractValue: (() => {
             const min = item.contract_value_min;
             const max = item.contract_value_max;

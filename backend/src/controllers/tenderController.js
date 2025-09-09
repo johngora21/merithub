@@ -313,11 +313,13 @@ const updateTender = async (req, res) => {
     } else if (req.body['evaluation_criteria[]'] && Array.isArray(req.body['evaluation_criteria[]'])) {
       updateData.evaluation_criteria = req.body['evaluation_criteria[]'];
     }
-    if (req.body['tags[]']) {
-      const tags = Array.isArray(req.body['tags[]']) ? req.body['tags[]'] : [req.body['tags[]']]
-      updateData.tags = tags
-    } else if (Array.isArray(req.body.tags)) {
-      updateData.tags = req.body.tags
+    // Handle tags field
+    if (req.body.tags && Array.isArray(req.body.tags)) {
+      updateData.tags = req.body.tags;
+    } else if (req.body['tags[]'] && Array.isArray(req.body['tags[]'])) {
+      updateData.tags = req.body['tags[]'];
+    } else {
+      updateData.tags = [];
     }
 
     // Handle file uploads (cover + documents) via multer .fields

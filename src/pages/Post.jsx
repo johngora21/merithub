@@ -92,6 +92,11 @@ const Post = ({ onClose, editItem = null }) => {
 
       const tenderMin = editItem.contract_value_min ?? editItem.min_value ?? null
       const tenderMax = editItem.contract_value_max ?? editItem.max_value ?? null
+      
+      // Debug logging
+      console.log('Edit item for tender:', editItem);
+      console.log('Tender min:', tenderMin, 'Tender max:', tenderMax);
+      console.log('Sector:', editItem.sector);
       const oppMin = editItem.amount_min ?? null
       const oppMax = editItem.amount_max ?? null
       const derivedSalaryType = isTender
@@ -106,12 +111,15 @@ const Post = ({ onClose, editItem = null }) => {
       const initialMax = isTender ? (tenderMax ?? '')
                         : isOpportunity ? (oppMax ?? '')
                         : (editItem.salary_max || '')
+      
+      console.log('Derived salary type:', derivedSalaryType);
+      console.log('Initial min:', initialMin, 'Initial max:', initialMax);
 
       const newFormData = {
         // Use the provided type from editItem; normalize to expected singular lowercase values
         type: (editItem.type || 'job').toString().toLowerCase().replace(/s$/, ''),
         title: editItem.title || '',
-        description: editItem.description || '',
+        description: editItem.description || editItem.tender_description || '',
         company: editItem.company || editItem.organization || '',
         organization: editItem.organization || editItem.company || '',
         location: editItem.location || '',
@@ -122,11 +130,12 @@ const Post = ({ onClose, editItem = null }) => {
         salaryMax: initialMax,
         jobType: editItem.job_type || '',
         experience: editItem.experience_years || editItem.experience_level || '',
+        duration: editItem.duration || '',
         industry: editItem.industry || '',
         customIndustry: editItem.customIndustry || '',
         skills: Array.isArray(editItem.skills) ? editItem.skills.join(', ') : (editItem.skills || ''),
         benefits: Array.isArray(editItem.benefits) ? editItem.benefits.join(', ') : (editItem.benefits || ''),
-        deadline: editItem.application_deadline || editItem.deadline || '',
+        deadline: editItem.application_deadline || editItem.deadline || editItem.submission_deadline || '',
         applicationUrl: editItem.external_url || editItem.application_url || '',
         contactEmail: editItem.contact_email || '',
         price: editItem.price || '',
@@ -139,13 +148,14 @@ const Post = ({ onClose, editItem = null }) => {
         isUrgent: editItem.is_urgent || false,
         // Tender-specific fields
         value: editItem.value || editItem.contract_value_min || editItem.contractValue || editItem.amount || '',
-        sector: (editItem.sector || editItem.industry || ''),
+        sector: (editItem.sector || editItem.industry || '').toLowerCase(),
         customSector: editItem.customSector || '',
         requirements: ensureMultiline(editItem.requirements || editItem.requirements_summary),
         projectScope: ensureMultiline(editItem.project_scope || editItem.scope),
         technicalRequirements: ensureMultiline(editItem.technical_requirements || editItem.technicalSpecs),
         submissionProcess: ensureMultiline(editItem.submission_process || editItem.submission),
         evaluationCriteria: ensureMultiline(editItem.evaluation_criteria || editItem.criteria),
+        contactPhone: editItem.contact_phone || '',
         // Opportunity-specific fields
         duration: editItem.duration || '',
         category: editItem.category || ''
@@ -1384,8 +1394,8 @@ const Post = ({ onClose, editItem = null }) => {
                     Duration (Project Timeline)
                   </label>
                   <select
-                    value={formData.experience}
-                    onChange={(e) => handleInputChange('experience', e.target.value)}
+                    value={formData.duration}
+                    onChange={(e) => handleInputChange('duration', e.target.value)}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -1869,9 +1879,9 @@ const Post = ({ onClose, editItem = null }) => {
                       Add
                     </button>
                   </div>
-                  {formData.tags && formData.tags.length > 0 && (
+                  {formData.tags && (Array.isArray(formData.tags) ? formData.tags.length > 0 : formData.tags.trim()) && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {formData.tags.map((tag, index) => (
+                      {(Array.isArray(formData.tags) ? formData.tags : formData.tags.split(',')).filter(t => t.trim()).map((tag, index) => (
                         <span
                           key={index}
                           style={{
@@ -2461,7 +2471,7 @@ const Post = ({ onClose, editItem = null }) => {
                 {formData.coverImage && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                     <img src={formData.coverImage instanceof File ? URL.createObjectURL(formData.coverImage) : (formData.coverImage || '')} alt="cover image" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
-                    <div style={{ fontSize: '12px', color: '#374151' }}>{formData.coverImage.name}</div>
+                    <div style={{ fontSize: '12px', color: '#374151' }}>{formData.coverImage instanceof File ? formData.coverImage.name : 'Cover Image'}</div>
                   </div>
                 )}
               </div>
@@ -2566,7 +2576,7 @@ const Post = ({ onClose, editItem = null }) => {
                 {formData.coverImage && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                     <img src={formData.coverImage instanceof File ? URL.createObjectURL(formData.coverImage) : (formData.coverImage || '')} alt="cover image" style={{ width: '60px', height: '40px', objectFit: 'cover', borderRadius: '6px' }} />
-                    <div style={{ fontSize: '12px', color: '#374151' }}>{formData.coverImage.name}</div>
+                    <div style={{ fontSize: '12px', color: '#374151' }}>{formData.coverImage instanceof File ? formData.coverImage.name : 'Cover Image'}</div>
                   </div>
                 )}
               </div>

@@ -103,8 +103,7 @@ const Applications = () => {
       approvalStatus: j.approval_status || 'pending',
       externalUrl: j.external_url || '',
       workType: toTitleCase(j.work_type) || (j.isRemote ? 'Remote' : 'Not specified'),
-      status: j.status || 'Active',
-      type: 'Job'
+      status: j.status || 'Active'
     }
   }
 
@@ -243,8 +242,7 @@ const Applications = () => {
       contactEmail: o.contactEmail,
       contactPhone: o.contactPhone,
       externalUrl: o.external_url || '',
-    status: o.status || 'Active',
-    type: 'Opportunity'
+    status: o.status || 'Active'
     }
   }
 
