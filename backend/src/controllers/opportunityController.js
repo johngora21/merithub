@@ -114,6 +114,37 @@ const createOpportunity = async (req, res) => {
       approval_status: 'pending'
     };
 
+    // Handle array fields from form data
+    console.log('🔍 Opportunity creation - req.body.tags:', req.body.tags);
+    console.log('🔍 Opportunity creation - req.body["tags[]"]:', req.body['tags[]']);
+    
+    if (req.body.tags && Array.isArray(req.body.tags)) {
+      opportunityData.tags = req.body.tags;
+      console.log('✅ Using req.body.tags as array:', opportunityData.tags);
+    } else if (req.body['tags[]'] && Array.isArray(req.body['tags[]'])) {
+      opportunityData.tags = req.body['tags[]'];
+      console.log('✅ Using req.body["tags[]"] as array:', opportunityData.tags);
+    } else {
+      opportunityData.tags = [];
+      console.log('⚠️ No tags found, setting to empty array');
+    }
+    
+    if (req.body.benefits && Array.isArray(req.body.benefits)) {
+      opportunityData.benefits = req.body.benefits;
+    } else if (req.body['benefits[]'] && Array.isArray(req.body['benefits[]'])) {
+      opportunityData.benefits = req.body['benefits[]'];
+    } else {
+      opportunityData.benefits = [];
+    }
+    
+    if (req.body.requirements && Array.isArray(req.body.requirements)) {
+      opportunityData.requirements = req.body.requirements;
+    } else if (req.body['requirements[]'] && Array.isArray(req.body['requirements[]'])) {
+      opportunityData.requirements = req.body['requirements[]'];
+    } else {
+      opportunityData.requirements = [];
+    }
+
     // Handle uploaded files
     if (req.files) {
       if (req.files.organizationLogo && req.files.organizationLogo[0]) {

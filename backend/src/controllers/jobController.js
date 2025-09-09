@@ -114,6 +114,13 @@ const getJobById = async (req, res) => {
 
 const createJob = async (req, res) => {
   try {
+    // Debug: Log what's being received
+    console.log('Job creation request body:', req.body);
+    console.log('Contact fields:', {
+      contact_email: req.body.contact_email,
+      contact_phone: req.body.contact_phone
+    });
+    
     const jobData = {
       ...req.body,
       created_by: req.user.id,
@@ -121,22 +128,57 @@ const createJob = async (req, res) => {
     };
 
     // Handle array fields from form data
+    console.log('🔍 Job creation - req.body.tags:', req.body.tags);
+    console.log('🔍 Job creation - req.body["tags[]"]:', req.body['tags[]']);
+    
     if (req.body.tags && Array.isArray(req.body.tags)) {
       jobData.tags = req.body.tags;
+      console.log('✅ Using req.body.tags as array:', jobData.tags);
+    } else if (req.body['tags[]'] && Array.isArray(req.body['tags[]'])) {
+      jobData.tags = req.body['tags[]'];
+      console.log('✅ Using req.body["tags[]"] as array:', jobData.tags);
+    } else {
+      jobData.tags = [];
+      console.log('⚠️ No tags found, setting to empty array');
     }
+    
     if (req.body.skills && Array.isArray(req.body.skills)) {
       jobData.skills = req.body.skills;
+    } else if (req.body['skills[]'] && Array.isArray(req.body['skills[]'])) {
+      jobData.skills = req.body['skills[]'];
+    } else {
+      jobData.skills = [];
     }
+    
     if (req.body.benefits && Array.isArray(req.body.benefits)) {
       jobData.benefits = req.body.benefits;
+    } else if (req.body['benefits[]'] && Array.isArray(req.body['benefits[]'])) {
+      jobData.benefits = req.body['benefits[]'];
+    } else {
+      jobData.benefits = [];
     }
 
     // If a logo file was uploaded, save its served URL path
     if (req.file) {
       jobData.company_logo = `/uploads/images/${req.file.filename}`;
     }
+    
+    console.log('Job data before creation:', {
+      contact_email: jobData.contact_email,
+      contact_phone: jobData.contact_phone,
+      title: jobData.title,
+      company: jobData.company
+    });
 
     const job = await Job.create(jobData);
+    
+    console.log('Job created successfully:', {
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      contact_email: job.contact_email,
+      contact_phone: job.contact_phone
+    });
 
     res.status(201).json({
       success: true,
@@ -191,15 +233,41 @@ const updateJob = async (req, res) => {
 
     const updateData = { ...req.body };
     
+    console.log(`[UPDATE JOB] Initial updateData:`, updateData);
+    console.log(`[UPDATE JOB] Contact fields in updateData:`, {
+      contact_email: updateData.contact_email,
+      contact_phone: updateData.contact_phone
+    });
+    
     // Handle array fields from form data
+    console.log('🔍 Job update - req.body.tags:', req.body.tags);
+    console.log('🔍 Job update - req.body["tags[]"]:', req.body['tags[]']);
+    
     if (req.body.tags && Array.isArray(req.body.tags)) {
       updateData.tags = req.body.tags;
+      console.log('✅ Using req.body.tags as array:', updateData.tags);
+    } else if (req.body['tags[]'] && Array.isArray(req.body['tags[]'])) {
+      updateData.tags = req.body['tags[]'];
+      console.log('✅ Using req.body["tags[]"] as array:', updateData.tags);
+    } else {
+      updateData.tags = [];
+      console.log('⚠️ No tags found, setting to empty array');
     }
+    
     if (req.body.skills && Array.isArray(req.body.skills)) {
       updateData.skills = req.body.skills;
+    } else if (req.body['skills[]'] && Array.isArray(req.body['skills[]'])) {
+      updateData.skills = req.body['skills[]'];
+    } else {
+      updateData.skills = [];
     }
+    
     if (req.body.benefits && Array.isArray(req.body.benefits)) {
       updateData.benefits = req.body.benefits;
+    } else if (req.body['benefits[]'] && Array.isArray(req.body['benefits[]'])) {
+      updateData.benefits = req.body['benefits[]'];
+    } else {
+      updateData.benefits = [];
     }
     
     if (req.file) {

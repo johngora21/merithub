@@ -503,6 +503,12 @@ const getAllContent = async (req, res) => {
 
       // Add type-specific fields
       if (type === 'jobs') {
+        // Debug logging for contact fields
+        console.log(`[ADMIN CONTENT] Job ${item.id} contact fields:`, {
+          contact_email: item.contact_email,
+          contact_phone: item.contact_phone
+        });
+        
         return {
           ...baseItem,
           company: item.company || 'Unknown Company',
@@ -517,6 +523,8 @@ const getAllContent = async (req, res) => {
           benefits: Array.isArray(item.benefits) ? item.benefits : (item.benefits ? [item.benefits] : []),
           tags: Array.isArray(item.tags) ? item.tags : (item.tags ? [item.tags] : []),
           external_url: item.external_url || '',
+          contact_email: item.contact_email || '',
+          contact_phone: item.contact_phone || '',
           logo: resolveAssetUrl(item.company_logo) || 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
           urgentHiring: item.is_urgent || false,
           isRemote: item.work_type === 'remote',
@@ -534,6 +542,48 @@ const getAllContent = async (req, res) => {
           application_deadline: item.application_deadline,
         price: item.price || 'Free'
         };
+        
+        // Debug the final job data
+        const finalJobData = {
+          ...baseItem,
+          company: item.company || 'Unknown Company',
+          location: item.location || 'Unknown Location',
+          country: item.country || '',
+          type: item.job_type || 'Full-time',
+          experience: item.experience_years ? `${item.experience_years} years` : (item.experience_level ? item.experience_level.charAt(0).toUpperCase() + item.experience_level.slice(1) + ' level' : 'Not specified'),
+          salary: item.salary_min && item.salary_max ? 
+                  `${item.currency} ${item.salary_min} - ${item.currency} ${item.salary_max}` : 
+                  'Salary not specified',
+          industry: item.industry || 'Unknown',
+          benefits: Array.isArray(item.benefits) ? item.benefits : (item.benefits ? [item.benefits] : []),
+          tags: Array.isArray(item.tags) ? item.tags : (item.tags ? [item.tags] : []),
+          external_url: item.external_url || '',
+          contact_email: item.contact_email || '',
+          contact_phone: item.contact_phone || '',
+          logo: resolveAssetUrl(item.company_logo) || 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=80&h=80&fit=crop',
+          urgentHiring: item.is_urgent || false,
+          isRemote: item.work_type === 'remote',
+          description: item.description || '',
+          skills: Array.isArray(item.skills) ? item.skills : (item.skills ? item.skills.split(',').map(s => s.trim()).filter(Boolean) : []),
+                  salary_min: item.salary_min,
+        salary_max: item.salary_max,
+        currency: item.currency || 'USD',
+        job_type: item.job_type,
+        experience_level: item.experience_level,
+        experience_years: item.experience_years,
+        work_type: item.work_type,
+        is_urgent: item.is_urgent,
+        company_logo: item.company_logo,
+          application_deadline: item.application_deadline,
+        price: item.price || 'Free'
+        };
+        
+        console.log(`[ADMIN CONTENT] Final job data for ${item.id}:`, {
+          contact_email: finalJobData.contact_email,
+          contact_phone: finalJobData.contact_phone
+        });
+        
+        return finalJobData;
       } else if (type === 'tenders') {
         return {
           ...baseItem,
@@ -1206,6 +1256,7 @@ const getApplicationsOverview = async (req, res) => {
         benefits: j.benefits || [],
         external_url: j.external_url,
         contact_email: j.contact_email,
+        contact_phone: j.contact_phone,
         logo: resolveAssetUrl(j.company_logo),
         urgentHiring: !!j.is_urgent,
         isRemote: j.work_type === 'remote',

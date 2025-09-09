@@ -95,6 +95,10 @@ const Job = sequelize.define('Job', {
     type: DataTypes.STRING(255),
     allowNull: true
   },
+  contact_phone: {
+    type: DataTypes.STRING(20),
+    allowNull: true
+  },
   is_urgent: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
