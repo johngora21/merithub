@@ -50,9 +50,52 @@ const Content = () => {
   }
 
   const [activeTab, setActiveTab] = useState('jobs')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [countryFilter, setCountryFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  
+  // Separate filter states for each content type
+  const [jobsFilters, setJobsFilters] = useState({
+    searchTerm: '',
+    countryFilter: '',
+    statusFilter: 'all'
+  })
+  
+  const [tendersFilters, setTendersFilters] = useState({
+    searchTerm: '',
+    countryFilter: '',
+    statusFilter: 'all'
+  })
+  
+  const [opportunitiesFilters, setOpportunitiesFilters] = useState({
+    searchTerm: '',
+    countryFilter: '',
+    statusFilter: 'all'
+  })
+  
+  const [coursesFilters, setCoursesFilters] = useState({
+    searchTerm: '',
+    countryFilter: '',
+    statusFilter: 'all'
+  })
+  
+  // Helper functions to get current filters based on active tab
+  const getCurrentFilters = () => {
+    switch (activeTab) {
+      case 'jobs': return jobsFilters
+      case 'tenders': return tendersFilters
+      case 'opportunities': return opportunitiesFilters
+      case 'courses': return coursesFilters
+      default: return jobsFilters
+    }
+  }
+  
+  const setCurrentFilters = (newFilters) => {
+    switch (activeTab) {
+      case 'jobs': setJobsFilters(newFilters); break
+      case 'tenders': setTendersFilters(newFilters); break
+      case 'opportunities': setOpportunitiesFilters(newFilters); break
+      case 'courses': setCoursesFilters(newFilters); break
+    }
+  }
+  
   const [selectedItems, setSelectedItems] = useState([])
   const [showPostPage, setShowPostPage] = useState(false)
   const [showCourseForm, setShowCourseForm] = useState(false)
@@ -2120,8 +2163,8 @@ const Content = () => {
             <input
               type="text"
               placeholder={`Search ${type}...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={getCurrentFilters().searchTerm}
+              onChange={(e) => setCurrentFilters({...getCurrentFilters(), searchTerm: e.target.value})}
               style={{
                 width: '100%',
                 paddingLeft: '40px',
@@ -2137,8 +2180,8 @@ const Content = () => {
           {/* Country Filter */}
           <div>
             <select
-              value={countryFilter}
-              onChange={(e) => setCountryFilter(e.target.value)}
+              value={getCurrentFilters().countryFilter}
+              onChange={(e) => setCurrentFilters({...getCurrentFilters(), countryFilter: e.target.value})}
               style={{
                 padding: '8px 12px',
                 border: '1px solid #d1d5db',
@@ -2157,8 +2200,8 @@ const Content = () => {
           {/* Status Filter */}
           <div>
             <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              value={getCurrentFilters().statusFilter}
+              onChange={(e) => setCurrentFilters({...getCurrentFilters(), statusFilter: e.target.value})}
               style={{
                 padding: '8px 12px',
                 border: '1px solid #d1d5db',
@@ -2224,15 +2267,16 @@ const Content = () => {
   )
 
   const applyFilters = (items) => {
+    const filters = getCurrentFilters()
     let out = items
-    if (countryFilter) {
+    if (filters.countryFilter) {
       out = out.filter(i => {
         const itemCode = getCountryCode(i.country || '')
-        return (itemCode || '').toString().toLowerCase() === countryFilter.toLowerCase()
+        return (itemCode || '').toString().toLowerCase() === filters.countryFilter.toLowerCase()
       })
     }
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase()
+    if (filters.searchTerm) {
+      const q = filters.searchTerm.toLowerCase()
       out = out.filter(i => (
         (i.title || '').toLowerCase().includes(q) ||
         (i.company || i.organization || '').toLowerCase().includes(q) ||
@@ -2248,7 +2292,7 @@ const Content = () => {
         return (
           <ContentTable
             type="jobs"
-            data={applyFilters(filterDataByStatus(jobsData, statusFilter))}
+            data={applyFilters(filterDataByStatus(jobsData, getCurrentFilters().statusFilter))}
             columns={[
               { key: 'title', label: 'Job Title' },
               { key: 'company', label: 'Company' },
@@ -2286,7 +2330,7 @@ const Content = () => {
         return (
           <ContentTable
             type="tenders"
-            data={applyFilters(filterDataByStatus(tendersData, statusFilter))}
+            data={applyFilters(filterDataByStatus(tendersData, getCurrentFilters().statusFilter))}
             columns={[
               { key: 'title', label: 'Tender Title' },
               { key: 'organization', label: 'Organization' },
@@ -2324,7 +2368,7 @@ const Content = () => {
         return (
           <ContentTable
             type="opportunities"
-            data={applyFilters(filterDataByStatus(opportunitiesData, statusFilter))}
+            data={applyFilters(filterDataByStatus(opportunitiesData, getCurrentFilters().statusFilter))}
             columns={[
               { key: 'title', label: 'Opportunity Title' },
               { key: 'type', label: 'Type' },
@@ -2362,7 +2406,7 @@ const Content = () => {
         return (
           <ContentTable
             type="courses"
-            data={coursesData}
+            data={applyFilters(filterDataByStatus(coursesData, getCurrentFilters().statusFilter))}
             columns={[
               { key: 'title', label: 'Course Title' },
               { key: 'category', label: 'Category' },
@@ -3768,8 +3812,8 @@ const Content = () => {
           {/* Country Filter */}
           <div>
             <select
-              value={countryFilter}
-              onChange={(e) => setCountryFilter(e.target.value)}
+              value={getCurrentFilters().countryFilter}
+              onChange={(e) => setCurrentFilters({...getCurrentFilters(), countryFilter: e.target.value})}
               style={{
                 padding: '8px 12px',
                 border: '1px solid #d1d5db',
@@ -3788,8 +3832,8 @@ const Content = () => {
           {/* Status Filter */}
           <div>
             <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              value={getCurrentFilters().statusFilter}
+              onChange={(e) => setCurrentFilters({...getCurrentFilters(), statusFilter: e.target.value})}
               style={{
                 padding: '8px 12px',
                 border: '1px solid #d1d5db',
