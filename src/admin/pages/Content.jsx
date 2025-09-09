@@ -54,26 +54,30 @@ const Content = () => {
   // Separate filter states for each content type
   const [jobsFilters, setJobsFilters] = useState({
     searchTerm: '',
-    countryFilter: '',
-    statusFilter: 'all'
+    typeFilter: 'all',
+    statusFilter: 'all',
+    dateFilter: ''
   })
   
   const [tendersFilters, setTendersFilters] = useState({
     searchTerm: '',
-    countryFilter: '',
-    statusFilter: 'all'
+    typeFilter: 'all',
+    statusFilter: 'all',
+    dateFilter: ''
   })
   
   const [opportunitiesFilters, setOpportunitiesFilters] = useState({
     searchTerm: '',
-    countryFilter: '',
-    statusFilter: 'all'
+    typeFilter: 'all',
+    statusFilter: 'all',
+    dateFilter: ''
   })
   
   const [coursesFilters, setCoursesFilters] = useState({
     searchTerm: '',
-    countryFilter: '',
-    statusFilter: 'all'
+    typeFilter: 'all',
+    statusFilter: 'all',
+    dateFilter: ''
   })
   
   // Helper functions to get current filters based on active tab
@@ -211,11 +215,76 @@ const Content = () => {
         console.log('Applications type:', typeof applications)
         console.log('Applications success:', applications?.success)
         console.log('Applications message:', applications?.message)
-        // Skip applications processing since we're on the content page, not applications page
+        
+        // Process applications data to get applicants
         const applicantsMap = new Map()
         const applicantsArr = []
         
+        // Process applications data if available
+        console.log('Raw applications data:', applications)
+        
+        if (applications && applications.applications && Array.isArray(applications.applications)) {
+          applications.applications.forEach(app => {
+            console.log('Processing application:', app)
+            const applicantId = app.user_id || app.applicant_id || app.user?.id
+            if (applicantId) {
+              if (!applicantsMap.has(applicantId)) {
+                applicantsMap.set(applicantId, {
+                  id: applicantId,
+                  name: app.user?.name || app.applicant?.name || app.user?.full_name || app.name || 'Unknown',
+                  email: app.user?.email || app.applicant?.email || app.email || 'Unknown',
+                  applications: []
+                })
+              }
+              
+              const applicant = applicantsMap.get(applicantId)
+              applicant.applications.push({
+                id: app.id,
+                content_id: app.content_id || app.job_id || app.tender_id || app.opportunity_id || app.course_id,
+                content_type: app.content_type || app.type || app.application_type,
+                status: app.status || 'pending',
+                applied_at: app.applied_at || app.created_at,
+                created_at: app.created_at
+              })
+            }
+          })
+          
+          // Convert map to array
+          applicantsArr.push(...Array.from(applicantsMap.values()))
+        } else if (applications && Array.isArray(applications)) {
+          // Handle case where applications is directly an array
+          applications.forEach(app => {
+            console.log('Processing direct application:', app)
+            const applicantId = app.user_id || app.applicant_id || app.user?.id
+            if (applicantId) {
+              if (!applicantsMap.has(applicantId)) {
+                applicantsMap.set(applicantId, {
+                  id: applicantId,
+                  name: app.user?.name || app.applicant?.name || app.user?.full_name || app.name || 'Unknown',
+                  email: app.user?.email || app.applicant?.email || app.email || 'Unknown',
+                  applications: []
+                })
+              }
+              
+              const applicant = applicantsMap.get(applicantId)
+              applicant.applications.push({
+                id: app.id,
+                content_id: app.content_id || app.job_id || app.tender_id || app.opportunity_id || app.course_id,
+                content_type: app.content_type || app.type || app.application_type,
+                status: app.status || 'pending',
+                applied_at: app.applied_at || app.created_at,
+                created_at: app.created_at
+              })
+            }
+          })
+          
+          // Convert map to array
+          applicantsArr.push(...Array.from(applicantsMap.values()))
+        }
+        
         console.log('Raw data arrays:', { jobsArr, tendersArr, oppArr, coursesArr, applicantsArr })
+        console.log('📊 Applicants data loaded:', applicantsArr.length, 'applicants')
+        console.log('Sample applicant:', applicantsArr[0])
 
         // Set real data into state used by the UI
         console.log('📊 Setting jobs data:', jobsArr.length, 'jobs')
@@ -1204,11 +1273,14 @@ const Content = () => {
                 alignItems: 'center',
                 gap: '4px',
                 fontSize: '13px',
-                color: isDeadlineUrgent ? '#dc2626' : '#64748b',
-                fontWeight: isDeadlineUrgent ? '600' : '500'
+                color: '#64748b',
+                fontWeight: '500'
               }}>
                 <Calendar size={12} />
+                <span>Deadline:</span>
+                <span style={{ color: isDeadlineUrgent ? '#dc2626' : '#64748b', fontWeight: isDeadlineUrgent ? '600' : '500' }}>
                 {item.deadline ? new Date(item.deadline).toLocaleDateString() : 'No deadline'}
+                </span>
               </div>
             </div>
 
@@ -1572,12 +1644,15 @@ const Content = () => {
               alignItems: 'center',
               gap: '4px',
               fontSize: '13px',
-              color: '#dc2626',
+              color: '#64748b',
               marginBottom: '12px',
-              fontWeight: '600'
+              fontWeight: '500'
             }}>
               <Calendar size={12} />
-              Deadline: {new Date(item.deadline).toLocaleDateString()}
+              <span>Deadline:</span>
+              <span style={{ color: '#dc2626', fontWeight: '600' }}>
+                {new Date(item.deadline).toLocaleDateString()}
+              </span>
             </div>
 
             {/* Tags - More prominent display */}
@@ -1901,9 +1976,10 @@ const Content = () => {
             <Briefcase size={12} />
             <span>{item.type}</span>
           </div>
-          <div style={{ gridColumn: '1 / span 2', display: 'flex', alignItems: 'center', gap: '6px', color: '#dc2626', fontWeight: 600 }}>
+          <div style={{ gridColumn: '1 / span 2', display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontWeight: 500 }}>
             <Calendar size={12} />
-            <span>{new Date(item.deadline).toLocaleDateString()}</span>
+            <span>Deadline:</span>
+            <span style={{ color: '#dc2626', fontWeight: 600 }}>{new Date(item.deadline).toLocaleDateString()}</span>
           </div>
         </div>
 
@@ -2236,22 +2312,68 @@ const Content = () => {
 
   const applyFilters = (items) => {
     const filters = getCurrentFilters()
+    console.log('Applying filters:', filters)
+    console.log('Items before filtering:', items.length)
     let out = items
-    if (filters.countryFilter) {
-      out = out.filter(i => {
-        const itemCode = getCountryCode(i.country || '')
-        return (itemCode || '').toString().toLowerCase() === filters.countryFilter.toLowerCase()
-      })
+    
+    // Content type filter
+    if (filters.typeFilter && filters.typeFilter !== 'all') {
+      const beforeCount = out.length
+      out = out.filter(i => i.type === filters.typeFilter)
+      console.log(`Type filter (${filters.typeFilter}): ${beforeCount} -> ${out.length}`)
     }
+    
+    // Search filter
     if (filters.searchTerm) {
+      const beforeCount = out.length
       const q = filters.searchTerm.toLowerCase()
       out = out.filter(i => (
         (i.title || '').toLowerCase().includes(q) ||
         (i.company || i.organization || '').toLowerCase().includes(q) ||
         (i.location || '').toLowerCase().includes(q)
       ))
+      console.log(`Search filter ("${filters.searchTerm}"): ${beforeCount} -> ${out.length}`)
     }
+    
+    // Status filter
+    if (filters.statusFilter && filters.statusFilter !== 'all') {
+      const beforeCount = out.length
+      out = out.filter(i => {
+        const status = i.approval_status || i.status || 'pending'
+        return status.toLowerCase() === filters.statusFilter.toLowerCase()
+      })
+      console.log(`Status filter (${filters.statusFilter}): ${beforeCount} -> ${out.length}`)
+    }
+    
+    // Date filter
+    if (filters.dateFilter) {
+      const beforeCount = out.length
+      const selectedDate = new Date(filters.dateFilter)
+      if (!isNaN(selectedDate.getTime())) {
+        out = out.filter(i => {
+          const itemDate = new Date(i.postedTime || i.created_at || i.createdAt || i.posted_at)
+          if (isNaN(itemDate.getTime())) return false
+          
+          // Compare dates (ignore time)
+          const itemDateOnly = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate())
+          const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate())
+          
+          return itemDateOnly.getTime() === selectedDateOnly.getTime()
+        })
+        console.log(`Date filter (${filters.dateFilter}): ${beforeCount} -> ${out.length}`)
+      }
+    }
+    
+    console.log('Final filtered count:', out.length)
     return out
+  }
+
+  // Helper function to get applicants for a specific content item
+  const getApplicantsForContent = (contentId, contentType) => {
+    // The backend already provides applicant count in the content data
+    // We don't need to process applicantsData separately
+    console.log('Getting applicants for content:', contentId, contentType)
+    return []
   }
 
   const getTabContent = () => {
@@ -2409,126 +2531,272 @@ const Content = () => {
           />
         )
 
-      case 'applicants':
+      case 'content':
+        // Combine all content types for the table
+        const allContent = [
+          ...jobsData.map(item => ({ 
+            ...item, 
+            type: 'Job', 
+            applicantCount: item.applicants || 0
+          })),
+          ...tendersData.map(item => ({ 
+            ...item, 
+            type: 'Tender', 
+            applicantCount: item.applicants || 0
+          })),
+          ...opportunitiesData.map(item => ({ 
+            ...item, 
+            type: 'Opportunity', 
+            applicantCount: item.applicants || 0
+          })),
+          ...coursesData.map(item => ({ 
+            ...item, 
+            type: 'Course', 
+            applicantCount: item.applicants || 0
+          }))
+        ]
+
+        const filteredContent = applyFilters(allContent)
+        
         return (
           <div style={{ padding: '20px' }}>
-            <div style={{ marginBottom: '20px', fontSize: '16px', fontWeight: '600' }}>
-              Applicants ({applicantsData.length})
+            <div style={{ marginBottom: '20px', fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>
+              All Content ({filteredContent.length})
             </div>
-            {applicantsData.length === 0 ? (
+            
+            {/* Filters */}
               <div style={{ 
-                textAlign: 'center', 
-                padding: '40px', 
-                color: '#64748b',
-                fontSize: '16px'
-              }}>
-                No applicants found
-              </div>
-            ) : (
-              <div style={{ 
-                display: 'grid', 
-                gap: '20px',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))'
-              }}>
-                {applicantsData.map(applicant => (
-                <div key={applicant.id} style={{
-                  border: '1px solid #e5e7eb',
+              backgroundColor: 'white',
                   borderRadius: '12px',
                   padding: '20px',
-                  backgroundColor: 'white',
+              marginBottom: '20px',
                   boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
                 }}>
-                  {/* Applicant Header */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                    <img 
-                      src={applicant.profileImage || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=60&h=60&fit=crop'} 
-                      alt={applicant.name}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                flexWrap: 'wrap'
+              }}>
+                {/* Search Bar */}
+                <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+                  <Search style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#9ca3af',
+                    width: '16px',
+                    height: '16px'
+                  }} />
+                  <input
+                    type="text"
+                    placeholder="Search content..."
+                    value={getCurrentFilters().searchTerm}
+                    onChange={(e) => {
+                      console.log('Search filter changed:', e.target.value)
+                      setCurrentFilters({...getCurrentFilters(), searchTerm: e.target.value})
+                    }}
                       style={{
-                        width: '50px',
-                        height: '50px',
-                        borderRadius: '50%',
-                        objectFit: 'cover'
-                      }}
-                    />
+                      width: '100%',
+                      paddingLeft: '40px',
+                      paddingRight: '16px',
+                      paddingTop: '8px',
+                      paddingBottom: '8px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                {/* Content Type Filter */}
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#111827' }}>
-                        {applicant.name}
-                      </h3>
-                      <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
-                        {applicant.email}
-                      </p>
+                  <select
+                    value={getCurrentFilters().typeFilter}
+                    onChange={(e) => {
+                      console.log('Type filter changed:', e.target.value)
+                      setCurrentFilters({...getCurrentFilters(), typeFilter: e.target.value})
+                    }}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      minWidth: '180px',
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <option value="all">All Types</option>
+                    <option value="Job">Jobs</option>
+                    <option value="Tender">Tenders</option>
+                    <option value="Opportunity">Opportunities</option>
+                    <option value="Course">Courses</option>
+                  </select>
                     </div>
+
+                {/* Status Filter */}
+                <div>
+                  <select
+                    value={getCurrentFilters().statusFilter}
+                    onChange={(e) => {
+                      console.log('Status filter changed:', e.target.value)
+                      setCurrentFilters({...getCurrentFilters(), statusFilter: e.target.value})
+                    }}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="approved">Approved</option>
+                    <option value="pending">Pending</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
                   </div>
 
-                  {/* Applications List */}
+                {/* Posted Date Filter */}
                   <div>
-                    <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '600', color: '#374151' }}>
-                      Applications ({applicant.applications.length})
-                    </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {applicant.applications.map((app, index) => (
-                        <div key={app.id} style={{
-                          padding: '12px',
-                          backgroundColor: '#f9fafb',
+                  <input
+                    type="date"
+                    value={getCurrentFilters().dateFilter}
+                    onChange={(e) => {
+                      console.log('Date filter changed:', e.target.value)
+                      setCurrentFilters({...getCurrentFilters(), dateFilter: e.target.value})
+                    }}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
                           borderRadius: '8px',
-                          border: '1px solid #e5e7eb'
-                        }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-                            <div>
-                              <p style={{ margin: 0, fontSize: '14px', fontWeight: '500', color: '#111827' }}>
-                                {app.job?.title || app.tender?.title || app.opportunity?.title || 'Unknown Position'}
-                              </p>
-                              <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>
-                                {app.job?.company || app.tender?.organization || app.opportunity?.organization || 'Unknown Organization'}
-                              </p>
+                      fontSize: '14px',
+                      backgroundColor: 'white',
+                      minWidth: '150px'
+                    }}
+                  />
+                </div>
+
+              </div>
+            </div>
+            
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+            }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Type</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Title</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Organization</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Applicants</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Posted Date</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '14px', fontWeight: '500', color: '#374151' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredContent.map((item, index) => (
+                      <tr key={`${item.type}-${item.id}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px 16px', color: '#374151', fontSize: '14px' }}>
+                          {item.type}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ fontWeight: '500', color: '#111827', marginBottom: '4px', fontSize: '14px' }}>
+                            {item.title}
                             </div>
+                          <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                            {item.location || 'Not specified'}
+                  </div>
+                        </td>
+                        <td style={{ padding: '12px 16px', color: '#374151', fontSize: '14px' }}>
+                          {item.company || item.organization || 'Not specified'}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
                     <span style={{
                       padding: '4px 8px',
                       borderRadius: '12px',
-                              fontSize: '11px',
+                            fontSize: '12px',
                       fontWeight: '500',
-                              backgroundColor: app.status === 'approved' ? '#dcfce7' : 
-                                            app.status === 'rejected' ? '#fef2f2' : '#fef3c7',
-                              color: app.status === 'approved' ? '#166534' : 
-                                   app.status === 'rejected' ? '#991b1b' : '#92400e',
-                              border: `1px solid ${app.status === 'approved' ? '#bbf7d0' : 
-                                               app.status === 'rejected' ? '#fecaca' : '#fde68a'}`
-                            }}>
-                              {app.status}
+                            backgroundColor: item.approval_status === 'approved' ? '#dcfce7' : 
+                                           item.approval_status === 'rejected' ? '#fef2f2' : '#fef3c7',
+                            color: item.approval_status === 'approved' ? '#166534' : 
+                                   item.approval_status === 'rejected' ? '#991b1b' : '#92400e'
+                          }}>
+                            {item.approval_status || 'pending'}
                     </span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                              {app.type} • {new Date(app.appliedAt).toLocaleDateString()}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: '12px',
+                              fontSize: '12px',
+                      fontWeight: '500',
+                              backgroundColor: item.applicantCount > 0 ? '#dcfce7' : '#f1f5f9',
+                              color: item.applicantCount > 0 ? '#166534' : '#6b7280'
+                            }}>
+                              {item.applicantCount || 0}
                             </span>
-                            {app.coverLetter && (
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 16px', color: '#6b7280', fontSize: '14px' }}>
+                          {item.postedTime ? new Date(item.postedTime).toLocaleDateString() : 
+                           item.created_at ? new Date(item.created_at).toLocaleDateString() : 
+                           item.createdAt ? new Date(item.createdAt).toLocaleDateString() :
+                           item.posted_at ? new Date(item.posted_at).toLocaleDateString() : 'Not available'}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                               <button 
-                                onClick={() => {
-                                  setSelectedItem({ ...app, applicant: applicant })
-                                  setShowDetails(true)
-                                }}
+                              onClick={() => handleViewDetails(item, item.type.toLowerCase())}
                                 style={{
-                                  padding: '4px 8px',
-                                  fontSize: '11px',
+                                padding: '6px 12px',
                                   backgroundColor: '#3b82f6',
                                   color: 'white',
                                   border: 'none',
                                   borderRadius: '6px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                View Details
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <Eye size={14} />
+                              View
                               </button>
-                            )}
+                            <button
+                              onClick={() => handleDelete(item, item.type.toLowerCase())}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#dc2626',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <Trash2 size={14} />
+                              Delete
+                            </button>
                           </div>
-                        </div>
+                        </td>
+                      </tr>
                       ))}
+                  </tbody>
+                </table>
                     </div>
                   </div>
-                </div>
-              ))}
-              </div>
-            )}
           </div>
         )
 
@@ -2650,10 +2918,10 @@ const Content = () => {
               Courses
             </div>
           </TabButton>
-          <TabButton value="applicants" isActive={activeTab === "applicants"} onClick={setActiveTab}>
+          <TabButton value="content" isActive={activeTab === "content"} onClick={setActiveTab}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Users size={16} />
-              Applicants
+              <FileText size={16} />
+              Content
             </div>
           </TabButton>
 
@@ -6196,3 +6464,4 @@ const Content = () => {
 }
 
 export default Content
+

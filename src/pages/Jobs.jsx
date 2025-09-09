@@ -799,6 +799,7 @@ ${user?.first_name} ${user?.last_name}`
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Calendar size={12} />
+                      <span>Deadline:</span>
                       <span style={{ color: '#dc2626', fontWeight: 600 }}>{job.deadline || 'Not specified'}</span>
                     </div>
                   </div>
@@ -1508,7 +1509,10 @@ ${user?.first_name} ${user?.last_name}`
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <Calendar size={14} />
-                          Deadline: {selectedJob.applicationDeadline ? new Date(selectedJob.applicationDeadline).toLocaleDateString() : 'No deadline'}
+                          <span>Deadline:</span>
+                          <span style={{ color: '#dc2626', fontWeight: '600' }}>
+                            {selectedJob.applicationDeadline ? new Date(selectedJob.applicationDeadline).toLocaleDateString() : 'No deadline'}
+                          </span>
                         </div>
                       </div>
                     </div>

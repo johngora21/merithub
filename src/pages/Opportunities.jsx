@@ -656,12 +656,15 @@ const Opportunities = () => {
                     alignItems: 'center',
                     gap: '4px',
                     fontSize: '13px',
-                    color: '#dc2626',
+                    color: '#64748b',
                     marginBottom: '12px',
-                    fontWeight: '600'
+                    fontWeight: '500'
                   }}>
                     <Calendar size={12} />
-                    {new Date(opportunity.deadline).toLocaleDateString()}
+                    <span>Deadline:</span>
+                    <span style={{ color: '#dc2626', fontWeight: '600' }}>
+                      {new Date(opportunity.deadline).toLocaleDateString()}
+                    </span>
                   </div>
 
                   {/* Tags */}

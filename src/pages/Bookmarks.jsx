@@ -802,11 +802,14 @@ const Bookmarks = () => {
                           alignItems: 'center',
                           gap: '4px',
                           fontSize: '13px',
-                          color: isDeadlineUrgent ? '#dc2626' : '#64748b',
-                          fontWeight: isDeadlineUrgent ? '600' : '500'
+                          color: '#64748b',
+                          fontWeight: '500'
                         }}>
                           <Calendar size={12} />
-                          {bookmark.deadline ? new Date(bookmark.deadline).toLocaleDateString() : 'Not specified'}
+                          <span>Deadline:</span>
+                          <span style={{ color: isDeadlineUrgent ? '#dc2626' : '#64748b', fontWeight: isDeadlineUrgent ? '600' : '500' }}>
+                            {bookmark.deadline ? new Date(bookmark.deadline).toLocaleDateString() : 'Not specified'}
+                          </span>
                         </div>
                   </div>
                   
@@ -1057,17 +1060,20 @@ const Bookmarks = () => {
                       </div>
                   
                       {/* Deadline */}
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
                         fontSize: '13px',
-                        color: '#dc2626',
+                        color: '#64748b',
                         marginBottom: '12px',
-                        fontWeight: '600'
+                        fontWeight: '500'
                       }}>
                         <Calendar size={12} />
-                        {bookmark.deadline ? new Date(bookmark.deadline).toLocaleDateString() : 'Not specified'}
+                        <span>Deadline:</span>
+                        <span style={{ color: '#dc2626', fontWeight: '600' }}>
+                          {bookmark.deadline ? new Date(bookmark.deadline).toLocaleDateString() : 'Not specified'}
+                        </span>
                       </div>
 
                       {/* Tags */}
@@ -1319,6 +1325,7 @@ const Bookmarks = () => {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Calendar size={12} />
+                      <span>Deadline:</span>
                       <span style={{ color: '#dc2626', fontWeight: 600 }}>{bookmark.deadline || 'Not specified'}</span>
                     </div>
                   </div>

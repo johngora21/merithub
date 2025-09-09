@@ -629,11 +629,14 @@ const Tenders = () => {
                       alignItems: 'center',
                       gap: '4px',
                       fontSize: '13px',
-                      color: isDeadlineUrgent ? '#dc2626' : '#64748b',
-                      fontWeight: isDeadlineUrgent ? '600' : '500'
+                      color: '#64748b',
+                      fontWeight: '500'
                     }}>
                       <Calendar size={12} />
-                      {new Date(tender.deadline).toLocaleDateString()}
+                      <span>Deadline:</span>
+                      <span style={{ color: isDeadlineUrgent ? '#dc2626' : '#64748b', fontWeight: isDeadlineUrgent ? '600' : '500' }}>
+                        {new Date(tender.deadline).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
 

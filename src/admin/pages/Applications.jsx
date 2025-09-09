@@ -1086,11 +1086,14 @@ const Applications = () => {
                         alignItems: 'center',
                         gap: '4px',
                         fontSize: '13px',
-                        color: isDeadlineUrgent ? '#dc2626' : '#64748b',
-                        fontWeight: isDeadlineUrgent ? '600' : '500'
+                        color: '#64748b',
+                        fontWeight: '500'
                       }}>
                         <Calendar size={12} />
-                        {item.deadline}
+                        <span>Deadline:</span>
+                        <span style={{ color: isDeadlineUrgent ? '#dc2626' : '#64748b', fontWeight: isDeadlineUrgent ? '600' : '500' }}>
+                          {item.deadline}
+                        </span>
                       </div>
                     </div>
 
@@ -1404,12 +1407,13 @@ const Applications = () => {
                       alignItems: 'center',
                       gap: '4px',
                       fontSize: '13px',
-                      color: '#dc2626',
+                      color: '#64748b',
                       marginBottom: '12px',
-                      fontWeight: '600'
+                      fontWeight: '500'
                     }}>
                       <Calendar size={12} />
-                      {item.deadline}
+                      <span>Deadline:</span>
+                      <span style={{ color: '#dc2626', fontWeight: '600' }}>{item.deadline}</span>
                     </div>
 
                     {/* Tags */}
@@ -1670,8 +1674,9 @@ const Applications = () => {
                   <Briefcase size={12} />
                   <span style={{ color: '#0f172a' }}>{item.type}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
                   <Calendar size={12} />
+                  <span>Deadline:</span>
                   <span style={{ color: '#dc2626', fontWeight: 600 }}>{item.deadline}</span>
                 </div>
               </div>
