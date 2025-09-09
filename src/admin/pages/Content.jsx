@@ -2754,22 +2754,29 @@ const Content = () => {
                         <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                               <button 
-                              onClick={() => handleViewDetails(item, item.type.toLowerCase())}
+                                onClick={() => {
+                                const t = (item.type || '').toLowerCase()
+                                let pathname = '/jobs'
+                                if (t === 'tenders' || t === 'tender') pathname = '/tenders'
+                                else if (t === 'opportunities' || t === 'opportunity') pathname = '/opportunities'
+                                const url = `${pathname}?openId=${item.id}`
+                                window.open(url, '_blank')
+                                }}
                                 style={{
-                                padding: '6px 12px',
+                                  padding: '6px 12px',
                                   backgroundColor: '#3b82f6',
                                   color: 'white',
                                   border: 'none',
                                   borderRadius: '6px',
-                                fontSize: '12px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}
-                            >
-                              <Eye size={14} />
-                              View
+                                  fontSize: '12px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <Eye size={14} />
+                                View
                               </button>
                             <button
                               onClick={() => handleDelete(item, item.type.toLowerCase())}

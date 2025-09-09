@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { countries } from '../utils/countries'
 import { tendersAPI } from '../lib/api-service'
@@ -40,22 +41,80 @@ const Tenders = () => {
   })
   const [showDetails, setShowDetails] = useState(false)
   const [selectedTender, setSelectedTender] = useState(null)
+  const [searchParams] = useSearchParams()
   const [tenders, setTenders] = useState([])
   const [loading, setLoading] = useState(false)
+
+  const getCountryName = (countryCodeOrName) => {
+    if (!countryCodeOrName) return 'Not specified'
+    const match = countries.find(c => c.code === countryCodeOrName || c.name === countryCodeOrName)
+    return match ? match.name : countryCodeOrName
+  }
 
   useEffect(() => {
     const fetchTenders = async () => {
       try {
         setLoading(true)
-        const data = await tendersAPI.getAll()
+        const data = await tendersAPI.getAll({ status: 'active' })
         const apiTenders = data?.tenders || data || []
         const transformed = apiTenders.map((t) => {
           const orgLogo = t.organization_logo ? resolveAssetUrl(t.organization_logo) : ''
           const coverImage = t.cover_image ? resolveAssetUrl(t.cover_image) : ''
-          const contractValue = (t.contract_value_min && t.contract_value_max)
-            ? `${t.currency} ${Number(t.contract_value_min).toLocaleString()} - ${t.currency} ${Number(t.contract_value_max).toLocaleString()}`
-            : 'Value not specified'
+          const toNumber = (val) => {
+            if (val === null || val === undefined || val === '') return null
+            if (typeof val === 'number') return val
+            if (typeof val === 'string') {
+              const cleaned = val.replace(/[^0-9.]/g, '')
+              if (!cleaned) return null
+              const n = Number(cleaned)
+              return isNaN(n) ? null : n
+            }
+            return null
+          }
+          const minVal = toNumber(t.contract_value_min)
+          const maxVal = toNumber(t.contract_value_max)
+          const hasMin = minVal !== null
+          const hasMax = maxVal !== null
+          const currency = t.currency || 'USD'
+          let contractValue = 'Value not specified'
+          if (hasMin && hasMax) {
+            contractValue = (minVal === maxVal)
+              ? `${currency} ${minVal.toLocaleString()}`
+              : `${currency} ${minVal.toLocaleString()} - ${currency} ${maxVal.toLocaleString()}`
+          } else if (hasMin) {
+            contractValue = `${currency} ${minVal.toLocaleString()}`
+          } else if (hasMax) {
+            contractValue = `${currency} ${maxVal.toLocaleString()}`
+          }
           const sector = (t.sector || '').split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('-')
+          const toArray = (val) => Array.isArray(val) ? val : (val ? [val] : [])
+          const parseToArray = (val) => {
+            if (!val && val !== 0) return []
+            if (Array.isArray(val)) {
+              return val
+                .map(item => typeof item === 'string' ? item.trim() : item)
+                .filter(item => item !== null && item !== undefined && String(item).trim() !== '')
+            }
+            if (typeof val === 'string') {
+              const str = val.trim()
+              // Try JSON parse first
+              if ((str.startsWith('[') && str.endsWith(']')) || (str.startsWith('{') && str.endsWith('}'))) {
+                try {
+                  const parsed = JSON.parse(str)
+                  return parseToArray(parsed)
+                } catch (_) {
+                  // fallthrough to split
+                }
+              }
+              // Split by commas or newlines
+              return str
+                .split(/\r?\n|,/)
+                .map(s => s.trim())
+                .filter(s => s.length > 0)
+            }
+            // Primitive non-string
+            return [val]
+          }
           return {
             id: String(t.id),
             title: t.title,
@@ -72,15 +131,26 @@ const Tenders = () => {
             deadline: t.deadline,
             description: t.description,
             detailedDescription: t.detailed_description,
-            documents: Array.isArray(t.documents) ? t.documents : [],
-            tags: [], // Remove project scope from tags
-            projectScope: t.project_scope || [],
-            technicalRequirements: t.technical_requirements || [],
-            organizationInfo: t.organization_info || null,
-            submissionProcess: t.submission_process || [],
-            evaluationCriteria: t.evaluation_criteria || [],
+            requirements: parseToArray(t.requirements),
+            documents: parseToArray(t.documents),
+            tags: parseToArray(t.tags),
+            projectScope: parseToArray(t.project_scope),
+            technicalRequirements: parseToArray(t.technical_requirements),
+            organizationInfo: (() => {
+              const info = t.organization_info
+              if (!info) return null
+              if (typeof info === 'string') {
+                try { return JSON.parse(info) } catch { return { name: t.organization, focus: info } }
+              }
+              return info
+            })(),
+            submissionProcess: parseToArray(t.submission_process),
+            evaluationCriteria: parseToArray(t.evaluation_criteria),
             submissions: t.submissions_count || 0,
             externalUrl: t.external_url,
+            contactEmail: t.contact_email || null,
+            contactPhone: t.contact_phone || null,
+            creator: t.creator || null,
             status: t.status || 'active',
             isUrgent: !!t.is_urgent,
             price: t.price || 'Free'
@@ -156,6 +226,19 @@ const Tenders = () => {
     setSelectedTender(tender)
     setShowDetails(true)
   }
+
+  // Open details if URL contains ?openId=
+  useEffect(() => {
+    const openId = searchParams.get('openId')
+    if (!openId) return
+    if (tenders && tenders.length > 0) {
+      const found = tenders.find(t => String(t.id) === String(openId))
+      if (found) {
+        setSelectedTender(found)
+        setShowDetails(true)
+      }
+    }
+  }, [searchParams, tenders])
 
   const handleDownloadDocs = (tenderId) => {
     console.log('Download documents clicked for tender:', tenderId)
@@ -1108,143 +1191,133 @@ const Tenders = () => {
           onClick={() => setShowDetails(false)}>
             <div style={{
               backgroundColor: 'white',
-              width: screenSize.isMobile ? '100%' : 'min(700px, 90vw)',
-              maxHeight: screenSize.isMobile ? '80vh' : '85vh',
+              width: screenSize.isMobile ? '100%' : 'min(800px, 90vw)',
+              maxHeight: '90vh',
               borderRadius: screenSize.isMobile ? '20px 20px 0 0' : '16px',
               overflowY: 'auto',
-              transform: showDetails ? 'translateY(0)' : (screenSize.isMobile ? 'translateY(100%)' : 'scale(0.9)'),
-              opacity: showDetails ? 1 : 0,
               transition: 'all 0.3s ease-in-out',
-              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              display: 'flex',
+              flexDirection: 'column'
             }}
             onClick={(e) => e.stopPropagation()}>
               
               {/* Header */}
               <div style={{ 
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 padding: screenSize.isMobile ? '16px 12px 0 12px' : '24px 24px 0 24px',
-                borderBottom: '1px solid #f0f0f0'
+                borderBottom: '1px solid #e5e7eb',
+                paddingBottom: '16px',
+                marginBottom: '16px'
               }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  marginBottom: '20px'
+                <h2 style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: '#1a1a1a',
+                  margin: 0
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: screenSize.isMobile ? '12px' : '16px', flex: 1 }}>
-                    {selectedTender.organizationLogo ? (
-                      <img
-                        src={selectedTender.organizationLogo}
-                        alt={selectedTender.organization}
-                        style={{
-                          width: screenSize.isMobile ? '48px' : '60px',
-                          height: screenSize.isMobile ? '48px' : '60px',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '2px solid #f8f9fa',
-                          flexShrink: 0
-                        }}
-                      />
-                    ) : (
-                    <div style={{
-                      width: screenSize.isMobile ? '48px' : '60px',
-                      height: screenSize.isMobile ? '48px' : '60px',
-                      backgroundColor: getSectorColor(selectedTender.sector) + '15',
-                        borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      {React.createElement(getSectorIcon(selectedTender.sector), {
-                        size: screenSize.isMobile ? 24 : 30,
-                        color: getSectorColor(selectedTender.sector)
-                      })}
-                    </div>
-                    )}
-                    
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h2 style={{
-                        fontSize: screenSize.isMobile ? '18px' : '20px',
-                        fontWeight: '700',
-                        color: '#1a1a1a',
-                        margin: '0 0 8px 0',
-                        lineHeight: '1.2'
-                      }}>
-                        {selectedTender.title}
-                      </h2>
-                      
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '16px',
-                        flexWrap: 'wrap',
-                        margin: '0 0 12px 0'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Building2 size={16} color="#64748b" />
-                          <span style={{ fontSize: '14px', color: '#64748b' }}>
-                            {selectedTender.organization}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <MapPin size={16} color="#64748b" />
-                          <span style={{ fontSize: '14px', color: '#64748b' }}>
-                            {selectedTender.location}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '16px',
-                        flexWrap: 'wrap'
-                      }}>
-                        <div style={{
-                          backgroundColor: '#16a34a',
-                          color: 'white',
-                          padding: '4px 12px',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          fontWeight: '600'
-                        }}>
-                          {selectedTender.contractValue}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Clock size={14} color="#64748b" />
-                          <span style={{ fontSize: '12px', color: '#64748b' }}>
-                            {selectedTender.duration}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Calendar size={14} color="#dc2626" />
-                          <span style={{ fontSize: '12px', color: '#dc2626', fontWeight: '600' }}>
-                            Due: {new Date(selectedTender.deadline).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={() => setShowDetails(false)}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.9)',
-                      border: '1px solid #e2e8f0',
-                      padding: '8px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      marginLeft: '12px'
-                    }}
-                  >
-                    <X size={20} color="#64748b" />
-                  </button>
-                </div>
+                  {selectedTender.title}
+                </h2>
+                <button
+                  onClick={() => setShowDetails(false)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    padding: '8px',
+                    borderRadius: '20px',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <X size={18} color="#64748b" />
+                </button>
               </div>
 
               {/* Content */}
-              <div style={{ padding: screenSize.isMobile ? '16px 12px' : '24px' }}>
+              <div style={{ padding: screenSize.isMobile ? '16px 24px 90px 24px' : '32px 40px 90px 40px', flex: 1 }}>
+                {/* Organization Profile Header (match admin) */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '16px',
+                  marginBottom: '24px',
+                  paddingBottom: '20px',
+                  borderBottom: '1px solid #e5e7eb'
+                }}>
+                  <img
+                    src={selectedTender.coverImage || selectedTender.organizationLogo}
+                    alt={selectedTender.organization}
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '30px',
+                      objectFit: 'cover',
+                      border: '2px solid #f8f9fa'
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 4px 0' }}>
+                      {selectedTender.organization}
+                    </h3>
+                    <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 8px 0' }}>
+                      {selectedTender.title}
+                    </h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '14px', color: '#64748b' }}>
+                      <span>{selectedTender.location}</span>
+                      <span>•</span>
+                      <span>{getCountryName(selectedTender.country)}</span>
+                      <span>•</span>
+                      <span style={{ color: '#dc2626', fontWeight: '600' }}>
+                        Deadline: {selectedTender.deadline ? new Date(selectedTender.deadline).toLocaleDateString() : 'Not specified'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
                 
+                {/* Tender Details */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Tender Details</h3>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                    gap: '16px' 
+                  }}>
+                    <div>
+                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Organization</span>
+                      <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedTender.organization || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Sector</span>
+                      <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedTender.sector || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Contract Value</span>
+                      <p style={{ fontSize: '14px', color: '#16a34a', margin: '2px 0 0 0', fontWeight: '600' }}>{selectedTender.contractValue || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Location</span>
+                      <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedTender.location || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Country</span>
+                      <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{getCountryName(selectedTender.country) || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Duration</span>
+                      <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedTender.duration || 'Not specified'}</p>
+                    </div>
+                    
+                  </div>
+                </div>
+
+                
+
                 {/* Tender Overview */}
                 <div style={{ marginBottom: '32px' }}>
                   <h3 style={{
@@ -1263,10 +1336,54 @@ const Tenders = () => {
                   }}>
                     {selectedTender.detailedDescription || selectedTender.description}
                   </p>
+                  {/* Application URL is shown in Tender Details, not here */}
                 </div>
 
                 {/* Project Scope */}
-                {selectedTender.projectScope && (
+                {/* Requirements & Qualifications */}
+                {Array.isArray(selectedTender.requirements) && selectedTender.requirements.some(i => i && String(i).trim() !== '') && (
+                  <div style={{ marginBottom: '32px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 16px 0'
+                    }}>
+                      Requirements & Qualifications
+                    </h3>
+                    <ul style={{
+                      listStyle: 'none',
+                      padding: 0,
+                      margin: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      {selectedTender.requirements.map((req, index) => (
+                        <li key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '8px',
+                          marginBottom: '8px',
+                          fontSize: '14px',
+                          lineHeight: '1.5',
+                          color: '#374151'
+                        }}>
+                          <span style={{
+                            color: '#16a34a',
+                            fontSize: '16px',
+                            lineHeight: '1',
+                            marginTop: '2px'
+                          }}>✓</span>
+                          {req}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Project Scope */}
+                {Array.isArray(selectedTender.projectScope) && selectedTender.projectScope.some(i => i && String(i).trim() !== '') && (
                   <div style={{ marginBottom: '32px' }}>
                     <h3 style={{
                       fontSize: '16px',
@@ -1309,7 +1426,7 @@ const Tenders = () => {
                 )}
 
                 {/* Technical Requirements */}
-                {selectedTender.technicalRequirements && (
+                {Array.isArray(selectedTender.technicalRequirements) && selectedTender.technicalRequirements.some(i => i && String(i).trim() !== '') && (
                   <div style={{ marginBottom: '32px' }}>
                     <h3 style={{
                       fontSize: '16px',
@@ -1332,11 +1449,17 @@ const Tenders = () => {
                           display: 'flex',
                           alignItems: 'flex-start',
                           gap: '8px',
+                          marginBottom: '8px',
                           fontSize: '14px',
-                          color: '#4a5568',
-                          lineHeight: '1.5'
+                          lineHeight: '1.5',
+                          color: '#374151'
                         }}>
-                          <Check size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: '1px' }} />
+                          <span style={{
+                            color: '#16a34a',
+                            fontSize: '16px',
+                            lineHeight: '1',
+                            marginTop: '2px'
+                          }}>✓</span>
                           {requirement}
                         </li>
                       ))}
@@ -1404,121 +1527,60 @@ const Tenders = () => {
                 )}
 
                 {/* Submission Process */}
-                {selectedTender.submissionProcess && (
+                {Array.isArray(selectedTender.submissionProcess) && selectedTender.submissionProcess.some(i => i && String(i).trim() !== '') && (
                   <div style={{ marginBottom: '32px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 16px 0'
-                    }}>
-                      Submission Process
-                    </h3>
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '12px'
-                    }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Submission Process</h3>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                       {selectedTender.submissionProcess.map((step, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
-                          padding: '12px 16px',
-                          backgroundColor: '#f8f9fa',
-                          borderRadius: '8px',
-                          border: '1px solid #e2e8f0'
-                        }}>
-                          <div style={{
-                            width: '24px',
-                            height: '24px',
-                            backgroundColor: '#16a34a',
-                            color: 'white',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '12px',
-                            fontWeight: '600',
-                            flexShrink: 0
-                          }}>
-                            {index + 1}
-                          </div>
-                          <span style={{
-                            fontSize: '14px',
-                            color: '#1a1a1a',
-                            fontWeight: '500'
-                          }}>
-                            {step}
-                          </span>
-                        </div>
+                        <li key={index} style={{ fontSize: '14px', color: '#1a1a1a', lineHeight: '1.6', marginBottom: '6px' }}>
+                          {step}
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   </div>
                 )}
 
                 {/* Evaluation Criteria */}
-                {selectedTender.evaluationCriteria && (
+                {Array.isArray(selectedTender.evaluationCriteria) && selectedTender.evaluationCriteria.some(i => i && String(i).trim() !== '') && (
                   <div style={{ marginBottom: '32px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 16px 0'
-                    }}>
-                      Evaluation Criteria
-                    </h3>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Evaluation Criteria</h3>
                     <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px'
+                      fontSize: '14px',
+                      lineHeight: '1.6',
+                      color: '#374151',
+                      whiteSpace: 'pre-line'
                     }}>
-                      {selectedTender.evaluationCriteria.map((criteria, index) => (
-                        <div key={index} style={{
-                          backgroundColor: '#e0f2fe',
-                          color: '#0369a1',
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          textAlign: 'center'
-                        }}>
-                          {criteria}
-                        </div>
-                      ))}
+                      {selectedTender.evaluationCriteria.join('\n')}
                     </div>
                   </div>
                 )}
 
-                {/* Required Documents */}
-                <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#1a1a1a',
-                    margin: '0 0 16px 0'
-                  }}>
-                    Required Documents
-                  </h3>
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '8px'
-                  }}>
-                    {selectedTender.documents.map((doc, index) => (
-                      <span key={index} style={{
-                        backgroundColor: '#16a34a',
-                        color: 'white',
-                        padding: '6px 12px',
-                        borderRadius: '16px',
-                        fontSize: '12px',
-                        fontWeight: '600'
-                      }}>
-                        {doc}
-                      </span>
-                    ))}
+                {/* Tags */}
+                {Array.isArray(selectedTender.tags) && selectedTender.tags.length > 0 && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Tags</h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {selectedTender.tags.map((tag, index) => {
+                        const label = typeof tag === 'string' ? tag : (tag?.name || tag?.title || '')
+                        if (!label) return null
+                        return (
+                          <span key={index} style={{
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            padding: '6px 10px',
+                            borderRadius: '9999px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            {label}
+                          </span>
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* No separate Required Documents section in admin tender modal */}
               </div>
             </div>
           </div>

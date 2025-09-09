@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { countries } from '../utils/countries'
 import { opportunitiesAPI, apiService, resolveAssetUrl } from '../lib/api-service'
@@ -27,6 +27,7 @@ import {
 
 const Opportunities = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const screenSize = useResponsive()
   const [savedOpportunities, setSavedOpportunities] = useState(new Set())
   const [opportunityIdToSavedItemId, setOpportunityIdToSavedItemId] = useState({})
@@ -72,7 +73,7 @@ const Opportunities = () => {
 
   const fetchOpportunities = async () => {
     try {
-      const data = await opportunitiesAPI.getAll({ limit: 50 })
+      const data = await opportunitiesAPI.getAll({ limit: 50, status: 'active' })
       const mapped = (data.opportunities || []).map((o) => ({
         id: o.id,
         title: o.title,
@@ -166,6 +167,19 @@ const Opportunities = () => {
     setSelectedOpportunity(opportunity)
     setShowDetails(true)
   }
+
+  // Open details if URL contains ?openId=
+  useEffect(() => {
+    const openId = searchParams.get('openId')
+    if (!openId) return
+    if (opportunities && opportunities.length > 0) {
+      const found = opportunities.find(o => String(o.id) === String(openId))
+      if (found) {
+        setSelectedOpportunity(found)
+        setShowDetails(true)
+      }
+    }
+  }, [searchParams, opportunities])
 
   const handleApply = (opportunityId) => {
     console.log('Apply clicked for opportunity:', opportunityId)
@@ -1237,345 +1251,163 @@ const Opportunities = () => {
           onClick={() => setShowDetails(false)}>
             <div style={{
               backgroundColor: 'white',
-              width: screenSize.isMobile ? '100%' : 'min(700px, 90vw)',
-              maxHeight: screenSize.isMobile ? '80vh' : '85vh',
+              width: screenSize.isMobile ? '100%' : 'min(800px, 90vw)',
+              maxHeight: '90vh',
               borderRadius: screenSize.isMobile ? '20px 20px 0 0' : '16px',
               overflowY: 'auto',
-              transform: showDetails ? 'translateY(0)' : (screenSize.isMobile ? 'translateY(100%)' : 'scale(0.9)'),
-              opacity: showDetails ? 1 : 0,
               transition: 'all 0.3s ease-in-out',
-              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              display: 'flex',
+              flexDirection: 'column'
             }}
             onClick={(e) => e.stopPropagation()}>
-              
-              {/* Header Image */}
-              <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
-                <img 
-                  src={selectedOpportunity.poster} 
-                  alt={selectedOpportunity.title}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
-                />
-                <div style={{
-                  position: 'absolute',
-                  top: '16px',
-                  right: '16px'
+              {/* Modal Header (match admin) */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: screenSize.isMobile ? '16px 12px 0 12px' : '24px 24px 0 24px',
+                borderBottom: '1px solid #e5e7eb',
+                paddingBottom: '16px',
+                marginBottom: '16px'
+              }}>
+                <h2 style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: '#1a1a1a',
+                  margin: 0
                 }}>
-                  <button
-                    onClick={() => setShowDetails(false)}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.9)',
-                      border: 'none',
-                      padding: '8px',
-                      borderRadius: '8px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <X size={20} color="#64748b" />
-                  </button>
-                </div>
+                  {selectedOpportunity.title}
+                </h2>
+                <button
+                  onClick={() => setShowDetails(false)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    padding: '8px',
+                    borderRadius: '20px',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <X size={18} color="#64748b" />
+                </button>
               </div>
 
               {/* Content */}
-              <div style={{ padding: screenSize.isMobile ? '16px 12px' : '24px' }}>
-                {/* Title and Basic Info */}
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: '12px'
-                  }}>
-                    <span style={{
-                      fontSize: '12px',
-                      color: '#3b82f6',
-                      backgroundColor: '#eff6ff',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontWeight: '600',
-                      textTransform: 'uppercase'
-                    }}>
-                      {selectedOpportunity.type}
-                    </span>
-                    <span style={{
-                      fontSize: '12px',
-                      color: '#dc2626',
-                      backgroundColor: '#fee2e2',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontWeight: '600'
-                    }}>
-                      Deadline: {new Date(selectedOpportunity.deadline).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  <h2 style={{
-                    fontSize: '24px',
-                    fontWeight: '700',
-                    color: '#1a1a1a',
-                    margin: '0 0 8px 0',
-                    lineHeight: '1.3'
-                  }}>
-                    {selectedOpportunity.title}
-                  </h2>
-
-                  <p style={{
-                    fontSize: '16px',
-                    color: '#64748b',
-                    margin: '0 0 16px 0'
-                  }}>
-                    {selectedOpportunity.organization || selectedOpportunity.category}
-                  </p>
-
-                  {/* Key Stats */}
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '16px',
-                    marginBottom: '20px',
-                    fontSize: '14px',
-                    color: '#64748b'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <DollarSign size={14} />
-                      {selectedOpportunity.amount}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Clock size={14} />
-                      {selectedOpportunity.duration}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <MapPin size={14} />
-                      {selectedOpportunity.location}
+              <div style={{ padding: screenSize.isMobile ? '16px 24px 90px 24px' : '32px 40px 90px 40px', flex: 1 }}>
+                {/* Organization Profile Header (match admin) */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '16px',
+                  marginBottom: '24px',
+                  paddingBottom: '20px',
+                  borderBottom: '1px solid #e5e7eb'
+                }}>
+                  <img 
+                    src={selectedOpportunity.poster || selectedOpportunity.organization_logo}
+                    alt={selectedOpportunity.organization}
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '30px',
+                      objectFit: 'cover',
+                      border: '2px solid #f8f9fa'
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 4px 0' }}>
+                      {selectedOpportunity.organization || ''}
+                    </h3>
+                    <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 8px 0' }}>
+                      {selectedOpportunity.title}
+                    </h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '14px', color: '#64748b' }}>
+                      <span>{selectedOpportunity.location}</span>
+                      <span>•</span>
+                      <span style={{ color: '#dc2626', fontWeight: '600' }}>
+                        Deadline: {selectedOpportunity.deadline ? new Date(selectedOpportunity.deadline).toLocaleDateString() : 'Not specified'}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Overview */}
+                {/* Opportunity Details grid (match admin) */}
                 <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#1a1a1a',
-                    margin: '0 0 8px 0'
-                  }}>
-                    Overview
-                  </h3>
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#64748b',
-                    lineHeight: '1.6',
-                    margin: 0
-                  }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Opportunity Details</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Organization</label>
+                      <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedOpportunity.organization || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Opportunity Type</label>
+                      <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedOpportunity.type || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Amount</label>
+                      <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedOpportunity.amount || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Duration</label>
+                      <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedOpportunity.duration || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
+                      <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedOpportunity.location || 'Not specified'}</p>
+                    </div>
+                    {selectedOpportunity.externalUrl && (
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application URL</label>
+                        <p style={{ fontSize: '14px', margin: 0, fontWeight: '500', wordBreak: 'break-all' }}>
+                          <a href={selectedOpportunity.externalUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedOpportunity.externalUrl}</a>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Opportunity Overview */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Opportunity Overview</h3>
+                  <p style={{ fontSize: '15px', lineHeight: '1.6', color: '#374151', margin: 0 }}>
                     {selectedOpportunity.detailedDescription || selectedOpportunity.description}
                   </p>
                 </div>
 
-                {/* Eligibility Criteria */}
-                {selectedOpportunity.eligibilityCriteria && (
+                {/* Benefits & Value */}
+                {selectedOpportunity.benefits && selectedOpportunity.benefits.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 12px 0'
-                    }}>
-                      Eligibility Criteria
-                    </h3>
-                    <div style={{ 
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '8px',
-                      padding: '16px'
-                    }}>
-                      {(selectedOpportunity.eligibilityCriteria || []).map((criteria, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          marginBottom: index === (selectedOpportunity.eligibilityCriteria || []).length - 1 ? '0' : '8px',
-                          fontSize: '14px',
-                          color: '#374151'
-                        }}>
-                          <span style={{
-                            color: '#3b82f6',
-                            marginRight: '8px',
-                            marginTop: '2px'
-                          }}>•</span>
-                          <span>{criteria}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Requirements */}
-                {selectedOpportunity.requirements && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 12px 0'
-                    }}>
-                      Requirements
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {(selectedOpportunity.requirements || []).map((req, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          fontSize: '14px',
-                          color: '#374151'
-                        }}>
-                          <span style={{
-                            color: '#dc2626',
-                            marginRight: '8px',
-                            marginTop: '2px'
-                          }}>✓</span>
-                          <span>{req}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Selection Process */}
-                {selectedOpportunity.selectionProcess && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 12px 0'
-                    }}>
-                      Selection Process
-                    </h3>
-                    <div style={{ 
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '8px',
-                      padding: '16px'
-                    }}>
-                      {(selectedOpportunity.selectionProcess || []).map((step, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          marginBottom: index === (selectedOpportunity.selectionProcess || []).length - 1 ? '0' : '8px',
-                          fontSize: '14px',
-                          color: '#374151'
-                        }}>
-                          <span style={{
-                            color: '#16a34a',
-                            fontWeight: '600',
-                            marginRight: '8px',
-                            minWidth: '20px'
-                          }}>
-                            {index + 1}.
-                          </span>
-                          <span>{step}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Program Details */}
-                {selectedOpportunity.programDetails && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 12px 0'
-                    }}>
-                      Program Details
-                    </h3>
-                    <div style={{ 
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '8px',
-                      padding: '16px'
-                    }}>
-                      {Object.entries(selectedOpportunity.programDetails || {}).map(([key, value], index) => (
-                        <div key={index} style={{
-                          marginBottom: index === Object.entries(selectedOpportunity.programDetails || {}).length - 1 ? '0' : '12px',
-                          fontSize: '14px'
-                        }}>
-                          <span style={{ 
-                            color: '#64748b',
-                            textTransform: 'capitalize',
-                            fontWeight: '500'
-                          }}>
-                            {key.replace(/([A-Z])/g, ' $1').toLowerCase()}: 
-                          </span>
-                          <span style={{ color: '#374151', marginLeft: '4px' }}>
-                            {value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Benefits & Tags */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr',
-                  gap: '20px',
-                  marginBottom: '24px'
-                }}>
-                  {/* Benefits */}
-                  <div>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 8px 0'
-                    }}>
-                      Benefits & Rewards
-                    </h3>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {(selectedOpportunity.benefits || []).map((benefit, index) => (
-                        <span key={index} style={{
-                          fontSize: '12px',
-                          color: '#16a34a',
-                          backgroundColor: '#f0fdf4',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontWeight: '500'
-                        }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Benefits & Value</h3>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {selectedOpportunity.benefits.map((benefit, index) => (
+                        <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', fontSize: '14px', lineHeight: '1.5', color: '#374151' }}>
+                          <span style={{ color: '#16a34a', fontSize: '16px', lineHeight: '1', marginTop: '2px' }}>✓</span>
                           {benefit}
-                        </span>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   </div>
+                )}
 
-                  {/* Tags */}
-                  <div>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 8px 0'
-                    }}>
-                      Topics & Skills
-                    </h3>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {(selectedOpportunity.tags || []).map((tag, index) => (
-                        <span key={index} style={{
-                          fontSize: '12px',
-                          color: '#6366f1',
-                          backgroundColor: '#eef2ff',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontWeight: '500'
-                        }}>
+                {/* Tags */}
+                {selectedOpportunity.tags && selectedOpportunity.tags.length > 0 && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Tags</h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {selectedOpportunity.tags.map((tag, index) => (
+                        <span key={index} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: '500' }}>
                           {tag}
                         </span>
                       ))}
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

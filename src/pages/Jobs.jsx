@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { countries } from '../utils/countries'
-import { apiService, resolveAssetUrl } from '../lib/api-service'
+import { apiService, resolveAssetUrl, jobsAPI } from '../lib/api-service'
 import { useAuth } from '../contexts/AuthContext'
 
 
@@ -29,6 +29,7 @@ import {
 
 const Jobs = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const screenSize = useResponsive()
   const { user } = useAuth()
   const [savedJobs, setSavedJobs] = useState(new Set())
@@ -150,8 +151,8 @@ const Jobs = () => {
   const fetchJobs = async () => {
     try {
       setLoading(true)
-      const response = await apiService.get('/jobs')
-      const transformedJobs = (response.data.jobs || []).map(transformJobData)
+      const response = await jobsAPI.getAll({ status: 'active' })
+      const transformedJobs = (response.jobs || []).map(transformJobData)
       setJobs(transformedJobs)
     } catch (error) {
       console.error('Error fetching jobs:', error)
@@ -160,6 +161,19 @@ const Jobs = () => {
       setLoading(false)
     }
   }
+
+  // Open details if URL contains ?openId=
+  useEffect(() => {
+    const openId = searchParams.get('openId')
+    if (!openId) return
+    if (jobs && jobs.length > 0) {
+      const found = jobs.find(j => String(j.id) === String(openId))
+      if (found) {
+        setSelectedJob(found)
+        setShowDetails(true)
+      }
+    }
+  }, [searchParams, jobs])
 
   // Static jobs data as fallback
   const staticJobs = []
@@ -1436,105 +1450,97 @@ ${user?.first_name} ${user?.last_name}`
           onClick={() => setShowDetails(false)}>
             <div style={{
               backgroundColor: 'white',
-              width: screenSize.isMobile ? '100%' : 'min(700px, 90vw)',
-              maxHeight: screenSize.isMobile ? '80vh' : '85vh',
+              width: screenSize.isMobile ? '100%' : 'min(800px, 90vw)',
+              maxHeight: '90vh',
               borderRadius: screenSize.isMobile ? '20px 20px 0 0' : '16px',
               overflowY: 'auto',
-              transform: showDetails ? 'translateY(0)' : (screenSize.isMobile ? 'translateY(100%)' : 'scale(0.9)'),
-              opacity: showDetails ? 1 : 0,
               transition: 'all 0.3s ease-in-out',
-              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+              boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              display: 'flex',
+              flexDirection: 'column'
             }}
             onClick={(e) => e.stopPropagation()}>
               
               {/* Header */}
               <div style={{ 
-                padding: '24px 24px 0 24px',
-                borderBottom: '1px solid #f0f0f0'
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: screenSize.isMobile ? '16px 12px 0 12px' : '24px 24px 0 24px',
+                borderBottom: '1px solid #e5e7eb',
+                paddingBottom: '16px',
+                marginBottom: '16px'
               }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  marginBottom: '20px'
+                <h2 style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: '#1a1a1a',
+                  margin: 0
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                    <img 
-                      src={selectedJob.logo} 
-                      alt={selectedJob.company}
-                      style={{
-                        width: '60px',
-                        height: '60px',
-                        borderRadius: '30px',
-                        objectFit: 'cover',
-                        border: '2px solid #f0f0f0'
-                      }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <h2 style={{
-                        fontSize: '24px',
-                        fontWeight: '700',
-                        color: '#1a1a1a',
-                        margin: '0 0 4px 0',
-                        lineHeight: '1.3'
-                      }}>
-                        {selectedJob.title}
-                      </h2>
-                      <h3 style={{
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        color: '#16a34a',
-                        margin: '0 0 8px 0'
-                      }}>
-                        {selectedJob.company}
-                      </h3>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '16px',
-                        fontSize: '14px',
-                        color: '#64748b'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <MapPin size={14} />
-                          {selectedJob.location}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Briefcase size={14} />
-                          {selectedJob.type}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <DollarSign size={14} />
-                          {selectedJob.salary}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Calendar size={14} />
-                          <span>Deadline:</span>
-                          <span style={{ color: '#dc2626', fontWeight: '600' }}>
-                            {selectedJob.applicationDeadline ? new Date(selectedJob.applicationDeadline).toLocaleDateString() : 'No deadline'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowDetails(false)}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.9)',
-                      border: '1px solid #e2e8f0',
-                      padding: '8px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      marginLeft: '12px'
-                    }}
-                  >
-                    <X size={20} color="#64748b" />
-                  </button>
-                </div>
+                  {selectedJob.title}
+                </h2>
+                <button
+                  onClick={() => setShowDetails(false)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    padding: '8px',
+                    borderRadius: '20px',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <X size={18} color="#64748b" />
+                </button>
               </div>
 
               {/* Content */}
-              <div style={{ padding: screenSize.isMobile ? '16px 12px' : '24px' }}>
+              <div style={{ padding: screenSize.isMobile ? '16px 24px 90px 24px' : '32px 40px 90px 40px', flex: 1 }}>
+                {/* Complete Job Details (match admin) */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: '0 0 16px 0' }}>
+                    Complete Job Details
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Job Type</label>
+                      <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedJob.type || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Work Type</label>
+                      <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedJob.isRemote ? 'Remote' : selectedJob.location || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Experience Level</label>
+                      <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedJob.experience || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry</label>
+                      <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedJob.industry || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
+                      <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedJob.location || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Salary</label>
+                      <p style={{ fontSize: '14px', color: '#16a34a', fontWeight: '600', margin: 0 }}>{selectedJob.salary || 'Not specified'}</p>
+                    </div>
+                    {selectedJob.externalUrl && (
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application URL</label>
+                        <a href={selectedJob.externalUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '14px', color: '#2563eb', fontWeight: '500', textDecoration: 'none' }}>
+                          {selectedJob.externalUrl}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Job Overview */}
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{

@@ -849,11 +849,9 @@ const approveContent = async (req, res) => {
       return res.status(404).json({ message: 'Content not found' });
     }
 
+    // Minimal update to avoid DB column mismatch errors
     await content.update({
-      approval_status: 'approved',
-      approved_by: req.user.id,
-      approved_at: new Date(),
-      rejection_reason: null
+      approval_status: 'approved'
     });
 
     await AdminLog.create({
