@@ -8,16 +8,64 @@ import { apiService, resolveAssetUrl } from '../../lib/api-service'
 const Applications = () => {
   const screenSize = useResponsive()
   const [activeTab, setActiveTab] = useState('jobs')
-  const [searchQuery, setSearchQuery] = useState('')
+  
+  // Separate filter states for each content type
+  const [jobsFilters, setJobsFilters] = useState({
+    searchQuery: '',
+    status: '',
+    location: '',
+    jobType: [],
+    experienceLevel: [],
+    industry: [],
+    salaryMin: '',
+    salaryMax: ''
+  })
+  
+  const [tendersFilters, setTendersFilters] = useState({
+    searchQuery: '',
+    status: '',
+    location: '',
+    jobType: [],
+    experienceLevel: [],
+    industry: [],
+    salaryMin: '',
+    salaryMax: ''
+  })
+  
+  const [opportunitiesFilters, setOpportunitiesFilters] = useState({
+    searchQuery: '',
+    status: '',
+    location: '',
+    jobType: [],
+    experienceLevel: [],
+    industry: [],
+    salaryMin: '',
+    salaryMax: ''
+  })
+  
+  // Helper functions to get current filters based on active tab
+  const getCurrentFilters = () => {
+    switch (activeTab) {
+      case 'jobs': return jobsFilters
+      case 'tenders': return tendersFilters
+      case 'opportunities': return opportunitiesFilters
+      default: return jobsFilters
+    }
+  }
+  
+  const setCurrentFilters = (newFilters) => {
+    switch (activeTab) {
+      case 'jobs': setJobsFilters(newFilters); break
+      case 'tenders': setTendersFilters(newFilters); break
+      case 'opportunities': setOpportunitiesFilters(newFilters); break
+    }
+  }
+  
   const [showFilters, setShowFilters] = useState(false)
   const [showOverview, setShowOverview] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
   const [showApplicantsList, setShowApplicantsList] = useState(false)
   const [selectedItemForApplicants, setSelectedItemForApplicants] = useState(null)
-  const [filters, setFilters] = useState({
-    status: '',
-    location: ''
-  })
 
   // API-driven data (preserve UI and structure)
   const [jobsState, setJobsState] = useState([])
@@ -394,31 +442,51 @@ const Applications = () => {
   ]
 
   const handleFilterChange = (category, value) => {
-    setFilters(prev => ({
-      ...prev,
+    setCurrentFilters({
+      ...getCurrentFilters(),
       [category]: value
-    }))
+    })
   }
 
   const clearAllFilters = () => {
-    setFilters({
+    setCurrentFilters({
+      searchQuery: '',
       status: '',
-      location: ''
+      location: '',
+      jobType: [],
+      experienceLevel: [],
+      industry: [],
+      salaryMin: '',
+      salaryMax: ''
     })
   }
 
   const getActiveFilterCount = () => {
+    const currentFilters = getCurrentFilters()
     let count = 0
-    if (filters.status && filters.status !== 'All Status') count += 1
-    if (filters.location && filters.location !== 'All Countries') count += 1
+    if (currentFilters.status && currentFilters.status !== 'All Status') count += 1
+    if (currentFilters.location && currentFilters.location !== 'All Countries') count += 1
     return count
   }
 
   const updateSalaryRange = (field, value) => {
-    setFilters(prev => ({
-      ...prev,
+    setCurrentFilters({
+      ...getCurrentFilters(),
       [field]: value
-    }))
+    })
+  }
+
+  const toggleFilter = (category, value) => {
+    const currentFilters = getCurrentFilters()
+    const currentArray = currentFilters[category] || []
+    const newArray = currentArray.includes(value)
+      ? currentArray.filter(item => item !== value)
+      : [...currentArray, value]
+    
+    setCurrentFilters({
+      ...currentFilters,
+      [category]: newArray
+    })
   }
 
   // Get current data based on active tab
@@ -433,9 +501,11 @@ const Applications = () => {
 
   // Filter and search applications
   const filteredApplications = getCurrentData().filter(item => {
+    const currentFilters = getCurrentFilters()
+    
     // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+    if (currentFilters.searchQuery) {
+      const query = currentFilters.searchQuery.toLowerCase()
       const matchesSearch = 
         item.title.toLowerCase().includes(query) ||
         item.company.toLowerCase().includes(query) ||
@@ -450,13 +520,13 @@ const Applications = () => {
     }
 
     // Status filter
-    if (filters.status && filters.status !== 'All Status' && item.status !== filters.status) {
+    if (currentFilters.status && currentFilters.status !== 'All Status' && item.status !== currentFilters.status) {
       return false
     }
 
     // Location filter
-    if (filters.location && filters.location !== 'All Countries') {
-      if (!item.location || !item.location.includes(filters.location)) {
+    if (currentFilters.location && currentFilters.location !== 'All Countries') {
+      if (!item.location || !item.location.includes(currentFilters.location)) {
         return false
       }
     }
@@ -627,8 +697,8 @@ const Applications = () => {
           <input
             type="text"
             placeholder={`Search ${activeTab}...`}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={getCurrentFilters().searchQuery}
+            onChange={(e) => setCurrentFilters({...getCurrentFilters(), searchQuery: e.target.value})}
             style={{
               width: '100%',
               backgroundColor: 'white',
@@ -654,7 +724,7 @@ const Applications = () => {
         
         {/* Status Filter */}
         <select
-          value={filters.status}
+          value={getCurrentFilters().status}
           onChange={(e) => handleFilterChange('status', e.target.value)}
           style={{
             padding: '10px 16px',
@@ -675,7 +745,7 @@ const Applications = () => {
 
         {/* Location Filter */}
         <select
-          value={filters.location}
+          value={getCurrentFilters().location}
           onChange={(e) => handleFilterChange('location', e.target.value)}
           style={{
             padding: '10px 16px',
@@ -1757,7 +1827,7 @@ const Applications = () => {
                     }}>
                       <input
                         type="checkbox"
-                        checked={filters.jobType.includes(type)}
+                        checked={getCurrentFilters().jobType.includes(type)}
                         onChange={() => toggleFilter('jobType', type)}
                         style={{ width: '16px', height: '16px' }}
                       />
@@ -1789,7 +1859,7 @@ const Applications = () => {
                     }}>
                       <input
                         type="checkbox"
-                        checked={filters.experienceLevel.includes(level)}
+                        checked={getCurrentFilters().experienceLevel.includes(level)}
                         onChange={() => toggleFilter('experienceLevel', level)}
                         style={{ width: '16px', height: '16px' }}
                       />
@@ -1821,7 +1891,7 @@ const Applications = () => {
                     }}>
                       <input
                         type="checkbox"
-                        checked={filters.industry.includes(industry)}
+                        checked={getCurrentFilters().industry.includes(industry)}
                         onChange={() => toggleFilter('industry', industry)}
                         style={{ width: '16px', height: '16px' }}
                       />
@@ -1853,7 +1923,7 @@ const Applications = () => {
                     }}>
                       <input
                         type="checkbox"
-                        checked={filters.location.includes(location)}
+                        checked={getCurrentFilters().location.includes(location)}
                         onChange={() => toggleFilter('location', location)}
                         style={{ width: '16px', height: '16px' }}
                       />
@@ -1877,7 +1947,7 @@ const Applications = () => {
                   <input
                     type="number"
                     placeholder="Min"
-                    value={filters.salaryMin}
+                    value={getCurrentFilters().salaryMin}
                     onChange={(e) => updateSalaryRange('salaryMin', e.target.value)}
                     style={{
                       flex: 1,
@@ -1891,7 +1961,7 @@ const Applications = () => {
                   <input
                     type="number"
                     placeholder="Max"
-                    value={filters.salaryMax}
+                    value={getCurrentFilters().salaryMax}
                     onChange={(e) => updateSalaryRange('salaryMax', e.target.value)}
                     style={{
                       flex: 1,
