@@ -88,7 +88,7 @@ const Post = ({ onClose, editItem = null }) => {
       }
 
       const isTender = ((editItem.type || '').toString().toLowerCase().replace(/s$/, '') === 'tender')
-      const isOpportunity = ((editItem.type || '').toString().toLowerCase().replace(/s$/, '') === 'opportunity')
+      const isOpportunity = ((editItem.content_type || editItem.type || '').toString().toLowerCase()) === 'opportunities'
 
       const tenderMin = editItem.contract_value_min ?? editItem.min_value ?? null
       const tenderMax = editItem.contract_value_max ?? editItem.max_value ?? null
@@ -97,8 +97,8 @@ const Post = ({ onClose, editItem = null }) => {
       console.log('Edit item for tender:', editItem);
       console.log('Tender min:', tenderMin, 'Tender max:', tenderMax);
       console.log('Sector:', editItem.sector);
-      const oppMin = editItem.amount_min ?? null
-      const oppMax = editItem.amount_max ?? null
+      const oppMin = editItem.salaryMin ?? editItem.amount_min ?? null
+      const oppMax = editItem.salaryMax ?? editItem.amount_max ?? null
       const derivedSalaryType = isTender
         ? (tenderMin != null && tenderMax != null && tenderMin !== tenderMax ? 'range' : 'fixed')
         : isOpportunity
@@ -111,6 +111,16 @@ const Post = ({ onClose, editItem = null }) => {
       const initialMax = isTender ? (tenderMax ?? '')
                         : isOpportunity ? (oppMax ?? '')
                         : (editItem.salary_max || '')
+      
+      console.log('DEBUG - editItem:', editItem)
+      console.log('DEBUG - editItem.type:', editItem.type)
+      console.log('DEBUG - editItem.content_type:', editItem.content_type)
+      console.log('DEBUG - editItem.opportunityType:', editItem.opportunityType)
+      console.log('DEBUG - isOpportunity:', isOpportunity)
+      console.log('DEBUG - isTender:', isTender)
+      console.log('DEBUG - oppMin:', oppMin, 'oppMax:', oppMax)
+      console.log('DEBUG - initialMin:', initialMin, 'initialMax:', initialMax)
+      console.log('DEBUG - derivedSalaryType:', derivedSalaryType)
       
       console.log('Derived salary type:', derivedSalaryType);
       console.log('Initial min:', initialMin, 'Initial max:', initialMax);
@@ -150,7 +160,7 @@ const Post = ({ onClose, editItem = null }) => {
         value: editItem.value || editItem.contract_value_min || editItem.contractValue || editItem.amount || '',
         sector: (editItem.sector || editItem.industry || '').toLowerCase(),
         customSector: editItem.customSector || '',
-        requirements: ensureMultiline(editItem.requirements || editItem.requirements_summary),
+        requirements: ensureMultiline(editItem.requirements || editItem.requirements_summary || editItem.eligibility_criteria),
         projectScope: ensureMultiline(editItem.project_scope || editItem.scope),
         technicalRequirements: ensureMultiline(editItem.technical_requirements || editItem.technicalSpecs),
         submissionProcess: ensureMultiline(editItem.submission_process || editItem.submission),
@@ -158,8 +168,14 @@ const Post = ({ onClose, editItem = null }) => {
         contactPhone: editItem.contact_phone || '',
         // Opportunity-specific fields
         duration: editItem.duration || '',
+        opportunityType: editItem.opportunityType || editItem.type || editItem.opportunity_type || '',
         category: editItem.category || ''
       };
+      
+      console.log('DEBUG - opportunityType mapped to:', newFormData.opportunityType)
+      console.log('DEBUG - salaryType mapped to:', newFormData.salaryType)
+      console.log('DEBUG - newFormData.opportunityType:', newFormData.opportunityType)
+      console.log('DEBUG - newFormData.salaryType:', newFormData.salaryType)
       setFormData(newFormData);
     }
   }, [editItem])
@@ -357,15 +373,29 @@ const Post = ({ onClose, editItem = null }) => {
       } else if (formData.type === 'opportunity') {
         // multipart so we can upload cover + organization logo
         const fd3 = new FormData()
+        
+        // Process amount based on type (fixed or range) for opportunities
+        let amount_min
+        let amount_max
+        if (formData.salaryType === 'fixed') {
+          amount_min = formData.salaryMin ? parseFloat(formData.salaryMin) : undefined
+          amount_max = formData.salaryMin ? parseFloat(formData.salaryMin) : undefined
+        } else if (formData.salaryType === 'range') {
+          amount_min = formData.salaryMin ? parseFloat(formData.salaryMin) : undefined
+          amount_max = formData.salaryMax ? parseFloat(formData.salaryMax) : undefined
+        }
+        
         const oppBody = {
           ...payload,
           organization: formData.organization,
-          type: normalizeOpportunityType(formData.jobType),
+          type: formData.opportunityType, // Store display value directly
           category: 'general',
           benefits: formData.benefits ? formData.benefits.split(',').map(s => s.trim()).filter(Boolean) : [],
           requirements: formData.requirements ? formData.requirements.split('\n').filter(Boolean) : [],
           duration: formData.experience || undefined,
           currency: formData.currency || 'USD',
+          amount_min: amount_min,
+          amount_max: amount_max,
           // price is admin-only via onClose
           price: onClose ? (formData.price || undefined) : undefined
         }
@@ -1966,8 +1996,8 @@ const Post = ({ onClose, editItem = null }) => {
                   </label>
                   <select
                     required
-                    value={formData.jobType}
-                    onChange={(e) => handleInputChange('jobType', e.target.value)}
+                    value={formData.opportunityType}
+                    onChange={(e) => handleInputChange('opportunityType', e.target.value)}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -2053,34 +2083,6 @@ const Post = ({ onClose, editItem = null }) => {
                   />
                 </div>
 
-                {/* Contact Phone */}
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    color: '#374151',
-                    marginBottom: '6px',
-                    display: 'block'
-                  }}>
-                    Contact Phone
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.contactPhone}
-                    onChange={(e) => handleInputChange('contactPhone', e.target.value)}
-                    placeholder="+255 123 456 789"
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-
                 {/* Application URL */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{
@@ -2122,8 +2124,8 @@ const Post = ({ onClose, editItem = null }) => {
                     Application Duration
                   </label>
                   <select
-                    value={formData.experience}
-                    onChange={(e) => handleInputChange('experience', e.target.value)}
+                    value={formData.duration}
+                    onChange={(e) => handleInputChange('duration', e.target.value)}
                     style={{
                       width: '100%',
                       padding: '10px 12px',

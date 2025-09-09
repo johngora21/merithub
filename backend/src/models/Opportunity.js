@@ -20,7 +20,7 @@ const Opportunity = sequelize.define('Opportunity', {
     allowNull: true
   },
   type: {
-    type: DataTypes.ENUM('scholarship', 'fellowship', 'grant', 'program', 'internship', 'competition', 'volunteer'),
+    type: DataTypes.ENUM('Scholarships', 'Fellowships', 'Grants', 'Funds', 'Internships', 'Programs', 'Competitions', 'Research', 'Professional Development'),
     allowNull: false
   },
   category: {
@@ -84,6 +84,11 @@ const Opportunity = sequelize.define('Opportunity', {
     defaultValue: []
   },
   documents: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: []
+  },
+  tags: {
     type: DataTypes.JSON,
     allowNull: true,
     defaultValue: []

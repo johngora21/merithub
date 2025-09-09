@@ -1133,17 +1133,16 @@ const Applications = () => {
             if (activeTab === 'opportunities') {
               const getTypeColor = (type) => {
                 switch (type) {
-                  case 'Scholarship': return '#1d4ed8'
-                  case 'Fellowship': return '#7c3aed'
-                  case 'Grant': return '#dc2626'
-                  case 'Program': return '#059669'
-                  case 'Internship': return '#ea580c'
-                  case 'Award': return '#ef4444'
-                  case 'Competition': return '#06b6d4'
-                  case 'Workshop': return '#f97316'
-                  case 'Conference': return '#ec4899'
-                  case 'Training': return '#6366f1'
-                  default: return '#16a34a'
+                  case 'Scholarships': return '#1d4ed8'      // Blue
+                  case 'Fellowships': return '#7c3aed'       // Purple
+                  case 'Grants': return '#dc2626'            // Red
+                  case 'Funds': return '#ea580c'             // Orange
+                  case 'Internships': return '#059669'       // Green
+                  case 'Programs': return '#0891b2'          // Cyan
+                  case 'Competitions': return '#f59e0b'      // Amber
+                  case 'Research': return '#8b5cf6'          // Violet
+                  case 'Professional Development': return '#ec4899' // Pink
+                  default: return '#64748b'                  // Gray
                 }
               }
 

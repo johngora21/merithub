@@ -574,7 +574,11 @@ const getAllContent = async (req, res) => {
           submissions: item.submissions_count || 0,
           coverImage: resolveAssetUrl(item.cover_image) || null,
           description: item.description || '',
-          tags: item.tags || [],
+          tags: (() => {
+            const tags = item.tags || [];
+            console.log('Admin controller - Tender tags for', item.title, ':', tags);
+            return tags;
+          })(),
           price: item.price || 'Free',
           // Detailed tender fields
           requirements: item.requirements || [],
@@ -590,10 +594,16 @@ const getAllContent = async (req, res) => {
           organization: item.organization || 'Unknown Organization',
           location: item.location || 'Unknown Location',
           type: item.type || 'Opportunity',
+          opportunityType: item.type || 'Opportunity', // Store display value directly
+          content_type: 'opportunities', // Add content type for frontend
           category: item.category || 'Unknown',
           amount: item.amount_min && item.amount_max ? 
                   `${item.currency} ${item.amount_min} - ${item.currency} ${item.amount_max}` : 
                   'Amount not specified',
+          amount_min: item.amount_min,
+          amount_max: item.amount_max,
+          salaryMin: item.amount_min, // Add salaryMin for frontend compatibility
+          salaryMax: item.amount_max, // Add salaryMax for frontend compatibility
           duration: item.duration || 'Not specified',
           deadline: item.deadline,
           poster: (() => {
@@ -608,18 +618,82 @@ const getAllContent = async (req, res) => {
           })(),
           description: item.description || '',
           detailed_description: item.detailed_description || '',
-          eligibility: item.eligibility_criteria || [],
-          applicationProcess: item.application_process || [],
-          benefits: item.benefits || [],
-          requirements: item.requirements || [],
-          tags: item.tags || [],
+          eligibility: (() => {
+            try {
+              if (typeof item.eligibility_criteria === 'string') {
+                return JSON.parse(item.eligibility_criteria);
+              }
+              return Array.isArray(item.eligibility_criteria) ? item.eligibility_criteria : [];
+            } catch (e) {
+              return [];
+            }
+          })(),
+          requirements: (() => {
+            try {
+              if (typeof item.eligibility_criteria === 'string') {
+                return JSON.parse(item.eligibility_criteria);
+              }
+              return Array.isArray(item.eligibility_criteria) ? item.eligibility_criteria : [];
+            } catch (e) {
+              return [];
+            }
+          })(),
+          applicationProcess: (() => {
+            try {
+              if (typeof item.application_process === 'string') {
+                return JSON.parse(item.application_process);
+              }
+              return Array.isArray(item.application_process) ? item.application_process : [];
+            } catch (e) {
+              return [];
+            }
+          })(),
+          benefits: (() => {
+            try {
+              if (typeof item.benefits === 'string') {
+                return JSON.parse(item.benefits);
+              }
+              return Array.isArray(item.benefits) ? item.benefits : [];
+            } catch (e) {
+              return [];
+            }
+          })(),
+          requirements: (() => {
+            try {
+              if (typeof item.requirements === 'string') {
+                return JSON.parse(item.requirements);
+              }
+              return Array.isArray(item.requirements) ? item.requirements : [];
+            } catch (e) {
+              return [];
+            }
+          })(),
+          tags: (() => {
+            try {
+              if (typeof item.tags === 'string') {
+                return JSON.parse(item.tags);
+              }
+              return Array.isArray(item.tags) ? item.tags : [];
+            } catch (e) {
+              return [];
+            }
+          })(),
           amount_min: item.amount_min,
           amount_max: item.amount_max,
           currency: item.currency || 'USD',
           organization_logo: item.organization_logo,
           external_url: item.external_url,
           contact_email: item.contact_email,
-          documents: item.documents || [],
+          documents: (() => {
+            try {
+              if (typeof item.documents === 'string') {
+                return JSON.parse(item.documents);
+              }
+              return Array.isArray(item.documents) ? item.documents : [];
+            } catch (e) {
+              return [];
+            }
+          })(),
           price: item.price || 'Free'
         };
       } else if (type === 'courses') {

@@ -597,13 +597,17 @@ const Bookmarks = () => {
               }
 
               const getTypeColor = (type) => {
-                switch (type?.toLowerCase()) {
-                  case 'scholarship': return '#3b82f6'
-                  case 'internship': return '#16a34a'
-                  case 'fellowship': return '#f59e0b'
-                  case 'grant': return '#8b5cf6'
-                  case 'competition': return '#ef4444'
-                  default: return '#64748b'
+                switch (type) {
+                  case 'Scholarships': return '#1d4ed8'      // Blue
+                  case 'Fellowships': return '#7c3aed'       // Purple
+                  case 'Grants': return '#dc2626'            // Red
+                  case 'Funds': return '#ea580c'             // Orange
+                  case 'Internships': return '#059669'       // Green
+                  case 'Programs': return '#0891b2'          // Cyan
+                  case 'Competitions': return '#f59e0b'      // Amber
+                  case 'Research': return '#8b5cf6'          // Violet
+                  case 'Professional Development': return '#ec4899' // Pink
+                  default: return '#64748b'                  // Gray
                 }
               }
 

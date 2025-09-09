@@ -617,24 +617,12 @@ const Content = () => {
 
   const getTypeColor = (type) => {
     const colorMap = {
-      'Scholarships': '#1d4ed8',      // Blue
-      'Fellowships': '#7c3aed',       // Purple
-      'Grants': '#dc2626',            // Red
-      'Funds': '#ea580c',             // Orange
-      'Internships': '#059669',       // Green
-      'Programs': '#0891b2',          // Cyan
-      'Competitions': '#f59e0b',      // Amber
-      'Research': '#8b5cf6',          // Violet
-      'Professional Development': '#ec4899', // Pink
-      'Volunteer': '#ef4444',         // Red
-      'Scholarship': '#1d4ed8',       // Blue (singular)
-      'Fellowship': '#7c3aed',        // Purple (singular)
-      'Grant': '#dc2626',             // Red (singular)
-      'Fund': '#ea580c',              // Orange (singular)
-      'Internship': '#059669',        // Green (singular)
-      'Program': '#0891b2',           // Cyan (singular)
-      'Competition': '#f59e0b',       // Amber (singular)
-      'default': '#64748b'            // Gray
+      'Scholarship': '#8b5cf6',
+      'Fellowship': '#3b82f6',
+      'Grant': '#16a34a',
+      'Competition': '#f59e0b',
+      'Volunteer': '#ef4444',
+      'default': '#64748b'
     }
     return colorMap[type] || colorMap.default
   }
@@ -4888,49 +4876,6 @@ const Content = () => {
                     </div>
                   )}
 
-                  {/* Tags */}
-                  {selectedItem.tags && selectedItem.tags.length > 0 && (
-                    <div style={{ marginBottom: '24px' }}>
-                      <h3 style={{
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        color: '#1a1a1a',
-                        margin: '0 0 12px 0'
-                      }}>
-                        Tags
-                      </h3>
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '8px'
-                      }}>
-                        {Array.isArray(selectedItem.tags) ? selectedItem.tags.map((tag, index) => (
-                          <span key={index} style={{
-                            backgroundColor: '#f1f5f9',
-                            color: '#475569',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
-                            fontWeight: '500'
-                          }}>
-                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
-                          </span>
-                        )) : (
-                          <span style={{
-                            backgroundColor: '#f1f5f9',
-                            color: '#475569',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
-                            fontWeight: '500'
-                          }}>
-                            {selectedItem.tags}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Contact Information */}
                   {selectedItem.contactInfo && (
                     <div style={{
@@ -4976,7 +4921,7 @@ const Content = () => {
                     borderBottom: '1px solid #e5e7eb'
                   }}>
                     <img 
-                      src={selectedItem.poster || selectedItem.coverImage || selectedItem.logo} 
+                      src={selectedItem.logo} 
                       alt={selectedItem.organization}
                       style={{
                         width: '60px',
@@ -5013,11 +4958,33 @@ const Content = () => {
                       }}>
                         <span>{selectedItem.location}</span>
                         <span>•</span>
-                        <span style={{ color: '#dc2626', fontWeight: '600' }}>
-                          Deadline: {selectedItem.deadline ? new Date(selectedItem.deadline).toLocaleDateString() : 'Not specified'}
-                        </span>
+                        <span>{selectedItem.type}</span>
+                        <span>•</span>
+                        <span style={{ color: '#16a34a', fontWeight: '600' }}>{selectedItem.value}</span>
+                        <span>•</span>
+                        <span>{selectedItem.duration}</span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Opportunity Overview */}
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      Opportunity Overview
+                    </h3>
+                    <p style={{
+                      fontSize: '15px',
+                      lineHeight: '1.6',
+                      color: '#374151',
+                      margin: 0
+                    }}>
+                      {selectedItem.description}
+                    </p>
                   </div>
 
                   {/* Detailed Information */}
@@ -5041,7 +5008,7 @@ const Content = () => {
                       </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Opportunity Type</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.opportunityType || selectedItem.type}</p>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.type}</p>
                       </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Amount</label>
@@ -5054,6 +5021,14 @@ const Content = () => {
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.location}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Country</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.country}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Deadline</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.deadline ? new Date(selectedItem.deadline).toLocaleDateString() : 'Not specified'}</p>
                       </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Posted By</label>
@@ -5086,28 +5061,8 @@ const Content = () => {
                     </div>
                   </div>
 
-                  {/* Opportunity Overview */}
-                  <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 12px 0'
-                    }}>
-                      Opportunity Overview
-                    </h3>
-                    <p style={{
-                      fontSize: '15px',
-                      lineHeight: '1.6',
-                      color: '#374151',
-                      margin: 0
-                    }}>
-                      {selectedItem.description}
-                    </p>
-                  </div>
-
                   {/* Eligibility */}
-                  {selectedItem.requirements && selectedItem.requirements.length > 0 && (
+                  {selectedItem.eligibility && (
                     <div style={{ marginBottom: '24px' }}>
                       <h3 style={{
                         fontSize: '18px',
@@ -5122,7 +5077,7 @@ const Content = () => {
                         padding: 0,
                         margin: 0
                       }}>
-                        {selectedItem.requirements.map((requirement, index) => (
+                        {selectedItem.eligibility.map((requirement, index) => (
                           <li key={index} style={{
                             display: 'flex',
                             alignItems: 'flex-start',
@@ -5145,8 +5100,9 @@ const Content = () => {
                     </div>
                   )}
 
-                  {/* Benefits & Value */}
-                  {selectedItem.benefits && selectedItem.benefits.length > 0 && (
+
+                  {/* Application Process */}
+                  {selectedItem.applicationProcess && (
                     <div style={{ marginBottom: '24px' }}>
                       <h3 style={{
                         fontSize: '18px',
@@ -5154,14 +5110,14 @@ const Content = () => {
                         color: '#1a1a1a',
                         margin: '0 0 12px 0'
                       }}>
-                        Benefits & Value
+                        Application Process
                       </h3>
                       <ul style={{
                         listStyle: 'none',
                         padding: 0,
                         margin: 0
                       }}>
-                        {selectedItem.benefits.map((benefit, index) => (
+                        {selectedItem.applicationProcess.map((step, index) => (
                           <li key={index} style={{
                             display: 'flex',
                             alignItems: 'flex-start',
@@ -5172,20 +5128,29 @@ const Content = () => {
                             color: '#374151'
                           }}>
                             <span style={{
-                              color: '#16a34a',
-                              fontSize: '16px',
-                              lineHeight: '1',
+                              backgroundColor: '#16a34a',
+                              color: 'white',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                               marginTop: '2px'
-                            }}>✓</span>
-                            {benefit}
+                            }}>
+                              {index + 1}
+                            </span>
+                            {step}
                           </li>
                         ))}
                       </ul>
                     </div>
                   )}
 
-                  {/* Tags */}
-                  {((selectedItem.tags && selectedItem.tags.length > 0) || (selectedItem.benefits && selectedItem.benefits.length > 0)) && (
+                  {/* Selection Criteria */}
+                  {selectedItem.selectionCriteria && (
                     <div style={{ marginBottom: '24px' }}>
                       <h3 style={{
                         fontSize: '18px',
@@ -5193,14 +5158,14 @@ const Content = () => {
                         color: '#1a1a1a',
                         margin: '0 0 12px 0'
                       }}>
-                        Tags
+                        Selection Criteria
                       </h3>
                       <div style={{
                         display: 'flex',
                         flexWrap: 'wrap',
                         gap: '8px'
                       }}>
-                        {Array.isArray((selectedItem.tags && selectedItem.tags.length > 0) ? selectedItem.tags : selectedItem.benefits) ? ((selectedItem.tags && selectedItem.tags.length > 0) ? selectedItem.tags : selectedItem.benefits).map((tag, index) => (
+                        {selectedItem.selectionCriteria.map((criteria, index) => (
                           <span key={index} style={{
                             backgroundColor: '#f1f5f9',
                             color: '#475569',
@@ -5209,23 +5174,66 @@ const Content = () => {
                             fontSize: '13px',
                             fontWeight: '500'
                           }}>
-                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
+                            {criteria}
                           </span>
-                        )) : (
-                          <span style={{
-                            backgroundColor: '#f1f5f9',
-                            color: '#475569',
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Focus Areas */}
+                  {selectedItem.focusAreas && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Focus Areas
+                      </h3>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        {selectedItem.focusAreas.map((area, index) => (
+                          <span key={index} style={{
+                            backgroundColor: '#f0fdf4',
+                            color: '#166534',
                             padding: '6px 12px',
                             borderRadius: '8px',
                             fontSize: '13px',
                             fontWeight: '500'
                           }}>
-                            {(selectedItem.tags && selectedItem.tags.length > 0) ? selectedItem.tags : selectedItem.benefits}
+                            {area}
                           </span>
-                        )}
+                        ))}
                       </div>
                     </div>
                   )}
+
+                  {/* Additional Info */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '16px',
+                    backgroundColor: '#f8fafc',
+                    borderRadius: '12px',
+                    marginTop: '24px'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      gap: '16px',
+                      fontSize: '14px',
+                      color: '#64748b'
+                    }}>
+                      <span><strong>Deadline:</strong> {selectedItem.deadline}</span>
+                      <span><strong>Posted:</strong> {selectedItem.postedTime}</span>
+                      <span><strong>Status:</strong> {selectedItem.status}</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
