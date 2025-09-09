@@ -1553,7 +1553,11 @@ ${user?.first_name} ${user?.last_name}`
                   <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: '0 0 16px 0' }}>
                     Complete Job Details
                   </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: screenSize.isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(250px, 1fr))', 
+                    gap: '16px' 
+                  }}>
                     <div>
                       <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Job Type</label>
                       <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedJob.type || 'Not specified'}</p>
