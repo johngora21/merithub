@@ -1332,7 +1332,7 @@ const Opportunities = () => {
                     }}
                   />
                   <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 4px 0' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 4px 0' }}>
                       {selectedOpportunity.organization || ''}
                     </h3>
                     <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 8px 0' }}>
@@ -1350,7 +1350,7 @@ const Opportunities = () => {
 
                 {/* Opportunity Details grid (match admin) */}
                 <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Opportunity Details</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Opportunity Details</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
                       <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Organization</label>
@@ -1385,7 +1385,7 @@ const Opportunities = () => {
 
                 {/* Opportunity Overview */}
                 <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Opportunity Overview</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Opportunity Overview</h3>
                   <p style={{ fontSize: '15px', lineHeight: '1.6', color: '#374151', margin: 0 }}>
                     {selectedOpportunity.detailedDescription || selectedOpportunity.description}
                   </p>
@@ -1394,7 +1394,7 @@ const Opportunities = () => {
                 {/* Eligibility Requirements */}
                 {selectedOpportunity.requirements && selectedOpportunity.requirements.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Eligibility Requirements</h3>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Eligibility Requirements</h3>
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                       {selectedOpportunity.requirements.map((requirement, index) => (
                         <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', fontSize: '14px', lineHeight: '1.5', color: '#374151' }}>
@@ -1409,7 +1409,7 @@ const Opportunities = () => {
                 {/* Benefits & Value */}
                 {selectedOpportunity.benefits && selectedOpportunity.benefits.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Benefits & Value</h3>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Benefits & Value</h3>
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                       {selectedOpportunity.benefits.map((benefit, index) => (
                         <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', fontSize: '14px', lineHeight: '1.5', color: '#374151' }}>
@@ -1424,7 +1424,7 @@ const Opportunities = () => {
                 {/* Tags */}
                 {((selectedOpportunity.tags && selectedOpportunity.tags.length > 0) || (selectedOpportunity.benefits && selectedOpportunity.benefits.length > 0)) && (
                   <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Tags</h3>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Tags</h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                       {((selectedOpportunity.tags && selectedOpportunity.tags.length > 0) ? selectedOpportunity.tags : selectedOpportunity.benefits).map((tag, index) => (
                         <span key={index} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: '500' }}>
