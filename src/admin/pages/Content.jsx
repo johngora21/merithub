@@ -1212,38 +1212,6 @@ const Content = () => {
               </div>
             </div>
 
-            {/* Tags */}
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '6px',
-              marginBottom: '12px'
-            }}>
-              {item.tags.slice(0, 2).map((tag, index) => (
-                <span key={index} style={{
-                  backgroundColor: '#f1f5f9',
-                  color: '#475569',
-                  padding: '6px 10px',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  fontWeight: '500'
-                }}>
-                  {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
-                </span>
-              ))}
-              {item.tags.length > 2 && (
-                <span style={{
-                  backgroundColor: '#f1f5f9',
-                  color: '#475569',
-                  padding: '4px 8px',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  fontWeight: '500'
-                }}>
-                  +{item.tags.length - 2} more
-                </span>
-              )}
-            </div>
 
             {/* Footer */}
             <div style={{
