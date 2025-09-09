@@ -59,6 +59,29 @@ const Jobs = () => {
     fetchSavedJobs()
   }, [])
 
+  // Listen for bookmark removal events from other pages
+  useEffect(() => {
+    const handleBookmarkRemoved = (event) => {
+      const { type, originalId } = event.detail
+      if (type === 'job') {
+        const idStr = String(originalId)
+        if (savedJobs.has(idStr)) {
+          const next = new Set(savedJobs)
+          next.delete(idStr)
+          setSavedJobs(next)
+          setJobIdToSavedItemId(prev => {
+            const copy = { ...prev }
+            delete copy[idStr]
+            return copy
+          })
+        }
+      }
+    }
+
+    window.addEventListener('bookmarkRemoved', handleBookmarkRemoved)
+    return () => window.removeEventListener('bookmarkRemoved', handleBookmarkRemoved)
+  }, [savedJobs])
+
   const fetchSavedJobs = async () => {
     try {
       const resp = await apiService.get('/saved-items')
@@ -127,7 +150,7 @@ const Jobs = () => {
       location: apiJob.location,
       salary,
       type: apiJob.job_type ? apiJob.job_type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('-') : 'Not specified',
-      experience: apiJob.experience_level ? apiJob.experience_level.charAt(0).toUpperCase() + apiJob.experience_level.slice(1) + ' level' : 'Not specified',
+      experience: apiJob.experience_years ? `${apiJob.experience_years} years` : (apiJob.experience_level ? apiJob.experience_level.charAt(0).toUpperCase() + apiJob.experience_level.slice(1) + ' level' : 'Not specified'),
       skills: apiJob.skills || [],
       tags: apiJob.tags || [],
       description: apiJob.description,

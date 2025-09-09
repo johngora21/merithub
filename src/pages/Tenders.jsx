@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { countries } from '../utils/countries'
-import { tendersAPI } from '../lib/api-service'
-import { resolveAssetUrl } from '../lib/api-service'
+import { tendersAPI, apiService, resolveAssetUrl } from '../lib/api-service'
 
 import { 
   Bookmark, 
@@ -29,6 +28,7 @@ import {
 const Tenders = () => {
   const screenSize = useResponsive()
   const [savedTenders, setSavedTenders] = useState(new Set())
+  const [tenderIdToSavedItemId, setTenderIdToSavedItemId] = useState({})
   
   const [searchQuery, setSearchQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
@@ -164,7 +164,31 @@ const Tenders = () => {
       }
     }
     fetchTenders()
+    fetchSavedTenders()
   }, [])
+
+  // Listen for bookmark removal events from other pages
+  useEffect(() => {
+    const handleBookmarkRemoved = (event) => {
+      const { type, originalId } = event.detail
+      if (type === 'tender') {
+        const idStr = String(originalId)
+        if (savedTenders.has(idStr)) {
+          const next = new Set(savedTenders)
+          next.delete(idStr)
+          setSavedTenders(next)
+          setTenderIdToSavedItemId(prev => {
+            const copy = { ...prev }
+            delete copy[idStr]
+            return copy
+          })
+        }
+      }
+    }
+
+    window.addEventListener('bookmarkRemoved', handleBookmarkRemoved)
+    return () => window.removeEventListener('bookmarkRemoved', handleBookmarkRemoved)
+  }, [savedTenders])
   const filterOptions = {
     sector: [
       'Technology', 'Construction', 'Healthcare', 'Transportation', 'Energy', 
@@ -192,14 +216,55 @@ const Tenders = () => {
     { code: 'BIF', symbol: 'FBu', name: 'Burundian Franc' }
   ]
 
-  const toggleSave = (tenderId) => {
-    const newSaved = new Set(savedTenders)
-    if (newSaved.has(tenderId)) {
-      newSaved.delete(tenderId)
-    } else {
-      newSaved.add(tenderId)
+  const fetchSavedTenders = async () => {
+    try {
+      const resp = await apiService.get('/saved-items')
+      const items = resp?.data?.items || resp?.data || []
+      const savedSet = new Set()
+      const map = {}
+      items.forEach(si => {
+        if (si.tender) {
+          savedSet.add(String(si.tender.id))
+          map[String(si.tender.id)] = si.id
+        }
+      })
+      setSavedTenders(savedSet)
+      setTenderIdToSavedItemId(map)
+    } catch (e) {
+      // ignore
     }
-    setSavedTenders(newSaved)
+  }
+
+  const toggleSave = async (tenderId) => {
+    const idStr = String(tenderId)
+    try {
+      if (savedTenders.has(idStr)) {
+        const savedId = tenderIdToSavedItemId[idStr]
+        if (savedId) {
+          await apiService.delete(`/saved-items/${savedId}`)
+        }
+        const next = new Set(savedTenders)
+        next.delete(idStr)
+        setSavedTenders(next)
+        setTenderIdToSavedItemId(prev => {
+          const copy = { ...prev }
+          delete copy[idStr]
+          return copy
+        })
+      } else {
+        const resp = await apiService.post('/saved-items', { item_type: 'tender', tender_id: Number(tenderId) })
+        const savedItem = resp?.data?.saved_item || resp?.data
+        const next = new Set(savedTenders)
+        next.add(idStr)
+        setSavedTenders(next)
+        if (savedItem?.id) {
+          setTenderIdToSavedItemId(prev => ({ ...prev, [idStr]: savedItem.id }))
+        }
+      }
+    } catch (e) {
+      console.error('Toggle save failed', e)
+      alert(e?.message || 'Failed to update bookmark')
+    }
   }
 
   const handleViewDetails = (tenderId) => {
@@ -735,6 +800,10 @@ const Tenders = () => {
                     flexShrink: 0
                   }}>
                     <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleApply(tender.id)
+                      }}
                       style={{
                         backgroundColor: '#16a34a',
                         color: 'white',

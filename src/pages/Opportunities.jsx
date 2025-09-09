@@ -52,6 +52,29 @@ const Opportunities = () => {
     fetchSavedOpportunities()
   }, [])
 
+  // Listen for bookmark removal events from other pages
+  useEffect(() => {
+    const handleBookmarkRemoved = (event) => {
+      const { type, originalId } = event.detail
+      if (type === 'opportunity') {
+        const idStr = String(originalId)
+        if (savedOpportunities.has(idStr)) {
+          const next = new Set(savedOpportunities)
+          next.delete(idStr)
+          setSavedOpportunities(next)
+          setOpportunityIdToSavedItemId(prev => {
+            const copy = { ...prev }
+            delete copy[idStr]
+            return copy
+          })
+        }
+      }
+    }
+
+    window.addEventListener('bookmarkRemoved', handleBookmarkRemoved)
+    return () => window.removeEventListener('bookmarkRemoved', handleBookmarkRemoved)
+  }, [savedOpportunities])
+
   const fetchSavedOpportunities = async () => {
     try {
       const resp = await apiService.get('/saved-items')
@@ -737,6 +760,10 @@ const Opportunities = () => {
                     flexShrink: 0
                   }}>
                     <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleApply(opportunity.id)
+                      }}
                       style={{
                         backgroundColor: '#16a34a',
                         color: 'white',

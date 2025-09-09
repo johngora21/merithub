@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { apiService, resolveAssetUrl } from '../lib/api-service'
+import { useAuth } from '../contexts/AuthContext'
 import { countries } from '../utils/countries'
 
 import { 
@@ -21,14 +22,18 @@ import {
   Shield,
   Factory,
   Calendar,
-  Users
+  Users,
+  X
 } from 'lucide-react'
 
 const Bookmarks = () => {
   const screenSize = useResponsive()
+  const { user } = useAuth()
   const [selectedFilter, setSelectedFilter] = useState('job')
   const [bookmarks, setBookmarks] = useState([])
   const [loading, setLoading] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
 
   useEffect(() => {
     // Test if user is logged in
@@ -70,6 +75,7 @@ const Bookmarks = () => {
 
     if (apiBookmark.job) {
           const j = apiBookmark.job
+          baseData.originalId = j.id
           const min = j?.salary_min != null ? Number(j.salary_min) : undefined
           const max = j?.salary_max != null ? Number(j.salary_max) : undefined
           const fmt = (n) => typeof n === 'number' && !Number.isNaN(n) ? n.toLocaleString() : ''
@@ -96,7 +102,8 @@ const Bookmarks = () => {
         country: getCountryName(j.country),
         salary,
         workType: j.job_type ? j.job_type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('-') : 'Not specified',
-        experience: j.experience_level ? j.experience_level.charAt(0).toUpperCase() + j.experience_level.slice(1) + ' level' : 'Not specified',
+        workTypeMode: j.work_type ? j.work_type.charAt(0).toUpperCase() + j.work_type.slice(1).replace('-', ' ') : 'Not specified',
+        experience: j.experience_years ? `${j.experience_years} years` : (j.experience_level ? j.experience_level.charAt(0).toUpperCase() + j.experience_level.slice(1) + ' level' : 'Not specified'),
         skills: j.skills || [],
         tags: j.tags || [],
         description: j.description,
@@ -117,6 +124,26 @@ const Bookmarks = () => {
       }
     } else if (apiBookmark.opportunity) {
       const o = apiBookmark.opportunity
+      baseData.originalId = o.id
+      
+      // Parse arrays from JSON strings (same logic as main Opportunities page)
+      const parseToArray = (val) => {
+        if (!val && val !== 0) return []
+        if (Array.isArray(val)) {
+          return val
+            .map(item => typeof item === 'string' ? item.trim() : item)
+            .filter(item => item !== null && item !== undefined && String(item).trim() !== '')
+        }
+        if (typeof val === 'string') {
+          const str = val.trim()
+          if ((str.startsWith('[') && str.endsWith(']')) || (str.startsWith('{') && str.endsWith('}'))) {
+            try { return parseToArray(JSON.parse(str)) } catch (_) {}
+          }
+          return str.split(/\r?\n|,/).map(s => s.trim()).filter(s => s.length > 0)
+        }
+        return [val]
+      }
+      
       console.log('Opportunity data:', {
         id: o.id,
         title: o.title,
@@ -136,15 +163,28 @@ const Bookmarks = () => {
         location: o.location || 'Not specified',
         country: getCountryName(o.country),
         duration: o.duration || 'Not specified',
-        salary: o.amount_min 
-          ? `${o.currency} ${o.amount_min}`
-          : 'Not specified',
+        salary: (() => {
+          if (o.amount_min && o.amount_max) {
+            const min = parseFloat(o.amount_min)
+            const max = parseFloat(o.amount_max)
+            if (min === max) {
+              return `${o.currency} ${min.toLocaleString()}`
+            } else {
+              return `${o.currency} ${min.toLocaleString()} - ${o.currency} ${max.toLocaleString()}`
+            }
+          } else if (o.amount_min) {
+            const min = parseFloat(o.amount_min)
+            return `${o.currency} ${min.toLocaleString()}`
+          }
+          return 'Not specified'
+        })(),
         opportunityType: o.type || 'Not specified',
         experience: o.experience_level || 'Not specified',
         skills: o.skills || [],
-        tags: o.tags || [],
+        tags: parseToArray(o.tags),
         description: o.description,
-        benefits: o.benefits || [],
+        benefits: parseToArray(o.benefits),
+        requirements: parseToArray(o.requirements),
         posted: o.created_at ? new Date(o.created_at).toLocaleDateString() : 'Recently',
         urgentHiring: o.is_urgent || false,
         price: o.price || 'Free',
@@ -157,18 +197,54 @@ const Bookmarks = () => {
         status: o.status || 'active',
         applicants: o.applicants || 0,
         logo: o.organization_logo ? resolveAssetUrl(o.organization_logo) : null,
-        poster: o.poster || o.cover_image || o.coverImage || o.organization_logo || null,
-        coverImage: o.cover_image || o.coverImage || o.poster || o.organization_logo || null,
-        cover_image: o.cover_image || o.coverImage || o.poster || o.organization_logo || null
+        poster: (() => {
+          // Same logic as main Opportunities page
+          const fromDocs = Array.isArray(o.documents) ? o.documents.find(d => d && d.type === 'cover') : null
+          const url = fromDocs?.url || null
+          const resolved = url ? (url.startsWith('http') ? url : `http://localhost:8000${url.startsWith('/') ? '' : '/'}${url}`) : null
+          if (resolved) return resolved
+          if (o.organization_logo) {
+            const logo = o.organization_logo.startsWith('http') ? o.organization_logo : `http://localhost:8000${o.organization_logo.startsWith('/') ? '' : '/'}${o.organization_logo}`
+            return logo
+          }
+          return null
+        })()
       }
       console.log('Transformed opportunity:', {
         id: o.id,
         title: o.title,
-        poster: o.poster || o.cover_image || o.coverImage || o.organization_logo || null,
-        coverImage: o.cover_image || o.coverImage || o.poster || o.organization_logo || null
+        poster: (() => {
+          // Same logic as main Opportunities page
+          const fromDocs = Array.isArray(o.documents) ? o.documents.find(d => d && d.type === 'cover') : null
+          const url = fromDocs?.url || null
+          const resolved = url ? (url.startsWith('http') ? url : `http://localhost:8000${url.startsWith('/') ? '' : '/'}${url}`) : null
+          if (resolved) return resolved
+          if (o.organization_logo) {
+            const logo = o.organization_logo.startsWith('http') ? o.organization_logo : `http://localhost:8000${o.organization_logo.startsWith('/') ? '' : '/'}${o.organization_logo}`
+            return logo
+          }
+          return null
+        })()
       })
     } else if (apiBookmark.tender) {
       const t = apiBookmark.tender
+      baseData.originalId = t.id
+      
+      // Format contract value properly
+      let contractValue = 'Not specified'
+      if (t.contract_value_min && t.contract_value_max) {
+        const min = parseFloat(t.contract_value_min)
+        const max = parseFloat(t.contract_value_max)
+        if (min === max) {
+          contractValue = `${t.currency} ${min.toLocaleString()}`
+        } else {
+          contractValue = `${t.currency} ${min.toLocaleString()} - ${t.currency} ${max.toLocaleString()}`
+        }
+      } else if (t.contract_value_min) {
+        const min = parseFloat(t.contract_value_min)
+        contractValue = `${t.currency} ${min.toLocaleString()}`
+      }
+      
       return {
         ...baseData,
         type: 'tender',
@@ -179,21 +255,19 @@ const Bookmarks = () => {
         industry: t.sector || 'Not specified',
         location: t.location,
         country: getCountryName(t.country),
-        contractValue: t.contract_value_min 
-          ? `${t.currency} ${(t.contract_value_min / 1000000).toFixed(1)}M`
-          : 'Not specified',
-        budget: t.contract_value_min 
-          ? `${t.currency} ${(t.contract_value_min / 1000000).toFixed(1)}M`
-          : 'Not specified',
-        salary: t.contract_value_min 
-          ? `${t.currency} ${(t.contract_value_min / 1000000).toFixed(1)}M`
-          : 'Not specified',
+        contractValue,
+        budget: contractValue,
+        salary: contractValue,
+        duration: t.duration || 'Not specified',
         tenderType: t.type || 'Not specified',
         experience: t.experience_level || 'Not specified',
         skills: t.skills || [],
         tags: t.tags || [],
         description: t.description,
         benefits: t.benefits || [],
+        requirements: t.requirements || [],
+        submissionProcess: t.submission_process || [],
+        evaluationCriteria: t.evaluation_criteria || [],
         posted: t.created_at ? new Date(t.created_at).toLocaleDateString() : 'Recently',
         urgentHiring: t.is_urgent || false,
         isUrgent: t.is_urgent || false,
@@ -207,7 +281,10 @@ const Bookmarks = () => {
         status: t.status || 'active',
         applicants: t.applicants || 0,
         logo: t.organization_logo ? resolveAssetUrl(t.organization_logo) : null,
-        coverImage: t.cover_image || t.coverImage || t.organization_logo || null
+        coverImage: (() => {
+          const coverImg = t.cover_image || t.coverImage || t.organization_logo
+          return coverImg ? resolveAssetUrl(coverImg) : null
+        })()
       }
     } else if (apiBookmark.course) {
       const c = apiBookmark.course
@@ -404,8 +481,195 @@ const Bookmarks = () => {
     return bookmark.type === selectedFilter
   })
 
-  const removeBookmark = (id) => {
-    setBookmarks(prev => prev.filter(bookmark => bookmark.id !== id))
+  const removeBookmark = async (id) => {
+    try {
+      // Find the bookmark to get its type and original ID
+      const bookmark = bookmarks.find(b => b.id === id)
+      if (!bookmark) return
+
+      // Delete from API
+      await apiService.delete(`/saved-items/${id}`)
+      
+      // Remove from local state
+      setBookmarks(prev => prev.filter(bookmark => bookmark.id !== id))
+      
+      // Update localStorage to sync with other pages
+      const savedItems = JSON.parse(localStorage.getItem('savedItems') || '{}')
+      
+      if (bookmark.type === 'job') {
+        const savedJobs = JSON.parse(localStorage.getItem('savedJobs') || '[]')
+        const updatedJobs = savedJobs.filter(jobId => jobId !== bookmark.originalId)
+        localStorage.setItem('savedJobs', JSON.stringify(updatedJobs))
+        delete savedItems[`job_${bookmark.originalId}`]
+      } else if (bookmark.type === 'tender') {
+        const savedTenders = JSON.parse(localStorage.getItem('savedTenders') || '[]')
+        const updatedTenders = savedTenders.filter(tenderId => tenderId !== bookmark.originalId)
+        localStorage.setItem('savedTenders', JSON.stringify(updatedTenders))
+        delete savedItems[`tender_${bookmark.originalId}`]
+      } else if (bookmark.type === 'opportunity') {
+        const savedOpportunities = JSON.parse(localStorage.getItem('savedOpportunities') || '[]')
+        const updatedOpportunities = savedOpportunities.filter(oppId => oppId !== bookmark.originalId)
+        localStorage.setItem('savedOpportunities', JSON.stringify(updatedOpportunities))
+        delete savedItems[`opportunity_${bookmark.originalId}`]
+      }
+      
+      localStorage.setItem('savedItems', JSON.stringify(savedItems))
+      
+      // Trigger a custom event to notify other pages
+      window.dispatchEvent(new CustomEvent('bookmarkRemoved', { 
+        detail: { 
+          type: bookmark.type, 
+          originalId: bookmark.originalId 
+        } 
+      }))
+      
+    } catch (error) {
+      console.error('Error removing bookmark:', error)
+      alert('Failed to remove bookmark')
+    }
+  }
+
+  const handleItemClick = (item) => {
+    setSelectedItem(item)
+    setShowDetails(true)
+  }
+
+  const handleApply = async (item) => {
+    console.log('Apply clicked for:', item.type, item.id)
+    
+    if (item.type === 'job') {
+      // Handle job application - EXACT same logic as Jobs.jsx
+      // Check if user is authenticated
+      if (!user) {
+        alert('Please log in to apply for jobs.')
+        return
+      }
+
+      // Check profile completeness for automatic application
+      const isProfileComplete = checkProfileCompleteness()
+      
+      if (!isProfileComplete.complete) {
+        // Show profile completion modal
+        alert('Please complete your profile to apply for jobs. Go to your profile page to add missing information.')
+        return
+      }
+
+      // Submit automatic application
+      try {
+        const applicationData = {
+          application_type: 'job',
+          job_id: parseInt(item.id),
+          cover_letter: generateCoverLetter(item),
+          application_data: {
+            profile_summary: generateProfileSummary(),
+            skills: user.skills || [],
+            experience_summary: generateExperienceSummary(),
+            education_summary: generateEducationSummary()
+          }
+        }
+
+        console.log('Submitting application with data:', applicationData)
+        console.log('User token:', localStorage.getItem('auth-token') ? 'Present' : 'Missing')
+        
+        const response = await apiService.post('/applications', applicationData)
+        
+        console.log('Application response:', response)
+        
+        if (response.success) {
+          alert('Application submitted successfully! The company will review your profile and contact you if interested.')
+          // Refresh bookmarks to update application count
+          fetchBookmarks()
+        } else {
+          console.error('Application failed:', response.message)
+          alert(response.message || 'Failed to submit application. Please try again.')
+        }
+      } catch (error) {
+        console.error('Application error:', error)
+        console.error('Error details:', error.message)
+        alert(`Failed to submit application: ${error.message}`)
+      }
+    } else if (item.type === 'tender') {
+      // Handle tender application - same logic as Tenders.jsx
+      if (item.externalUrl) {
+        window.open(item.externalUrl, '_blank')
+      } else {
+        // Show tender details modal as fallback
+        setSelectedItem(item)
+        setShowDetails(true)
+      }
+    } else if (item.type === 'opportunity') {
+      // Handle opportunity application - same logic as Opportunities.jsx
+      if (item.externalUrl) {
+        window.open(item.externalUrl, '_blank')
+      } else {
+        // Fallback - could show a modal with external link or redirect
+        alert('Please visit the organization\'s website to apply for this opportunity.')
+      }
+    }
+  }
+
+  const checkProfileCompleteness = () => {
+    const requiredFields = [
+      user?.first_name,
+      user?.last_name,
+      user?.email,
+      user?.phone,
+      user?.location,
+      user?.industry,
+      user?.current_job_title
+    ]
+
+    const hasRequiredFields = requiredFields.every(field => field && field.trim() !== '')
+    const hasEducation = user?.education && user.education.length > 0
+    const hasExperience = user?.experience && user.experience.length > 0
+
+    return {
+      complete: hasRequiredFields && (hasEducation || hasExperience),
+      missingFields: {
+        basicInfo: !hasRequiredFields,
+        education: !hasEducation,
+        experience: !hasExperience
+      }
+    }
+  }
+
+  const generateCoverLetter = (job) => {
+    return `Dear Hiring Manager,
+
+I am writing to express my interest in the ${job.title} position at ${job.company}. 
+
+With my background in ${user?.industry || 'technology'} and experience as a ${user?.current_job_title || 'professional'}, I am confident that I would be a valuable addition to your team.
+
+I am particularly drawn to this opportunity because of ${job.company}'s reputation in the industry and the chance to contribute to meaningful projects.
+
+I look forward to the opportunity to discuss how my skills and experience align with your needs.
+
+Best regards,
+${user?.first_name} ${user?.last_name}`
+  }
+
+  const generateProfileSummary = () => {
+    return `${user?.first_name} ${user?.last_name} is a ${user?.current_job_title || 'professional'} with experience in ${user?.industry || 'technology'}. Based in ${user?.location || 'various locations'}, they bring expertise and dedication to their work.`
+  }
+
+  const generateExperienceSummary = () => {
+    if (!user?.experience || user.experience.length === 0) {
+      return 'Experience details available upon request.'
+    }
+    
+    return user.experience.map(exp => 
+      `${exp.title} at ${exp.company} (${exp.period}) - ${exp.description || 'Key responsibilities and achievements.'}`
+    ).join('\n\n')
+  }
+
+  const generateEducationSummary = () => {
+    if (!user?.education || user.education.length === 0) {
+      return 'Education details available upon request.'
+    }
+    
+    return user.education.map(edu => 
+      `${edu.level} in ${edu.program} from ${edu.school} (${edu.period})`
+    ).join('\n')
   }
 
   const getTypeColor = (type) => {
@@ -638,7 +902,11 @@ const Bookmarks = () => {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
                     e.currentTarget.style.transform = 'translateY(0)'
-                  }}>
+                  }}
+                  onClick={() => handleItemClick(bookmark)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleItemClick(bookmark) }}>
                     
                     {/* Cover Image */}
                     <div style={{ position: 'relative' }}>
@@ -813,39 +1081,6 @@ const Bookmarks = () => {
                         </div>
                   </div>
                   
-                      {/* Tags */}
-                      {bookmark.tags && bookmark.tags.length > 0 && (
-                        <div style={{ marginBottom: '12px', flex: 1 }}>
-                          <div style={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: '6px'
-                          }}>
-                            {bookmark.tags.slice(0, 4).map((tag, index) => (
-                              <span key={index} style={{
-                                backgroundColor: '#f1f5f9',
-                                color: '#475569',
-                                padding: '4px 8px',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                fontWeight: '500'
-                              }}>
-                                {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Not specified'}
-                              </span>
-                            ))}
-                            {bookmark.tags.length > 4 && (
-                              <span style={{
-                                color: '#64748b',
-                                fontSize: '12px',
-                                padding: '4px 8px',
-                                fontWeight: '500'
-                              }}>
-                                +{bookmark.tags.length - 4} more
-                              </span>
-                            )}
-                          </div>
-                  </div>
-                )}
 
                       {/* Footer */}
                 <div style={{
@@ -858,14 +1093,18 @@ const Bookmarks = () => {
                         flexShrink: 0
                 }}>
                         <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleApply(bookmark)
+                          }}
                           style={{
                             backgroundColor: '#16a34a',
                             color: 'white',
                             border: 'none',
                             padding: '8px 16px',
                             borderRadius: '6px',
-                      fontSize: '14px',
-                      fontWeight: '600',
+                            fontSize: '14px',
+                            fontWeight: '600',
                             cursor: 'pointer',
                             transition: 'background-color 0.2s'
                           }}
@@ -912,13 +1151,17 @@ const Bookmarks = () => {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
                     e.currentTarget.style.transform = 'translateY(0)'
-                  }}>
+                  }}
+                  onClick={() => handleItemClick(bookmark)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleItemClick(bookmark) }}>
                     
                     {/* Poster Image */}
                     <div style={{ position: 'relative' }}>
-                      {(bookmark.poster || bookmark.coverImage || bookmark.cover_image) ? (
+                      {bookmark.poster ? (
                         <img 
-                          src={resolveAssetUrl(bookmark.poster || bookmark.coverImage || bookmark.cover_image)} 
+                          src={bookmark.poster} 
                           alt={bookmark.title || 'Opportunity'}
                           style={{
                             width: '100%',
@@ -926,8 +1169,12 @@ const Bookmarks = () => {
                             objectFit: 'cover'
                           }}
                           onError={(e) => {
+                            console.log('Image failed to load:', e.target.src)
                             e.target.style.display = 'none'
                             e.target.nextSibling.style.display = 'flex'
+                          }}
+                          onLoad={() => {
+                            console.log('Image loaded successfully:', e.target.src)
                           }}
                         />
                       ) : null}
@@ -935,7 +1182,7 @@ const Bookmarks = () => {
                         width: '100%',
                         height: '250px',
                         backgroundColor: '#f8f9fa',
-                        display: (bookmark.poster || bookmark.coverImage || bookmark.cover_image) ? 'none' : 'flex',
+                        display: bookmark.poster ? 'none' : 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: '#64748b'
@@ -1076,39 +1323,6 @@ const Bookmarks = () => {
                         </span>
                       </div>
 
-                      {/* Tags */}
-                      {bookmark.tags && bookmark.tags.length > 0 && (
-                        <div style={{ marginBottom: '12px', flex: 1 }}>
-                          <div style={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: '6px'
-                          }}>
-                            {bookmark.tags.slice(0, 4).map((tag, index) => (
-                              <span key={index} style={{
-                                backgroundColor: '#f1f5f9',
-                                color: '#475569',
-                                padding: '4px 8px',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                      fontWeight: '500'
-                    }}>
-                                {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Not specified'}
-                              </span>
-                            ))}
-                            {bookmark.tags.length > 4 && (
-                              <span style={{
-                                color: '#64748b',
-                                fontSize: '12px',
-                                padding: '4px 8px',
-                                fontWeight: '500'
-                              }}>
-                                +{bookmark.tags.length - 4} more
-                              </span>
-                            )}
-                          </div>
-                    </div>
-                  )}
                   
                       {/* Footer */}
                     <div style={{
@@ -1121,6 +1335,10 @@ const Bookmarks = () => {
                         flexShrink: 0
                       }}>
                         <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleApply(bookmark)
+                          }}
                           style={{
                             backgroundColor: '#16a34a',
                             color: 'white',
@@ -1162,7 +1380,11 @@ const Bookmarks = () => {
                 onMouseLeave={(e) => {
                   e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
                   e.currentTarget.style.transform = 'translateY(0)'
-                }}>
+                }}
+                onClick={() => handleItemClick(bookmark)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleItemClick(bookmark) }}>
                   
                   {/* PRO Badge and Remove Button - Top Right */}
                   <div style={{
@@ -1330,30 +1552,6 @@ const Bookmarks = () => {
                     </div>
                   </div>
 
-                  {/* Tags */}
-                  {bookmark.tags && bookmark.tags.length > 0 && (
-                    <div style={{ marginBottom: '10px' }}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {bookmark.tags.slice(0, 4).map((tag, index) => (
-                          <span key={index} style={{
-                            backgroundColor: '#dbeafe',
-                            color: '#1d4ed8',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            fontSize: '11px',
-                            fontWeight: '500'
-                          }}>
-                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Not specified'}
-                          </span>
-                        ))}
-                        {bookmark.tags.length > 4 && (
-                          <span style={{ color: '#64748b', fontSize: '11px', padding: '2px 6px', fontWeight: '500' }}>
-                            +{bookmark.tags.length - 4} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Footer */}
                 <div style={{
@@ -1385,7 +1583,7 @@ const Bookmarks = () => {
                   <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        // Handle view details or apply
+                        handleApply(bookmark)
                       }}
                     style={{
                       backgroundColor: '#16a34a',
@@ -1407,7 +1605,7 @@ const Bookmarks = () => {
                         e.target.style.transform = 'translateY(0)'
                       }}
                     >
-                    View Details
+                    Apply Now
                   </button>
                 </div>
               </div>
@@ -1415,6 +1613,600 @@ const Bookmarks = () => {
           })
         )
         })()}
+        </div>
+      )}
+
+      {/* Popup Modals */}
+      {showDetails && selectedItem && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: screenSize.isMobile ? 'flex-end' : 'center',
+          justifyContent: screenSize.isMobile ? 'stretch' : 'center',
+          transition: 'all 0.3s ease-in-out'
+        }}
+        onClick={() => setShowDetails(false)}>
+          <div style={{
+            backgroundColor: 'white',
+            width: screenSize.isMobile ? '100%' : 'min(800px, 90vw)',
+            maxHeight: '90vh',
+            borderRadius: screenSize.isMobile ? '20px 20px 0 0' : '16px',
+            overflowY: 'auto',
+            transition: 'all 0.3s ease-in-out',
+            boxShadow: screenSize.isMobile ? 'none' : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+          onClick={(e) => e.stopPropagation()}>
+            
+            {/* Header */}
+            <div style={{ 
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: screenSize.isMobile ? '16px 12px 0 12px' : '24px 24px 0 24px',
+              borderBottom: '1px solid #e5e7eb',
+              paddingBottom: '16px',
+              marginBottom: '16px'
+            }}>
+              <h2 style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#1a1a1a',
+                margin: 0
+              }}>
+                {selectedItem.title}
+              </h2>
+              <button
+                onClick={() => setShowDetails(false)}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  padding: '8px',
+                  borderRadius: '20px',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={18} color="#64748b" />
+              </button>
+            </div>
+
+            {/* Content - This will be populated based on selectedItem.type */}
+            <div style={{ padding: screenSize.isMobile ? '16px 24px 90px 24px' : '32px 40px 90px 40px', flex: 1 }}>
+              {selectedItem.type === 'job' && (
+                <div>
+                  {/* Company Profile Header (match admin) */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px',
+                    marginBottom: '24px',
+                    paddingBottom: '20px',
+                    borderBottom: '1px solid #e5e7eb'
+                  }}>
+                    <img 
+                      src={resolveAssetUrl(selectedItem.logo)} 
+                      alt={selectedItem.company}
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '30px',
+                        objectFit: 'cover',
+                        border: '2px solid #f8f9fa'
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 4px 0' }}>
+                        {selectedItem.company}
+                      </h3>
+                      <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 8px 0' }}>
+                        {selectedItem.title}
+                      </h2>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '14px', color: '#64748b' }}>
+                        <span>{selectedItem.location}</span>
+                        <span>•</span>
+                        <span style={{ fontWeight: '500', color: '#0f172a' }}>Country:</span>
+                        <span>{selectedItem.country}</span>
+                        <span>•</span>
+                        <span>Deadline: {selectedItem.deadline || 'No deadline'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Complete Job Details (match admin) */}
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: '0 0 16px 0' }}>
+                      Complete Job Details
+                    </h3>
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: screenSize.isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(250px, 1fr))', 
+                      gap: '16px' 
+                    }}>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Job Type</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedItem.workType || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Work Type</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedItem.workTypeMode || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Experience Level</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedItem.experience || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedItem.industry || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedItem.location || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Country</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedItem.country || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Salary</label>
+                        <p style={{ fontSize: '14px', color: '#16a34a', fontWeight: '600', margin: 0 }}>{selectedItem.salary || 'Not specified'}</p>
+                      </div>
+                      {selectedItem.contactEmail && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Email</label>
+                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
+                            <a href={`mailto:${selectedItem.contactEmail}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contactEmail}</a>
+                          </p>
+                        </div>
+                      )}
+                      {selectedItem.contactPhone && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Phone</label>
+                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
+                            <a href={`tel:${selectedItem.contactPhone}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contactPhone}</a>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Job Overview */}
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 8px 0'
+                    }}>
+                      Job Overview
+                    </h3>
+                    <p style={{
+                      fontSize: '14px',
+                      color: '#64748b',
+                      lineHeight: '1.6',
+                      margin: 0
+                    }}>
+                      {selectedItem.description}
+                    </p>
+                  </div>
+
+                  {/* Skills & Benefits */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '20px',
+                    marginBottom: '24px'
+                  }}>
+                    {/* Skills */}
+                    <div>
+                      <h3 style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Requirements & Qualifications
+                      </h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {selectedItem.skills.map((skill, index) => (
+                          <div key={index} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            fontSize: '14px',
+                            color: '#374151'
+                          }}>
+                            <span style={{
+                              color: '#16a34a',
+                              marginRight: '8px',
+                              marginTop: '2px'
+                            }}>✓</span>
+                            <span>{skill}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Benefits */}
+                    {Array.isArray(selectedItem.benefits) && selectedItem.benefits.length > 0 && (
+                      <div>
+                        <h3 style={{
+                          fontSize: '16px',
+                          fontWeight: '600',
+                          color: '#1a1a1a',
+                          margin: '0 0 12px 0'
+                        }}>
+                          Benefits & Perks
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {selectedItem.benefits.map((benefit, index) => (
+                            <div key={index} style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              fontSize: '14px',
+                              color: '#374151'
+                            }}>
+                              <span style={{
+                                color: '#16a34a',
+                                marginRight: '8px',
+                                marginTop: '2px'
+                              }}>✓</span>
+                              <span>{benefit}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tags */}
+                  {selectedItem.tags && selectedItem.tags.length > 0 && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: '0 0 12px 0' }}>Tags</h3>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {selectedItem.tags.map((tag, index) => (
+                          <span key={index} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: '500' }}>
+                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {selectedItem.type === 'tender' && (
+                <div>
+                  {/* Organization Profile Header (match admin) */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px',
+                    marginBottom: '24px',
+                    paddingBottom: '20px',
+                    borderBottom: '1px solid #e5e7eb'
+                  }}>
+                    <img
+                      src={selectedItem.coverImage || selectedItem.logo}
+                      alt={selectedItem.organization}
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '30px',
+                        objectFit: 'cover',
+                        border: '2px solid #f8f9fa'
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 4px 0' }}>
+                        {selectedItem.organization}
+                      </h3>
+                      <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 8px 0' }}>
+                        {selectedItem.title}
+                      </h2>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '14px', color: '#64748b' }}>
+                        <span>{selectedItem.location}</span>
+                        <span>•</span>
+                        <span>{selectedItem.country}</span>
+                        <span>•</span>
+                        <span style={{ color: '#dc2626', fontWeight: '600' }}>
+                          Deadline: {selectedItem.deadline || 'Not specified'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Tender Details */}
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Tender Details</h3>
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: '1fr 1fr', 
+                      gap: '16px' 
+                    }}>
+                      <div>
+                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Organization</span>
+                        <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedItem.organization || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Sector</span>
+                        <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedItem.sector || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Contract Value</span>
+                        <p style={{ fontSize: '14px', color: '#16a34a', margin: '2px 0 0 0', fontWeight: '600' }}>{selectedItem.contractValue || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Location</span>
+                        <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedItem.location || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Country</span>
+                        <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedItem.country || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Duration</span>
+                        <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedItem.duration || 'Not specified'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tender Overview */}
+                  <div style={{ marginBottom: '32px' }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                      Tender Overview
+                    </h3>
+                    <p style={{
+                      fontSize: '14px',
+                      color: '#4a5568',
+                      lineHeight: '1.6',
+                      margin: 0
+                    }}>
+                      {selectedItem.description}
+                    </p>
+                  </div>
+
+                  {/* Requirements & Qualifications */}
+                  {Array.isArray(selectedItem.requirements) && selectedItem.requirements.some(i => i && String(i).trim() !== '') && (
+                    <div style={{ marginBottom: '32px' }}>
+                      <h3 style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 16px 0'
+                      }}>
+                        Requirements & Qualifications
+                      </h3>
+                      <ul style={{
+                        listStyle: 'none',
+                        padding: 0,
+                        margin: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px'
+                      }}>
+                        {selectedItem.requirements.map((req, index) => (
+                          <li key={index} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px',
+                            marginBottom: '8px',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                            color: '#374151'
+                          }}>
+                            <span style={{
+                              color: '#16a34a',
+                              fontSize: '16px',
+                              lineHeight: '1',
+                              marginTop: '2px'
+                            }}>✓</span>
+                            {req}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+
+                  {/* Submission Process */}
+                  {Array.isArray(selectedItem.submissionProcess) && selectedItem.submissionProcess.some(i => i && String(i).trim() !== '') && (
+                    <div style={{ marginBottom: '32px' }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Submission Process</h3>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                        {selectedItem.submissionProcess.map((step, index) => (
+                          <li key={index} style={{ fontSize: '14px', color: '#1a1a1a', lineHeight: '1.6', marginBottom: '6px' }}>
+                            {step}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Evaluation Criteria */}
+                  {Array.isArray(selectedItem.evaluationCriteria) && selectedItem.evaluationCriteria.some(i => i && String(i).trim() !== '') && (
+                    <div style={{ marginBottom: '32px' }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Evaluation Criteria</h3>
+                      <div style={{
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                        color: '#374151',
+                        whiteSpace: 'pre-line'
+                      }}>
+                        {selectedItem.evaluationCriteria.join('\n')}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  {Array.isArray(selectedItem.tags) && selectedItem.tags.length > 0 && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Tags</h3>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {selectedItem.tags.map((tag, index) => {
+                          const label = typeof tag === 'string' ? tag : (tag?.name || tag?.title || '')
+                          if (!label) return null
+                          return (
+                            <span key={index} style={{
+                              backgroundColor: '#f1f5f9',
+                              color: '#475569',
+                              padding: '6px 10px',
+                              borderRadius: '9999px',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}>
+                              {label}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {selectedItem.type === 'opportunity' && (
+                <div>
+                  {/* Organization Profile Header (match admin) */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px',
+                    marginBottom: '24px',
+                    paddingBottom: '20px',
+                    borderBottom: '1px solid #e5e7eb'
+                  }}>
+                    <img 
+                      src={selectedItem.poster || selectedItem.logo}
+                      alt={selectedItem.organization}
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '30px',
+                        objectFit: 'cover',
+                        border: '2px solid #f8f9fa'
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 4px 0' }}>
+                        {selectedItem.organization || ''}
+                      </h3>
+                      <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 8px 0' }}>
+                        {selectedItem.title}
+                      </h2>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '14px', color: '#64748b' }}>
+                        <span>{selectedItem.location}</span>
+                        <span>•</span>
+                        <span style={{ color: '#dc2626', fontWeight: '600' }}>
+                          Deadline: {selectedItem.deadline || 'Not specified'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Opportunity Details grid (match admin) */}
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Opportunity Details</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Organization</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.organization || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Opportunity Type</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.opportunityType || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Amount</label>
+                        <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedItem.salary || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Duration</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.duration || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.location || 'Not specified'}</p>
+                      </div>
+                      {selectedItem.externalUrl && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application URL</label>
+                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500', wordBreak: 'break-all' }}>
+                            <a href={selectedItem.externalUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.externalUrl}</a>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Opportunity Overview */}
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Opportunity Overview</h3>
+                    <p style={{ fontSize: '15px', lineHeight: '1.6', color: '#374151', margin: 0 }}>
+                      {selectedItem.description}
+                    </p>
+                  </div>
+
+                  {/* Eligibility Requirements */}
+                  {Array.isArray(selectedItem.requirements) && selectedItem.requirements.length > 0 && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Eligibility Requirements</h3>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                        {selectedItem.requirements.map((requirement, index) => (
+                          <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', fontSize: '14px', lineHeight: '1.5', color: '#374151' }}>
+                            <span style={{ color: '#16a34a', fontSize: '16px', lineHeight: '1', marginTop: '2px' }}>✓</span>
+                            {requirement}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Benefits & Value */}
+                  {Array.isArray(selectedItem.benefits) && selectedItem.benefits.length > 0 && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Benefits & Value</h3>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                        {selectedItem.benefits.map((benefit, index) => (
+                          <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', fontSize: '14px', lineHeight: '1.5', color: '#374151' }}>
+                            <span style={{ color: '#16a34a', fontSize: '16px', lineHeight: '1', marginTop: '2px' }}>✓</span>
+                            {benefit}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  {((Array.isArray(selectedItem.tags) && selectedItem.tags.length > 0) || (Array.isArray(selectedItem.benefits) && selectedItem.benefits.length > 0)) && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Tags</h3>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {((Array.isArray(selectedItem.tags) && selectedItem.tags.length > 0) ? selectedItem.tags : selectedItem.benefits).map((tag, index) => (
+                          <span key={index} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: '500' }}>
+                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
       </div>

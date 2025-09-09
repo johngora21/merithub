@@ -12,8 +12,6 @@
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
     padding: 0;
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f1f5f9;
   }
   
   body {
@@ -39,22 +37,19 @@
   transition: all 0.2s ease-in-out;
 }
 
-/* Custom Scrollbar */
+/* Hide Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  display: none;
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
+/* For Firefox */
+html {
+  scrollbar-width: none;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+/* For IE and Edge */
+body {
+  -ms-overflow-style: none;
 }
 
 /* Smooth animations */
