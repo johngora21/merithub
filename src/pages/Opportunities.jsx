@@ -74,7 +74,37 @@ const Opportunities = () => {
   const fetchOpportunities = async () => {
     try {
       const data = await opportunitiesAPI.getAll({ limit: 50, status: 'active' })
-      const mapped = (data.opportunities || []).map((o) => ({
+      const parseToArray = (val) => {
+        if (!val && val !== 0) return []
+        if (Array.isArray(val)) {
+          return val
+            .map(item => typeof item === 'string' ? item.trim() : item)
+            .filter(item => item !== null && item !== undefined && String(item).trim() !== '')
+        }
+        if (typeof val === 'string') {
+          const str = val.trim()
+          if ((str.startsWith('[') && str.endsWith(']')) || (str.startsWith('{') && str.endsWith('}'))) {
+            try { return parseToArray(JSON.parse(str)) } catch (_) {}
+          }
+          return str.split(/\r?\n|,/).map(s => s.trim()).filter(s => s.length > 0)
+        }
+        return [val]
+      }
+      const toNumber = (val) => {
+        if (val === null || val === undefined || val === '') return null
+        if (typeof val === 'number') return val
+        if (typeof val === 'string') {
+          const cleaned = val.replace(/[^0-9.]/g, '')
+          if (!cleaned) return null
+          const n = Number(cleaned)
+          return isNaN(n) ? null : n
+        }
+        return null
+      }
+      const mapped = (data.opportunities || []).map((o) => {
+        const parsedTags = parseToArray(o.tags)
+        const unifiedTags = (parsedTags && parsedTags.length > 0) ? parsedTags : parseToArray(o.benefits)
+        return ({
         id: o.id,
         title: o.title,
         organization: o.organization || '',
@@ -82,7 +112,7 @@ const Opportunities = () => {
         category: o.category || 'General',
         location: o.location || (o.country || 'Global'),
         duration: o.duration || 'Varies',
-        description: o.description || '',
+        description: o.detailed_description || o.description || '',
         poster: (() => {
           const fromDocs = Array.isArray(o.documents) ? o.documents.find(d => d && d.type === 'cover') : null
           const url = fromDocs?.url || null
@@ -95,12 +125,26 @@ const Opportunities = () => {
           return 'https://via.placeholder.com/800x400?text=Opportunity'
         })(),
         deadline: o.deadline || new Date().toISOString(),
-        amount: (o.amount_min || o.amount_max) ? `${o.currency || 'USD'} ${o.amount_min || o.amount_max}` : 'Varies',
-        tags: Array.isArray(o.benefits) ? o.benefits : [],
+        amount: (() => {
+          const minVal = toNumber(o.amount_min)
+          const maxVal = toNumber(o.amount_max)
+          const currency = o.currency || 'USD'
+          if (minVal !== null && maxVal !== null) {
+            return minVal === maxVal ? `${currency} ${minVal.toLocaleString()}` : `${currency} ${minVal.toLocaleString()} - ${currency} ${maxVal.toLocaleString()}`
+          } else if (minVal !== null) {
+            return `${currency} ${minVal.toLocaleString()}`
+          } else if (maxVal !== null) {
+            return `${currency} ${maxVal.toLocaleString()}`
+          }
+          return 'Varies'
+        })(),
+        requirements: parseToArray(o.requirements),
+        benefits: parseToArray(o.benefits),
+        tags: unifiedTags,
         organization_logo: o.organization_logo ? (o.organization_logo.startsWith('http') ? o.organization_logo : `http://localhost:8000${o.organization_logo.startsWith('/') ? '' : '/'}${o.organization_logo}`) : undefined,
         externalUrl: o.external_url || undefined,
         price: o.price || 'Free'
-      }))
+      })})
       setOpportunities(mapped)
     } catch (e) {
       console.error('Failed to load opportunities', e)
@@ -1380,6 +1424,21 @@ const Opportunities = () => {
                   </p>
                 </div>
 
+                {/* Eligibility Requirements */}
+                {selectedOpportunity.requirements && selectedOpportunity.requirements.length > 0 && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Eligibility Requirements</h3>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {selectedOpportunity.requirements.map((requirement, index) => (
+                        <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', fontSize: '14px', lineHeight: '1.5', color: '#374151' }}>
+                          <span style={{ color: '#16a34a', fontSize: '16px', lineHeight: '1', marginTop: '2px' }}>✓</span>
+                          {requirement}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {/* Benefits & Value */}
                 {selectedOpportunity.benefits && selectedOpportunity.benefits.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
@@ -1396,13 +1455,13 @@ const Opportunities = () => {
                 )}
 
                 {/* Tags */}
-                {selectedOpportunity.tags && selectedOpportunity.tags.length > 0 && (
+                {((selectedOpportunity.tags && selectedOpportunity.tags.length > 0) || (selectedOpportunity.benefits && selectedOpportunity.benefits.length > 0)) && (
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Tags</h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {selectedOpportunity.tags.map((tag, index) => (
+                      {((selectedOpportunity.tags && selectedOpportunity.tags.length > 0) ? selectedOpportunity.tags : selectedOpportunity.benefits).map((tag, index) => (
                         <span key={index} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: '500' }}>
-                          {tag}
+                          {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
                         </span>
                       ))}
                     </div>
