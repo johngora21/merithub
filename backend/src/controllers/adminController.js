@@ -1179,6 +1179,12 @@ const getApplicationsOverview = async (req, res) => {
       })
     ]);
 
+    console.log('🔍 Raw opportunities from DB:', opportunities.map(o => ({
+      id: o.id,
+      title: o.title,
+      external_url: o.external_url
+    })));
+
     const mapJob = (j) => ({
         id: j.id,
         title: j.title,
@@ -1259,14 +1265,57 @@ const getApplicationsOverview = async (req, res) => {
       location: o.location || o.country || 'Remote',
       country: o.country,
       duration: o.duration || '',
-      stipend: o.amount_min && o.amount_max ? `${o.currency} ${o.amount_min} - ${o.currency} ${o.amount_max}` : '',
+      stipend: (() => {
+        const min = o.amount_min;
+        const max = o.amount_max;
+        const currency = o.currency || 'USD';
+        
+        if (min != null && max != null) {
+          // Convert to numbers for proper comparison
+          const minNum = parseFloat(min);
+          const maxNum = parseFloat(max);
+          return minNum === maxNum ? `${currency} ${minNum}` : `${currency} ${minNum} - ${currency} ${maxNum}`;
+        } else if (min != null) {
+          return `${currency} ${min}`;
+        } else if (max != null) {
+          return `${currency} ${max}`;
+        }
+        return 'Amount not specified';
+      })(),
       postedTime: o.createdAt,
       deadline: o.deadline || null,
       applicants: o.applications ? o.applications.length : (o.applications_count || 0),
       description: o.description || '',
-      benefits: Array.isArray(o.benefits) ? o.benefits : [],
-      requirements: Array.isArray(o.requirements) ? o.requirements : [],
-      eligibility: Array.isArray(o.eligibility) ? o.eligibility : [],
+      benefits: (() => {
+        try {
+          if (typeof o.benefits === 'string') {
+            return JSON.parse(o.benefits);
+          }
+          return Array.isArray(o.benefits) ? o.benefits : [];
+        } catch (e) {
+          return [];
+        }
+      })(),
+      requirements: (() => {
+        try {
+          if (typeof o.requirements === 'string') {
+            return JSON.parse(o.requirements);
+          }
+          return Array.isArray(o.requirements) ? o.requirements : [];
+        } catch (e) {
+          return [];
+        }
+      })(),
+      eligibility: (() => {
+        try {
+          if (typeof o.eligibility_criteria === 'string') {
+            return JSON.parse(o.eligibility_criteria);
+          }
+          return Array.isArray(o.eligibility_criteria) ? o.eligibility_criteria : [];
+        } catch (e) {
+          return [];
+        }
+      })(),
       applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : [],
       logo: resolveAssetUrl(o.organization_logo) || '',
       contact_email: o.contact_email,

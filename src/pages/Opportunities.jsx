@@ -725,39 +725,6 @@ const Opportunities = () => {
                     </span>
                   </div>
 
-                  {/* Tags */}
-                  {opportunity.tags && opportunity.tags.length > 0 && (
-                    <div style={{ marginBottom: '12px', flex: 1 }}>
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '6px'
-                      }}>
-                        {opportunity.tags.slice(0, 2).map((tag, index) => (
-                          <span key={index} style={{
-                            backgroundColor: '#f1f5f9',
-                            color: '#475569',
-                            padding: '6px 10px',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                            fontWeight: '500'
-                          }}>
-                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Not specified'}
-                          </span>
-                        ))}
-                        {opportunity.tags.length > 2 && (
-                          <span style={{
-                            color: '#64748b',
-                            fontSize: '12px',
-                            padding: '4px 8px',
-                            fontWeight: '500'
-                          }}>
-                            +{opportunity.tags.length - 2} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Footer */}
                   <div style={{

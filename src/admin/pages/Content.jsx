@@ -4490,83 +4490,6 @@ const Content = () => {
                     </p>
                   </div>
 
-                  {/* Detailed Information */}
-                  <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 16px 0'
-                    }}>
-                      Job Details
-                    </h3>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: '12px'
-                    }}>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Job Type</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.jobType || 'Full-time'}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Work Type</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.workType || 'Not specified'}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Experience Level</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.experience || 'Not specified'}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.industry}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.location}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Country</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{getCountryName(selectedItem.country) || selectedItem.country}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Salary</label>
-                        <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedItem.salary || 'Not specified'}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application Deadline</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.application_deadline ? new Date(selectedItem.application_deadline).toLocaleDateString() : 'Not specified'}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Posted By</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.postedBy || 'Admin'}</p>
-                      </div>
-                      {selectedItem.contact_email && (
-                        <div>
-                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Email</label>
-                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
-                            <a href={`mailto:${selectedItem.contact_email}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contact_email}</a>
-                          </p>
-                        </div>
-                      )}
-                      {selectedItem.contact_phone && (
-                        <div>
-                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Phone</label>
-                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
-                            <a href={`tel:${selectedItem.contact_phone}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contact_phone}</a>
-                          </p>
-                        </div>
-                      )}
-                      {selectedItem.external_url && (
-                        <div>
-                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application URL</label>
-                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500', wordBreak: 'break-all' }}>
-                            <a href={selectedItem.external_url} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.external_url}</a>
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
 
                   {/* Skills */}
                   {selectedItem.skills && selectedItem.skills.length > 0 && (
@@ -4579,23 +4502,22 @@ const Content = () => {
                       }}>
                         Required Skills
                       </h3>
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '8px'
-                      }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {(Array.isArray(selectedItem.skills) ? selectedItem.skills : 
                           (selectedItem.skills ? selectedItem.skills.split(',').map(s => s.trim()).filter(Boolean) : [])).map((skill, index) => (
-                          <span key={index} style={{
-                            backgroundColor: '#f1f5f9',
-                            color: '#475569',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
-                            fontWeight: '500'
+                          <div key={index} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            fontSize: '14px',
+                            color: '#374151'
                           }}>
-                            {typeof skill === 'string' ? skill : skill?.name || skill?.title || 'Unknown'}
-                          </span>
+                            <span style={{
+                              color: '#16a34a',
+                              marginRight: '8px',
+                              marginTop: '2px'
+                            }}>✓</span>
+                            <span>{typeof skill === 'string' ? skill : skill?.name || skill?.title || 'Unknown'}</span>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -4612,33 +4534,35 @@ const Content = () => {
                       }}>
                         Benefits
                       </h3>
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '8px'
-                      }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {Array.isArray(selectedItem.benefits) ? selectedItem.benefits.map((benefit, index) => (
-                          <span key={index} style={{
-                            backgroundColor: '#ecfdf5',
-                            color: '#065f46',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
-                            fontWeight: '500'
+                          <div key={index} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            fontSize: '14px',
+                            color: '#374151'
                           }}>
-                            {benefit}
-                          </span>
+                            <span style={{
+                              color: '#16a34a',
+                              marginRight: '8px',
+                              marginTop: '2px'
+                            }}>✓</span>
+                            <span>{benefit}</span>
+                          </div>
                         )) : (
-                          <span style={{
-                            backgroundColor: '#ecfdf5',
-                            color: '#065f46',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
-                            fontWeight: '500'
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            fontSize: '14px',
+                            color: '#374151'
                           }}>
-                            {benefit}
-                          </span>
+                            <span style={{
+                              color: '#16a34a',
+                              marginRight: '8px',
+                              marginTop: '2px'
+                            }}>✓</span>
+                            <span>{selectedItem.benefits}</span>
+                          </div>
                         )}
                       </div>
                     </div>

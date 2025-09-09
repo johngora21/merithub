@@ -723,39 +723,6 @@ const Tenders = () => {
                     </div>
                   </div>
 
-                  {/* Tags */}
-                  {tender.tags && tender.tags.length > 0 && (
-                    <div style={{ marginBottom: '12px', flex: 1 }}>
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '6px'
-                      }}>
-                        {tender.tags.slice(0, 2).map((tag, index) => (
-                          <span key={index} style={{
-                            backgroundColor: '#f1f5f9',
-                            color: '#475569',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            fontSize: '12px',
-                            fontWeight: '500'
-                          }}>
-                            {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Not specified'}
-                          </span>
-                        ))}
-                        {tender.tags.length > 2 && (
-                          <span style={{
-                            color: '#64748b',
-                            fontSize: '12px',
-                            padding: '4px 8px',
-                            fontWeight: '500'
-                          }}>
-                            +{tender.tags.length - 2} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Footer */}
                   <div style={{
@@ -1285,7 +1252,7 @@ const Tenders = () => {
                   <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Tender Details</h3>
                   <div style={{ 
                     display: 'grid', 
-                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                    gridTemplateColumns: '1fr 1fr', 
                     gap: '16px' 
                   }}>
                     <div>

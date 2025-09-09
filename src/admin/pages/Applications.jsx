@@ -75,6 +75,11 @@ const Applications = () => {
   const [loadError, setLoadError] = useState('')
 
   // Map backend payloads to the exact UI fields used by the cards
+  const isProBadge = (item) => {
+    const price = item?.price
+    return price === 'Pro' || item?.postedBy === 'platform' || item?.posted_by === 'platform' || item?.is_featured === true
+  }
+
   const mapJob = (j) => {
     const resolveAssetUrl = (path) => {
       if (!path) return ''
@@ -119,6 +124,7 @@ const Applications = () => {
       ? `${years} years`
       : (j.experience ? j.experience : (j.experience_level || ''))
 
+    console.log('Job data for mapping:', j)
     return {
       id: j.id || j.job_id || `JOB-${j?.id || ''}`,
       title: j.title || j.position || '',
@@ -151,7 +157,8 @@ const Applications = () => {
       approvalStatus: j.approval_status || 'pending',
       externalUrl: j.external_url || '',
       workType: toTitleCase(j.work_type) || (j.isRemote ? 'Remote' : 'Not specified'),
-      status: j.status || 'Active'
+      status: j.status || 'Active',
+      isFeatured: j.is_featured || j.is_featured === true || false
     }
   }
 
@@ -226,6 +233,24 @@ const Applications = () => {
   }
 
   const mapOpportunity = (o) => {
+    // Use the SAME parseToArray function as the main app
+    const parseToArray = (val) => {
+      if (!val && val !== 0) return []
+      if (Array.isArray(val)) {
+        return val
+          .map(item => typeof item === 'string' ? item.trim() : item)
+          .filter(item => item !== null && item !== undefined && String(item).trim() !== '')
+      }
+      if (typeof val === 'string') {
+        const str = val.trim()
+        if ((str.startsWith('[') && str.endsWith(']')) || (str.startsWith('{') && str.endsWith('}'))) {
+          try { return parseToArray(JSON.parse(str)) } catch (_) {}
+        }
+        return str.split(/\r?\n|,/).map(s => s.trim()).filter(s => s.length > 0)
+      }
+      return [val]
+    }
+    
     const resolveAssetUrl = (path) => {
       if (!path) return ''
       if (typeof path !== 'string') return ''
@@ -243,19 +268,28 @@ const Applications = () => {
       ? s.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('-')
       : s
     
-    // Use EXACT same amount logic as Content page
-    const min = o.amount_min != null ? Number(o.amount_min) : undefined
-    const max = o.amount_max != null ? Number(o.amount_max) : undefined
-    const fmt = (n) => typeof n === 'number' && !Number.isNaN(n) ? n.toLocaleString() : ''
+    // Use the SAME amount logic as the main app
+    const toNumber = (val) => {
+      if (val === null || val === undefined || val === '') return null
+      if (typeof val === 'number') return val
+      if (typeof val === 'string') {
+        const cleaned = val.replace(/[^0-9.]/g, '')
+        const n = Number(cleaned)
+        return isNaN(n) ? null : n
+      }
+      return null
+    }
+    
+    const currency = o.currency || 'USD'
+    const minVal = toNumber(o.amount_min)
+    const maxVal = toNumber(o.amount_max)
     let stipend
-    if (min != null && max != null) {
-      stipend = min === max
-        ? `${o.currency} ${fmt(min)}`
-        : `${o.currency} ${fmt(min)} - ${o.currency} ${fmt(max)}`
-    } else if (min != null) {
-      stipend = `${o.currency} ${fmt(min)}`
-    } else if (max != null) {
-      stipend = `${o.currency} ${fmt(max)}`
+    if (minVal !== null && maxVal !== null) {
+      stipend = minVal === maxVal ? `${currency} ${minVal.toLocaleString()}` : `${currency} ${minVal.toLocaleString()} - ${currency} ${maxVal.toLocaleString()}`
+    } else if (minVal !== null) {
+      stipend = `${currency} ${minVal.toLocaleString()}`
+    } else if (maxVal !== null) {
+      stipend = `${currency} ${maxVal.toLocaleString()}`
     } else {
       stipend = 'Amount not specified'
     }
@@ -265,30 +299,47 @@ const Applications = () => {
     const countryFromList = countries.find(c => c.code === rawCountry || c.name === rawCountry)
     const normalizedCountry = countryFromList ? countryFromList.name : rawCountry
 
+    console.log('=== RAW OPPORTUNITY DATA ===', o)
+    console.log('=== OPPORTUNITY KEYS ===', Object.keys(o))
+    console.log('Amount fields:', { 
+      amount_min: o.amount_min, 
+      amount_max: o.amount_max, 
+      currency: o.currency,
+      amount: o.amount,
+      value: o.value
+    })
+    console.log('Benefits & Requirements fields:', {
+      benefits: o.benefits,
+      requirements: o.requirements,
+      eligibility_criteria: o.eligibility_criteria
+    })
+        console.log('Raw opportunity object keys:', Object.keys(o))
+        console.log('Raw opportunity values:', Object.values(o))
+        console.log('Raw external_url:', o.external_url)
     return {
     id: o.id || o.opportunity_id || `OPP-${o?.id || ''}`,
     title: o.title || '',
     company: o.organization || o.company || '',
     industry: o.industry || o.category || '',
-    type: o.type || '',
+    type: o.type || o.opportunity_type || '',
     location: o.location || o.country || 'Not specified',
       country: normalizedCountry || '',
     duration: o.duration || '',
       stipend: stipend,
+      amount: stipend, // Add amount field
       deadline: o.deadline ? formatDate(o.deadline) : 'No deadline',
     postedTime: o.postedTime || o.createdAt ? new Date(o.postedTime || o.createdAt).toLocaleDateString() : 'Recently',
     applicants: o.applicants || o.applicants_count || 0,
       description: o.description || o.opportunity_description || '',
-      benefits: Array.isArray(o.benefits) ? o.benefits : (o.benefits ? [o.benefits] : []),
-      tags: Array.isArray(o.tags) ? o.tags : (o.tags ? [o.tags] : []),
-      requirements: Array.isArray(o.requirements) ? o.requirements : (o.requirements ? [o.requirements] : []),
-      eligibility: Array.isArray(o.eligibility) ? o.eligibility : (o.eligibility ? [o.eligibility] : []),
-      applicationProcess: Array.isArray(o.applicationProcess) ? o.applicationProcess : (o.applicationProcess ? [o.applicationProcess] : []),
+      benefits: parseToArray(o.benefits),
+      tags: parseToArray(o.tags),
+      requirements: parseToArray(o.requirements),
+      eligibility: parseToArray(o.eligibility_criteria),
+      applicationProcess: parseToArray(o.applicationProcess),
     logo: resolveAssetUrl(o.logo || o.organization_logo),
       poster: resolveAssetUrl(o.poster || o.cover_image || o.coverImage || o.logo || o.organization_logo),
-      postedBy: o.postedBy,
-      contactEmail: o.contactEmail,
-      contactPhone: o.contactPhone,
+      coverImage: resolveAssetUrl(o.cover_image || o.coverImage || o.poster || o.logo || o.organization_logo), // Add coverImage
+      contactEmail: o.contact_email,
       externalUrl: o.external_url || '',
     status: o.status || 'Active'
     }
@@ -296,6 +347,7 @@ const Applications = () => {
 
   useEffect(() => {
     const fetchApplications = async () => {
+      console.log('Fetching applications...')
       try {
         setLoadingData(true)
         setLoadError('')
@@ -1008,7 +1060,7 @@ const Applications = () => {
                       </div>
                       
                       {/* PRO Badge - Top Right */}
-                      {item.type === 'Job' && item.price === 'Pro' && (
+                      {isProBadge(item) && (
                         <span style={{
                           fontSize: '10px',
                           color: 'white',
@@ -1018,7 +1070,7 @@ const Applications = () => {
                           fontWeight: '600',
                           boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                         }}>
-                          PRO
+                          FEATURED
                         </span>
                       )}
                     </div>
@@ -1146,19 +1198,6 @@ const Applications = () => {
                         alignItems: 'center',
                         gap: '8px'
                       }}>
-                        <span style={{
-                          fontSize: '11px',
-                          fontWeight: '700',
-                          color: '#16a34a',
-                          backgroundColor: '#dcfce7',
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          border: '1px solid #bbf7d0',
-                          letterSpacing: '0.5px'
-                        }}>
-                          FREE
-                        </span>
-                        
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1316,22 +1355,10 @@ const Applications = () => {
                             PRO
                           </span>
                         )}
-                        {item.price === 'Free' && (
-                          <span style={{
-                            fontSize: '10px',
-                            color: 'white',
-                            backgroundColor: '#16a34a',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            fontWeight: '700'
-                          }}>
-                            Free
-                          </span>
-                        )}
                       </div>
                       
                       {/* PRO Badge - Top Right */}
-                      {item.type === 'Job' && item.price === 'Pro' && (
+                      {isProBadge(item) && (
                         <span style={{
                           fontSize: '10px',
                           color: 'white',
@@ -1341,7 +1368,7 @@ const Applications = () => {
                           fontWeight: '600',
                           boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                         }}>
-                          PRO
+                          FEATURED
                         </span>
                       )}
                     </div>
@@ -1465,19 +1492,6 @@ const Applications = () => {
                         alignItems: 'center',
                         gap: '8px'
                       }}>
-                        <span style={{
-                          fontSize: '11px',
-                          fontWeight: '700',
-                          color: '#16a34a',
-                          backgroundColor: '#dcfce7',
-                          padding: '4px 8px',
-                          borderRadius: '6px',
-                          border: '1px solid #bbf7d0',
-                          letterSpacing: '0.5px'
-                        }}>
-                          FREE
-                        </span>
-                        
                         <div style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1545,7 +1559,7 @@ const Applications = () => {
             onClick={() => handleItemClick(item)}>
               
               {/* PRO Badge - Top Right */}
-              {item.type === 'Job' && item.price === 'Pro' && (
+              {isProBadge(item) && (
                 <div style={{
                   position: 'absolute',
                   top: '12px',
@@ -2061,9 +2075,9 @@ const Applications = () => {
                 marginBottom: '16px'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  {selectedItem.logo && selectedItem.logo.trim() !== '' ? (
+                  {(selectedItem.logo || selectedItem.coverImage || selectedItem.poster) && (selectedItem.logo || selectedItem.coverImage || selectedItem.poster).trim() !== '' ? (
                     <img 
-                      src={selectedItem.logo} 
+                      src={selectedItem.coverImage || selectedItem.poster || selectedItem.logo} 
                       alt={selectedItem.company}
                       style={{
                         width: '48px',
@@ -2103,7 +2117,7 @@ const Applications = () => {
                       color: '#64748b',
                       margin: 0
                     }}>
-                      {selectedItem.industry}
+                      {selectedItem.type && ['Scholarships', 'Fellowships', 'Grants', 'Funds', 'Internships', 'Programs', 'Competitions', 'Research', 'Professional Development'].includes(selectedItem.type) ? selectedItem.type : selectedItem.industry}
                     </p>
                   </div>
                 </div>
@@ -2121,6 +2135,13 @@ const Applications = () => {
                 </button>
               </div>
               
+              {/* Debug logging */}
+              {console.log('Modal selectedItem for opportunities:', selectedItem)}
+              {console.log('Benefits:', selectedItem.benefits)}
+              {console.log('Eligibility:', selectedItem.eligibility)}
+              {console.log('Stipend:', selectedItem.stipend)}
+              {console.log('External URL:', selectedItem.externalUrl)}
+              
               <h1 style={{
                 fontSize: '24px',
                 fontWeight: '700',
@@ -2135,8 +2156,6 @@ const Applications = () => {
                   <MapPin size={16} />
                   {selectedItem.location}
                 </div>
-                <span>•</span>
-                <span><strong>Country:</strong> <span style={{ color: '#2563eb' }}>{selectedItem.country}</span></span>
                 <span>•</span>
                 <span><strong>Deadline:</strong> <span style={{ color: '#dc2626' }}>{selectedItem.deadline}</span></span>
               </div>
@@ -2154,7 +2173,7 @@ const Applications = () => {
                 }}>
                   {selectedItem.type === 'job' ? 'Complete Job Details' : 
                    selectedItem.type === 'tender' ? 'Complete Tender Details' : 
-                   selectedItem.type === 'opportunity' ? 'Complete Opportunity Details' : 
+                   selectedItem.type === 'opportunity' ? 'Opportunity Details' : 
                    'Complete Details'}
                 </h3>
                 <div style={{
@@ -2284,27 +2303,13 @@ const Applications = () => {
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.location}</p>
                       </div>
                       <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Country</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.country}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Stipend/Amount</label>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Amount</label>
                         <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedItem.stipend}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Posted By</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.postedBy}</p>
                       </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Email</label>
                         <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
                           <a href={`mailto:${selectedItem.contactEmail}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contactEmail}</a>
-                        </p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Phone</label>
-                        <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
-                          <a href={`tel:${selectedItem.contactPhone}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contactPhone}</a>
                         </p>
                       </div>
                       <div>
@@ -2326,7 +2331,7 @@ const Applications = () => {
                   color: '#0f172a',
                   margin: '0 0 12px 0'
                 }}>
-                  {activeTab === 'jobs' ? 'Job Overview' : activeTab === 'tenders' ? 'Tender Description' : 'Opportunity Description'}
+                  {activeTab === 'jobs' ? 'Job Overview' : activeTab === 'tenders' ? 'Tender Description' : 'Opportunity Overview'}
                 </h3>
                 <p style={{
                   fontSize: '14px',
@@ -2339,7 +2344,8 @@ const Applications = () => {
               </div>
 
               {/* Required Skills/Requirements */}
-              {(selectedItem.skills || selectedItem.requirements) && (
+              {((activeTab === 'opportunities' && selectedItem.eligibility && selectedItem.eligibility.length > 0) || 
+                (activeTab !== 'opportunities' && (selectedItem.skills || selectedItem.requirements))) && (
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{
                     fontSize: '16px',
@@ -2349,18 +2355,20 @@ const Applications = () => {
                   }}>
                     {activeTab === 'jobs' ? 'Required Skills' : activeTab === 'tenders' ? 'Requirements & Qualifications' : 'Eligibility & Requirements'}
                   </h3>
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '8px'
-                  }}>
-                    {(selectedItem.skills || selectedItem.requirements || []).map((skill, index) => (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {(activeTab === 'opportunities' ? selectedItem.eligibility : (selectedItem.skills || selectedItem.requirements || [])).map((skill, index) => (
                       <div key={index} style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
                         fontSize: '14px',
-                        color: '#0f172a',
-                        marginBottom: '4px'
+                        color: '#374151'
                       }}>
-                        {skill}
+                        <span style={{
+                          color: '#16a34a',
+                          marginRight: '8px',
+                          marginTop: '2px'
+                        }}>✓</span>
+                        <span>{skill}</span>
                       </div>
                     ))}
                   </div>
@@ -2481,6 +2489,36 @@ const Applications = () => {
               )}
 
               {/* Opportunity Specific Sections */}
+              {activeTab === 'opportunities' && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#0f172a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    Benefits & Value
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {selectedItem.benefits.map((benefit, index) => (
+                      <div key={index} style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        fontSize: '14px',
+                        color: '#374151'
+                      }}>
+                        <span style={{
+                          color: '#16a34a',
+                          marginRight: '8px',
+                          marginTop: '2px'
+                        }}>✓</span>
+                        <span>{benefit}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {activeTab === 'opportunities' && selectedItem.eligibility && selectedItem.eligibility.length > 0 && (
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{
@@ -2551,21 +2589,23 @@ const Applications = () => {
                   }}>
                     {activeTab === 'opportunities' ? 'Benefits & Value' : 'Benefits'}
                   </h3>
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '8px'
-                  }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {selectedItem.benefits.map((benefit, index) => (
                       <div key={index} style={{
-                  fontSize: '14px',
-                        color: '#0f172a',
-                        marginBottom: '4px'
-                }}>
-                        {benefit}
-              </div>
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        fontSize: '14px',
+                        color: '#374151'
+                      }}>
+                        <span style={{
+                          color: '#16a34a',
+                          marginRight: '8px',
+                          marginTop: '2px'
+                        }}>✓</span>
+                        <span>{benefit}</span>
+                      </div>
                     ))}
-            </div>
+                  </div>
             </div>
               )}
 

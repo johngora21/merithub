@@ -132,12 +132,15 @@ const Jobs = () => {
       tags: apiJob.tags || [],
       description: apiJob.description,
       benefits: apiJob.benefits || [],
-      postedTime: apiJob.created_at ? new Date(apiJob.created_at).toLocaleDateString() : 'Recently',
+      responsibilities: apiJob.responsibilities || [],
+      requirements: apiJob.requirements || [],
+      companyInfo: apiJob.company_info || null,
+      postedTime: apiJob.created_at ? new Date(apiJob.created_at).toLocaleDateString() : null,
       isRemote: apiJob.work_type === 'remote',
       urgentHiring: apiJob.is_urgent || false,
       price: apiJob.price || null,
-      rating: 4.5, // Default rating since not in API
-      postedBy: apiJob.posted_by || 'platform',
+      rating: apiJob.rating || null,
+      postedBy: apiJob.posted_by || null,
       externalUrl: apiJob.external_url,
       contactEmail: apiJob.contact_email,
       applicationDeadline: apiJob.application_deadline,
@@ -211,6 +214,8 @@ const Jobs = () => {
   }
 
   const handleJobClick = (job) => {
+    console.log('handleJobClick -> job id:', job?.id)
+    console.log('Opening modal for job:', job.title)
     setSelectedJob(job)
     setShowDetails(true)
   }
@@ -649,7 +654,10 @@ ${user?.first_name} ${user?.last_name}`
                   e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
                   e.currentTarget.style.transform = 'translateY(0)'
                 }}
-                onClick={() => handleJobClick(job)}>
+                onClick={() => handleJobClick(job)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleJobClick(job) }}>
                   
                   {/* PRO Badge and Save Button - Top Right */}
                   <div style={{
@@ -661,7 +669,7 @@ ${user?.first_name} ${user?.last_name}`
                     alignItems: 'center',
                     gap: '8px'
                   }}>
-                    {job.postedBy === 'platform' && (
+                    {job.isFeatured && (
                       <span style={{
                         fontSize: '10px',
                         color: 'white',
@@ -671,7 +679,7 @@ ${user?.first_name} ${user?.last_name}`
                         fontWeight: '600',
                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                       }}>
-                        PRO
+                        FEATURED
                       </span>
                     )}
                     
@@ -711,7 +719,7 @@ ${user?.first_name} ${user?.last_name}`
                     alignItems: 'flex-start',
                     justifyContent: 'space-between',
                     marginBottom: '10px'
-                  }}>
+                  }} onClick={() => handleJobClick(job)}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                       {job.logo && job.logo.trim() !== '' ? (
                         <img 
@@ -780,7 +788,7 @@ ${user?.first_name} ${user?.last_name}`
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px'
-                  }}>
+                  }} onClick={() => handleJobClick(job)}>
                     {job.title}
                     {job.urgentHiring && (
                       <Star size={14} color="#2563eb" fill="#2563eb" />
@@ -856,19 +864,22 @@ ${user?.first_name} ${user?.last_name}`
                       alignItems: 'center',
                       gap: '8px'
                     }}>
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: '700',
-                        color: '#16a34a',
-                        backgroundColor: '#dcfce7',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #bbf7d0',
-                        letterSpacing: '0.5px'
-                      }}>
-                        FREE
-                      </span>
+                      {(job.price === 'Pro' || job.postedBy === 'platform' || job.is_featured === true) && (
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          color: '#3b82f6',
+                          backgroundColor: '#dbeafe',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid #93c5fd',
+                          letterSpacing: '0.5px'
+                        }}>
+                          PRO
+                        </span>
+                      )}
                     </div>
+
 
                     <button
                       onClick={(e) => {
@@ -904,9 +915,8 @@ ${user?.first_name} ${user?.last_name}`
           )}
         </div>
       </div>
-      </div>
-  ) 
-        {/* Filter Modal */}
+
+      {/* Filter Modal */}
         {showFilters && (
           <div style={{
             position: 'fixed',
@@ -1432,7 +1442,7 @@ ${user?.first_name} ${user?.last_name}`
           </div>
         )}
 
-        {/* Job Details Modal */}
+      {/* Job Details Modal */}
         {showDetails && selectedJob && (
           <div style={{
             position: 'fixed',
@@ -1500,6 +1510,44 @@ ${user?.first_name} ${user?.last_name}`
 
               {/* Content */}
               <div style={{ padding: screenSize.isMobile ? '16px 24px 90px 24px' : '32px 40px 90px 40px', flex: 1 }}>
+                {/* Company Profile Header (match admin) */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '16px',
+                  marginBottom: '24px',
+                  paddingBottom: '20px',
+                  borderBottom: '1px solid #e5e7eb'
+                }}>
+                  <img 
+                    src={resolveAssetUrl(selectedJob.logo)} 
+                    alt={selectedJob.company}
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '30px',
+                      objectFit: 'cover',
+                      border: '2px solid #f8f9fa'
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 4px 0' }}>
+                      {selectedJob.company}
+                    </h3>
+                    <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 8px 0' }}>
+                      {selectedJob.title}
+                    </h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '14px', color: '#64748b' }}>
+                      <span>{selectedJob.location}</span>
+                      <span>•</span>
+                      <span style={{ fontWeight: '500', color: '#0f172a' }}>Country:</span>
+                      <span>{selectedJob.country}</span>
+                      <span>•</span>
+                      <span>Deadline: {selectedJob.deadline || 'No deadline'}</span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Complete Job Details (match admin) */}
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: '0 0 16px 0' }}>
@@ -1527,19 +1575,32 @@ ${user?.first_name} ${user?.last_name}`
                       <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedJob.location || 'Not specified'}</p>
                     </div>
                     <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Country</label>
+                      <p style={{ fontSize: '14px', color: '#0f172a', fontWeight: '500', margin: 0 }}>{selectedJob.country || 'Not specified'}</p>
+                    </div>
+                    <div>
                       <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Salary</label>
                       <p style={{ fontSize: '14px', color: '#16a34a', fontWeight: '600', margin: 0 }}>{selectedJob.salary || 'Not specified'}</p>
                     </div>
-                    {selectedJob.externalUrl && (
+                    {selectedJob.contactEmail && (
                       <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application URL</label>
-                        <a href={selectedJob.externalUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '14px', color: '#2563eb', fontWeight: '500', textDecoration: 'none' }}>
-                          {selectedJob.externalUrl}
-                        </a>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Email</label>
+                        <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
+                          <a href={`mailto:${selectedJob.contactEmail}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedJob.contactEmail}</a>
+                        </p>
+                      </div>
+                    )}
+                    {selectedJob.contactPhone && (
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Phone</label>
+                        <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
+                          <a href={`tel:${selectedJob.contactPhone}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedJob.contactPhone}</a>
+                        </p>
                       </div>
                     )}
                   </div>
                 </div>
+
 
                 {/* Job Overview */}
                 <div style={{ marginBottom: '24px' }}>
@@ -1561,72 +1622,6 @@ ${user?.first_name} ${user?.last_name}`
                   </p>
                 </div>
 
-                {/* Key Responsibilities */}
-                {selectedJob.responsibilities && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 12px 0'
-                    }}>
-                      Key Responsibilities
-                    </h3>
-                    <div style={{ 
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '8px',
-                      padding: '16px'
-                    }}>
-                      {selectedJob.responsibilities.map((item, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          marginBottom: index === selectedJob.responsibilities.length - 1 ? '0' : '8px',
-                          fontSize: '14px',
-                          color: '#374151'
-                        }}>
-                          <span style={{
-                            color: '#16a34a',
-                            marginRight: '8px',
-                            marginTop: '2px'
-                          }}>•</span>
-                          <span>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Requirements */}
-                {selectedJob.requirements && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 12px 0'
-                    }}>
-                      Requirements & Qualifications
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {selectedJob.requirements.map((req, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          fontSize: '14px',
-                          color: '#374151'
-                        }}>
-                          <span style={{
-                            color: '#dc2626',
-                            marginRight: '8px',
-                            marginTop: '2px'
-                          }}>✓</span>
-                          <span>{req}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {/* Company Information */}
                 {selectedJob.companyInfo && (
@@ -1677,8 +1672,8 @@ ${user?.first_name} ${user?.last_name}`
 
                 {/* Skills & Benefits */}
                 <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr',
+                  display: 'flex',
+                  flexDirection: 'column',
                   gap: '20px',
                   marginBottom: '24px'
                 }}>
@@ -1688,22 +1683,25 @@ ${user?.first_name} ${user?.last_name}`
                       fontSize: '16px',
                       fontWeight: '600',
                       color: '#1a1a1a',
-                      margin: '0 0 8px 0'
+                      margin: '0 0 12px 0'
                     }}>
-                      Required Skills
+                      Requirements & Qualifications
                     </h3>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {selectedJob.skills.map((skill, index) => (
-                        <span key={index} style={{
-                          fontSize: '12px',
-                          color: '#16a34a',
-                          backgroundColor: '#f0fdf4',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontWeight: '500'
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          fontSize: '14px',
+                          color: '#374151'
                         }}>
-                          {skill}
-                        </span>
+                          <span style={{
+                            color: '#16a34a',
+                            marginRight: '8px',
+                            marginTop: '2px'
+                          }}>✓</span>
+                          <span>{skill}</span>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -1714,32 +1712,49 @@ ${user?.first_name} ${user?.last_name}`
                       fontSize: '16px',
                       fontWeight: '600',
                       color: '#1a1a1a',
-                      margin: '0 0 8px 0'
+                      margin: '0 0 12px 0'
                     }}>
                       Benefits & Perks
                     </h3>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {selectedJob.benefits.map((benefit, index) => (
-                        <span key={index} style={{
-                          fontSize: '12px',
-                          color: '#3b82f6',
-                          backgroundColor: '#eff6ff',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          fontWeight: '500'
+                        <div key={index} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          fontSize: '14px',
+                          color: '#374151'
                         }}>
-                          {benefit}
-                        </span>
+                          <span style={{
+                            color: '#16a34a',
+                            marginRight: '8px',
+                            marginTop: '2px'
+                          }}>✓</span>
+                          <span>{benefit}</span>
+                        </div>
                       ))}
                     </div>
                   </div>
                 </div>
+
+                {/* Tags */}
+                {selectedJob.tags && selectedJob.tags.length > 0 && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', margin: '0 0 12px 0' }}>Tags</h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {selectedJob.tags.map((tag, index) => (
+                        <span key={index} style={{ backgroundColor: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: '500' }}>
+                          {typeof tag === 'string' ? tag : tag?.name || tag?.title || 'Unknown'}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* Profile Completion Modal */}
+      {/* Profile Completion Modal */}
         {showProfileCompletionModal && (
           <div style={{
             position: 'fixed',
@@ -1904,10 +1919,8 @@ ${user?.first_name} ${user?.last_name}`
             </div>
           </div>
         )}
-      
-    }
-      
-      
-
+    </div>
+  )
+}
 
 export default Jobs
