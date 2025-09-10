@@ -19,7 +19,8 @@ import {
   CheckCircle,
   Calendar,
   LogOut,
-  Menu
+  Menu,
+  Trash2
 } from 'lucide-react'
 
 import { apiService } from '../../lib/api-service'
@@ -57,6 +58,9 @@ const CRM = () => {
   const [page, setPage] = useState(1)
   const [limit] = useState(20)
   const [totalPages, setTotalPages] = useState(1)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [userToDelete, setUserToDelete] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
   // Advanced filters modal
   const [showFilters, setShowFilters] = useState(false)
   // Multi-select filters using sets (checkbox UI)
@@ -350,6 +354,43 @@ const CRM = () => {
 
   const sendBulkEmail = async (contacts, message) => {
     await apiService.post('/notifications/bulk', { channel: 'email', recipients: contacts, message })
+  }
+
+  const handleDeleteUser = (customer) => {
+    setUserToDelete(customer)
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return
+
+    try {
+      setDeleteLoading(true)
+      setError('')
+      
+      // Call the delete API endpoint
+      await apiService.delete(`/admin/users/${userToDelete.id}`)
+      
+      setSuccess(`User ${userToDelete.name} has been deleted successfully and their email has been blocked.`)
+      
+      // Refresh the user list
+      await loadUsers()
+      
+      // Close the confirmation dialog
+      setShowDeleteConfirm(false)
+      setUserToDelete(null)
+      
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      setError(error?.response?.data?.message || 'Failed to delete user. Please try again.')
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
+  const cancelDeleteUser = () => {
+    setShowDeleteConfirm(false)
+    setUserToDelete(null)
   }
 
   // Contact Selector Modal Component
@@ -1377,6 +1418,19 @@ const CRM = () => {
                             title="Send SMS"
                           >
                             <Phone size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(customer)}
+                            style={{
+                              backgroundColor: 'transparent',
+                              border: 'none',
+                              color: '#ef4444',
+                              cursor: 'pointer',
+                              padding: '4px'
+                            }}
+                            title="Delete User"
+                          >
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -2489,6 +2543,128 @@ const CRM = () => {
       <ContactSelectorModal />
       {/* Advanced Filters Modal */}
       <FiltersModal />
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '100%',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '16px'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: '#fef2f2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '12px'
+              }}>
+                <Trash2 size={20} color="#ef4444" />
+              </div>
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#0f172a',
+                margin: 0
+              }}>
+                Delete User
+              </h3>
+            </div>
+            
+            <p style={{
+              fontSize: '14px',
+              color: '#64748b',
+              marginBottom: '20px',
+              lineHeight: '1.5'
+            }}>
+              Are you sure you want to delete <strong>{userToDelete?.name}</strong>? 
+              This action will permanently delete their account and block their email address 
+              <strong> {userToDelete?.email}</strong> from creating new accounts.
+            </p>
+            
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={cancelDeleteUser}
+                disabled={deleteLoading}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'transparent',
+                  color: '#64748b',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: deleteLoading ? 'not-allowed' : 'pointer',
+                  opacity: deleteLoading ? 0.5 : 1
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteUser}
+                disabled={deleteLoading}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: deleteLoading ? 'not-allowed' : 'pointer',
+                  opacity: deleteLoading ? 0.5 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {deleteLoading ? (
+                  <>
+                    <div style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid #ffffff',
+                      borderTop: '2px solid transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}></div>
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    Delete User
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

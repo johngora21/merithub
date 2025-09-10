@@ -1065,6 +1065,34 @@ Merit Consultants Team`,
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   }
 
+  // Check if deadline has passed
+  const isDeadlineExpired = (deadline) => {
+    if (!deadline) return false
+    try {
+      const deadlineDate = new Date(deadline)
+      const now = new Date()
+      return deadlineDate < now
+    } catch (error) {
+      console.error('Error checking deadline:', error)
+      return false
+    }
+  }
+
+  // Format date to dd/mm/yyyy
+  const formatDateDDMMYYYY = (dateString) => {
+    if (!dateString) return 'No deadline'
+    try {
+      const date = new Date(dateString)
+      const day = date.getDate().toString().padStart(2, '0')
+      const month = (date.getMonth() + 1).toString().padStart(2, '0')
+      const year = date.getFullYear()
+      return `${day}/${month}/${year}`
+    } catch (error) {
+      console.error('Error formatting date:', error)
+      return 'Invalid date'
+    }
+  }
+
   // Normalize price badges to match merit app cards
   const isProBadge = (item) => {
     const price = item?.price
@@ -1587,9 +1615,9 @@ Merit Consultants Team`,
                 fontWeight: '500'
               }}>
                 <Calendar size={12} />
-                <span>Deadline:</span>
-                <span style={{ color: isDeadlineUrgent ? '#dc2626' : '#64748b', fontWeight: isDeadlineUrgent ? '600' : '500' }}>
-                {item.deadline ? new Date(item.deadline).toLocaleDateString() : 'No deadline'}
+                <span>{isDeadlineExpired(item.deadline) ? 'Closed' : 'Deadline:'}</span>
+                <span style={{ color: isDeadlineExpired(item.deadline) ? '#6b7280' : (isDeadlineUrgent ? '#dc2626' : '#64748b'), fontWeight: isDeadlineExpired(item.deadline) ? '500' : (isDeadlineUrgent ? '600' : '500') }}>
+                {isDeadlineExpired(item.deadline) ? '' : formatDateDDMMYYYY(item.deadline)}
                 </span>
               </div>
             </div>
@@ -1600,7 +1628,8 @@ Merit Consultants Team`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              paddingTop: '12px',
+              paddingTop: '16px',
+              paddingBottom: '16px',
               borderTop: '1px solid #f1f5f9',
               marginTop: 'auto',
               flexShrink: 0
@@ -1959,9 +1988,9 @@ Merit Consultants Team`,
               fontWeight: '500'
             }}>
               <Calendar size={12} />
-              <span>Deadline:</span>
-              <span style={{ color: '#dc2626', fontWeight: '600' }}>
-                {new Date(item.deadline).toLocaleDateString()}
+              <span>{isDeadlineExpired(item.deadline) ? 'Closed' : 'Deadline:'}</span>
+              <span style={{ color: isDeadlineExpired(item.deadline) ? '#6b7280' : '#dc2626', fontWeight: '600' }}>
+                {isDeadlineExpired(item.deadline) ? '' : formatDateDDMMYYYY(item.deadline)}
               </span>
             </div>
 
@@ -2003,7 +2032,8 @@ Merit Consultants Team`,
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
-              paddingTop: '12px',
+              paddingTop: '16px',
+              paddingBottom: '16px',
               borderTop: '1px solid #f1f5f9',
               marginTop: 'auto',
               flexShrink: 0
@@ -2288,8 +2318,8 @@ Merit Consultants Team`,
           </div>
           <div style={{ gridColumn: '1 / span 2', display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontWeight: 500 }}>
             <Calendar size={12} />
-            <span>Deadline:</span>
-            <span style={{ color: '#dc2626', fontWeight: 600 }}>{new Date(item.deadline).toLocaleDateString()}</span>
+            <span>{isDeadlineExpired(item.deadline) ? 'Closed' : 'Deadline:'}</span>
+            <span style={{ color: isDeadlineExpired(item.deadline) ? '#6b7280' : '#dc2626', fontWeight: 600 }}>{isDeadlineExpired(item.deadline) ? '' : formatDateDDMMYYYY(item.deadline)}</span>
           </div>
         </div>
 
@@ -2799,7 +2829,7 @@ Merit Consultants Team`,
               { 
                 key: 'deadline', 
                 label: 'Deadline',
-                render: (item) => formatDate(item.deadline)
+                render: (item) => isDeadlineExpired(item.deadline) ? 'Closed' : formatDateDDMMYYYY(item.deadline)
               }
             ]}
           />
@@ -2837,7 +2867,7 @@ Merit Consultants Team`,
               { 
                 key: 'deadline', 
                 label: 'Application Deadline',
-                render: (item) => formatDate(item.deadline)
+                render: (item) => isDeadlineExpired(item.deadline) ? 'Closed' : formatDateDDMMYYYY(item.deadline)
               }
             ]}
           />
@@ -4588,7 +4618,7 @@ Merit Consultants Team`,
                         <span>•</span>
                         <span style={{ fontWeight: '500', color: '#0f172a' }}>Country: </span><span>{getCountryName(selectedItem.country)}</span>
                         <span>•</span>
-                        <span>Deadline: {selectedItem.deadline || 'No deadline'}</span>
+                        <span>{isDeadlineExpired(selectedItem.deadline) ? 'Closed' : `Deadline: ${formatDateDDMMYYYY(selectedItem.deadline)}`}</span>
                       </div>
                     </div>
                   </div>
@@ -5226,8 +5256,8 @@ Merit Consultants Team`,
                         <span>•</span>
                         <span>{selectedItem.country}</span>
                         <span>•</span>
-                        <span style={{ color: '#dc2626', fontWeight: '600' }}>
-                          Deadline: {selectedItem.deadline ? new Date(selectedItem.deadline).toLocaleDateString() : 'Not specified'}
+                        <span style={{ color: isDeadlineExpired(selectedItem.deadline) ? '#6b7280' : '#dc2626', fontWeight: '600' }}>
+                          {isDeadlineExpired(selectedItem.deadline) ? 'Closed' : `Deadline: ${formatDateDDMMYYYY(selectedItem.deadline)}`}
                         </span>
                       </div>
                     </div>
@@ -5596,8 +5626,8 @@ Merit Consultants Team`,
                       }}>
                         <span>{selectedItem.location}</span>
                         <span>•</span>
-                        <span style={{ color: '#dc2626', fontWeight: '600' }}>
-                          Deadline: {selectedItem.deadline ? new Date(selectedItem.deadline).toLocaleDateString() : 'Not specified'}
+                        <span style={{ color: isDeadlineExpired(selectedItem.deadline) ? '#6b7280' : '#dc2626', fontWeight: '600' }}>
+                          {isDeadlineExpired(selectedItem.deadline) ? 'Closed' : `Deadline: ${formatDateDDMMYYYY(selectedItem.deadline)}`}
                         </span>
                       </div>
                     </div>

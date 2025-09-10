@@ -47,6 +47,20 @@ const Opportunities = () => {
   })
   const [opportunities, setOpportunities] = useState([])
 
+  // Format date to dd/mm/yyyy
+  const formatDeadline = (deadline) => {
+    if (!deadline) return 'Not specified'
+    try {
+      const date = new Date(deadline)
+      const day = date.getDate().toString().padStart(2, '0')
+      const month = (date.getMonth() + 1).toString().padStart(2, '0')
+      const year = date.getFullYear()
+      return `${day}/${month}/${year}`
+    } catch {
+      return deadline
+    }
+  }
+
   useEffect(() => {
     fetchOpportunities()
     fetchSavedOpportunities()
@@ -124,6 +138,18 @@ const Opportunities = () => {
         }
         return null
       }
+      // Check if deadline has passed
+      const isDeadlineExpired = (deadline) => {
+        if (!deadline) return false
+        try {
+          const deadlineDate = new Date(deadline)
+          const now = new Date()
+          return deadlineDate < now
+        } catch {
+          return false
+        }
+      }
+
       const mapped = (data.opportunities || []).map((o) => {
         const parsedTags = parseToArray(o.tags)
         const unifiedTags = (parsedTags && parsedTags.length > 0) ? parsedTags : parseToArray(o.benefits)
@@ -148,6 +174,7 @@ const Opportunities = () => {
           return 'https://via.placeholder.com/800x400?text=Opportunity'
         })(),
         deadline: o.deadline || new Date().toISOString(),
+        isDeadlineExpired: isDeadlineExpired(o.deadline),
         amount: (() => {
           const minVal = toNumber(o.amount_min)
           const maxVal = toNumber(o.amount_max)
@@ -250,9 +277,16 @@ const Opportunities = () => {
 
   const handleApply = (opportunityId) => {
     console.log('Apply clicked for opportunity:', opportunityId)
+    const opportunity = opportunities.find(opp => opp.id === opportunityId)
+    
+    // Check if deadline has expired
+    if (opportunity && opportunity.isDeadlineExpired) {
+      alert('This opportunity application is closed. The deadline has passed.')
+      return
+    }
+    
     // For opportunities, we'll use external links
     // This would typically open the external application URL
-    const opportunity = opportunities.find(opp => opp.id === opportunityId)
     if (opportunity && opportunity.externalUrl) {
       window.open(opportunity.externalUrl, '_blank')
     } else {
@@ -742,9 +776,12 @@ const Opportunities = () => {
                     fontWeight: '500'
                   }}>
                     <Calendar size={12} />
-                    <span>Deadline:</span>
-                    <span style={{ color: '#dc2626', fontWeight: '600' }}>
-                      {new Date(opportunity.deadline).toLocaleDateString()}
+                    <span>{opportunity.isDeadlineExpired ? 'Closed' : 'Deadline:'}</span>
+                    <span style={{ 
+                      color: opportunity.isDeadlineExpired ? '#6b7280' : '#dc2626', 
+                      fontWeight: '600' 
+                    }}>
+                      {opportunity.isDeadlineExpired ? '' : formatDeadline(opportunity.deadline)}
                     </span>
                   </div>
 
@@ -764,21 +801,31 @@ const Opportunities = () => {
                         e.stopPropagation()
                         handleApply(opportunity.id)
                       }}
+                      disabled={opportunity.isDeadlineExpired}
                       style={{
-                        backgroundColor: '#16a34a',
+                        backgroundColor: opportunity.isDeadlineExpired ? '#6b7280' : '#16a34a',
                         color: 'white',
                         border: 'none',
                         padding: '8px 16px',
                         borderRadius: '6px',
                         fontSize: '14px',
                         fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s'
+                        cursor: opportunity.isDeadlineExpired ? 'not-allowed' : 'pointer',
+                        transition: 'background-color 0.2s',
+                        opacity: opportunity.isDeadlineExpired ? 0.6 : 1
                       }}
-                      onMouseOver={(e) => e.target.style.backgroundColor = '#15803d'}
-                      onMouseOut={(e) => e.target.style.backgroundColor = '#16a34a'}
+                      onMouseOver={(e) => {
+                        if (!opportunity.isDeadlineExpired) {
+                          e.target.style.backgroundColor = '#15803d'
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!opportunity.isDeadlineExpired) {
+                          e.target.style.backgroundColor = '#16a34a'
+                        }
+                      }}
                     >
-                      Apply Now
+                      {opportunity.isDeadlineExpired ? 'Closed' : 'Apply Now'}
                     </button>
                   </div>
                 </div>

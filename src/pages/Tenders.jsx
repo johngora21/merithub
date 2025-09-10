@@ -129,6 +129,7 @@ const Tenders = () => {
             currency: t.currency,
             duration: t.duration || 'Not specified',
             deadline: t.deadline,
+            isDeadlineExpired: isDeadlineExpired(t.deadline),
             description: t.description,
             detailedDescription: t.detailed_description,
             requirements: parseToArray(t.requirements),
@@ -278,6 +279,13 @@ const Tenders = () => {
   const handleApply = (tenderId) => {
     console.log('Apply clicked for tender:', tenderId)
     const tender = tenders.find(t => t.id === tenderId)
+    
+    // Check if deadline has expired
+    if (tender && tender.isDeadlineExpired) {
+      alert('This tender application is closed. The deadline has passed.')
+      return
+    }
+    
     if (tender && tender.externalUrl) {
       window.open(tender.externalUrl, '_blank')
     } else {
@@ -386,6 +394,32 @@ const Tenders = () => {
     const diffTime = deadlineDate - today
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
+  }
+
+  // Check if deadline has passed
+  const isDeadlineExpired = (deadline) => {
+    if (!deadline) return false
+    try {
+      const deadlineDate = new Date(deadline)
+      const now = new Date()
+      return deadlineDate < now
+    } catch {
+      return false
+    }
+  }
+
+  // Format date to dd/mm/yyyy
+  const formatDeadline = (deadline) => {
+    if (!deadline) return 'Not specified'
+    try {
+      const date = new Date(deadline)
+      const day = date.getDate().toString().padStart(2, '0')
+      const month = (date.getMonth() + 1).toString().padStart(2, '0')
+      const year = date.getFullYear()
+      return `${day}/${month}/${year}`
+    } catch {
+      return deadline
+    }
   }
 
   // Filter and search tenders
@@ -781,9 +815,12 @@ const Tenders = () => {
                       fontWeight: '500'
                     }}>
                       <Calendar size={12} />
-                      <span>Deadline:</span>
-                      <span style={{ color: isDeadlineUrgent ? '#dc2626' : '#64748b', fontWeight: isDeadlineUrgent ? '600' : '500' }}>
-                        {new Date(tender.deadline).toLocaleDateString()}
+                      <span>{tender.isDeadlineExpired ? 'Closed' : 'Deadline:'}</span>
+                      <span style={{ 
+                        color: tender.isDeadlineExpired ? '#6b7280' : (isDeadlineUrgent ? '#dc2626' : '#64748b'), 
+                        fontWeight: tender.isDeadlineExpired ? '500' : (isDeadlineUrgent ? '600' : '500') 
+                      }}>
+                        {tender.isDeadlineExpired ? '' : formatDeadline(tender.deadline)}
                       </span>
                     </div>
                   </div>
@@ -804,21 +841,31 @@ const Tenders = () => {
                         e.stopPropagation()
                         handleApply(tender.id)
                       }}
+                      disabled={tender.isDeadlineExpired}
                       style={{
-                        backgroundColor: '#16a34a',
+                        backgroundColor: tender.isDeadlineExpired ? '#6b7280' : '#16a34a',
                         color: 'white',
                         border: 'none',
                         padding: '8px 16px',
                         borderRadius: '6px',
                         fontSize: '14px',
                         fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s'
+                        cursor: tender.isDeadlineExpired ? 'not-allowed' : 'pointer',
+                        transition: 'background-color 0.2s',
+                        opacity: tender.isDeadlineExpired ? 0.6 : 1
                       }}
-                      onMouseOver={(e) => e.target.style.backgroundColor = '#15803d'}
-                      onMouseOut={(e) => e.target.style.backgroundColor = '#16a34a'}
+                      onMouseOver={(e) => {
+                        if (!tender.isDeadlineExpired) {
+                          e.target.style.backgroundColor = '#15803d'
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!tender.isDeadlineExpired) {
+                          e.target.style.backgroundColor = '#16a34a'
+                        }
+                      }}
                     >
-                      Apply Now
+                      {tender.isDeadlineExpired ? 'Closed' : 'Apply Now'}
                     </button>
                   </div>
                 </div>
@@ -1310,7 +1357,7 @@ const Tenders = () => {
                       <span>{getCountryName(selectedTender.country)}</span>
                       <span>•</span>
                       <span style={{ color: '#dc2626', fontWeight: '600' }}>
-                        Deadline: {selectedTender.deadline ? new Date(selectedTender.deadline).toLocaleDateString() : 'Not specified'}
+                        Deadline: {formatDeadline(selectedTender.deadline)}
                           </span>
                         </div>
                         </div>

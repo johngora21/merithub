@@ -129,13 +129,29 @@ const Jobs = () => {
       return country ? country.name : countryCode
     }
 
-    // Format deadline
+    // Format deadline and check if expired
     const formatDeadline = (deadline) => {
       if (!deadline) return 'Not specified'
       try {
-        return new Date(deadline).toLocaleDateString()
+        const date = new Date(deadline)
+        const day = date.getDate().toString().padStart(2, '0')
+        const month = (date.getMonth() + 1).toString().padStart(2, '0')
+        const year = date.getFullYear()
+        return `${day}/${month}/${year}`
       } catch {
         return deadline
+      }
+    }
+
+    // Check if deadline has passed
+    const isDeadlineExpired = (deadline) => {
+      if (!deadline) return false
+      try {
+        const deadlineDate = new Date(deadline)
+        const now = new Date()
+        return deadlineDate < now
+      } catch {
+        return false
       }
     }
 
@@ -168,6 +184,7 @@ const Jobs = () => {
       contactEmail: apiJob.contact_email,
       applicationDeadline: apiJob.application_deadline,
       deadline: formatDeadline(apiJob.application_deadline),
+      isDeadlineExpired: isDeadlineExpired(apiJob.application_deadline),
       isFeatured: apiJob.is_featured || false,
       status: apiJob.status || 'active',
       applicants: apiJob.applicants || 0
@@ -246,6 +263,12 @@ const Jobs = () => {
   const handleApply = async (jobId) => {
     console.log('Apply clicked for job:', jobId)
     const job = currentJobs.find(j => j.id === jobId)
+    
+    // Check if deadline has expired
+    if (job && job.isDeadlineExpired) {
+      alert('This job application is closed. The deadline has passed.')
+      return
+    }
     
     // Check if user is authenticated
     if (!user) {
@@ -844,8 +867,13 @@ ${user?.first_name} ${user?.last_name}`
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Calendar size={12} />
-                      <span>Deadline:</span>
-                      <span style={{ color: '#dc2626', fontWeight: 600 }}>{job.deadline || 'Not specified'}</span>
+                      <span>{job.isDeadlineExpired ? 'Closed' : 'Deadline:'}</span>
+                      <span style={{ 
+                        color: job.isDeadlineExpired ? '#6b7280' : '#dc2626', 
+                        fontWeight: 600 
+                      }}>
+                        {job.isDeadlineExpired ? '' : (job.deadline || 'Not specified')}
+                      </span>
                     </div>
                   </div>
 
@@ -909,27 +937,33 @@ ${user?.first_name} ${user?.last_name}`
                         e.stopPropagation()
                         handleApply(job.id)
                       }}
+                      disabled={job.isDeadlineExpired}
                       style={{
-                        backgroundColor: '#16a34a',
+                        backgroundColor: job.isDeadlineExpired ? '#6b7280' : '#16a34a',
                         color: 'white',
                         border: 'none',
                         padding: '8px 16px',
                         borderRadius: '6px',
                         fontSize: '12px',
                         fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease-in-out'
+                        cursor: job.isDeadlineExpired ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s ease-in-out',
+                        opacity: job.isDeadlineExpired ? 0.6 : 1
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = '#15803d'
-                        e.target.style.transform = 'translateY(-1px)'
+                        if (!job.isDeadlineExpired) {
+                          e.target.style.backgroundColor = '#15803d'
+                          e.target.style.transform = 'translateY(-1px)'
+                        }
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = '#16a34a'
-                        e.target.style.transform = 'translateY(0)'
+                        if (!job.isDeadlineExpired) {
+                          e.target.style.backgroundColor = '#16a34a'
+                          e.target.style.transform = 'translateY(0)'
+                        }
                       }}
                     >
-                      Apply Now
+                      {job.isDeadlineExpired ? 'Closed' : 'Apply Now'}
                     </button>
                   </div>
                 </div>

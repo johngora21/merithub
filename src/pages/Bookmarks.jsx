@@ -67,9 +67,25 @@ const Bookmarks = () => {
     const formatDeadline = (deadline) => {
       if (!deadline) return 'Not specified'
       try {
-        return new Date(deadline).toLocaleDateString()
+        const date = new Date(deadline)
+        const day = date.getDate().toString().padStart(2, '0')
+        const month = (date.getMonth() + 1).toString().padStart(2, '0')
+        const year = date.getFullYear()
+        return `${day}/${month}/${year}`
       } catch {
         return deadline
+      }
+    }
+
+    // Check if deadline has passed
+    const isDeadlineExpired = (deadline) => {
+      if (!deadline) return false
+      try {
+        const deadlineDate = new Date(deadline)
+        const now = new Date()
+        return deadlineDate < now
+      } catch {
+        return false
       }
     }
 
@@ -118,6 +134,7 @@ const Bookmarks = () => {
         contactPhone: j.contact_phone,
         applicationDeadline: j.application_deadline,
         deadline: formatDeadline(j.application_deadline),
+        isDeadlineExpired: isDeadlineExpired(j.application_deadline),
         isFeatured: j.is_featured || false,
         status: j.status || 'active',
         applicants: j.applicants || 0,
@@ -194,6 +211,7 @@ const Bookmarks = () => {
         contactEmail: o.contact_email,
         applicationDeadline: o.deadline,
         deadline: formatDeadline(o.deadline),
+        isDeadlineExpired: isDeadlineExpired(o.deadline),
         isFeatured: o.is_featured || false,
         status: o.status || 'active',
         applicants: o.applicants || 0,
@@ -278,6 +296,7 @@ const Bookmarks = () => {
         contactEmail: t.contact_email,
         applicationDeadline: t.deadline,
         deadline: formatDeadline(t.deadline),
+        isDeadlineExpired: isDeadlineExpired(t.deadline),
         isFeatured: t.is_featured || false,
         status: t.status || 'active',
         applicants: t.applicants || 0,
@@ -537,6 +556,12 @@ const Bookmarks = () => {
 
   const handleApply = async (item) => {
     console.log('Apply clicked for:', item.type, item.id)
+    
+    // Check if deadline has expired
+    if (item.isDeadlineExpired) {
+      alert(`This ${item.type} application is closed. The deadline has passed.`)
+      return
+    }
     
     if (item.type === 'job') {
       // Handle job application - EXACT same logic as Jobs.jsx
@@ -1075,9 +1100,12 @@ ${user?.first_name} ${user?.last_name}`
                           fontWeight: '500'
                         }}>
                           <Calendar size={12} />
-                          <span>Deadline:</span>
-                          <span style={{ color: isDeadlineUrgent ? '#dc2626' : '#64748b', fontWeight: isDeadlineUrgent ? '600' : '500' }}>
-                            {bookmark.deadline ? new Date(bookmark.deadline).toLocaleDateString() : 'Not specified'}
+                          <span>{bookmark.isDeadlineExpired ? 'Closed' : 'Deadline:'}</span>
+                          <span style={{ 
+                            color: bookmark.isDeadlineExpired ? '#6b7280' : (isDeadlineUrgent ? '#dc2626' : '#64748b'), 
+                            fontWeight: bookmark.isDeadlineExpired ? '500' : (isDeadlineUrgent ? '600' : '500') 
+                          }}>
+                            {bookmark.isDeadlineExpired ? '' : formatDeadline(bookmark.deadline)}
                           </span>
                         </div>
                   </div>
@@ -1098,21 +1126,31 @@ ${user?.first_name} ${user?.last_name}`
                             e.stopPropagation()
                             handleApply(bookmark)
                           }}
+                          disabled={bookmark.isDeadlineExpired}
                           style={{
-                            backgroundColor: '#16a34a',
+                            backgroundColor: bookmark.isDeadlineExpired ? '#6b7280' : '#16a34a',
                             color: 'white',
                             border: 'none',
                             padding: '8px 16px',
                             borderRadius: '6px',
                             fontSize: '14px',
                             fontWeight: '600',
-                            cursor: 'pointer',
-                            transition: 'background-color 0.2s'
+                            cursor: bookmark.isDeadlineExpired ? 'not-allowed' : 'pointer',
+                            transition: 'background-color 0.2s',
+                            opacity: bookmark.isDeadlineExpired ? 0.6 : 1
                           }}
-                          onMouseOver={(e) => e.target.style.backgroundColor = '#15803d'}
-                          onMouseOut={(e) => e.target.style.backgroundColor = '#16a34a'}
+                          onMouseOver={(e) => {
+                            if (!bookmark.isDeadlineExpired) {
+                              e.target.style.backgroundColor = '#15803d'
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (!bookmark.isDeadlineExpired) {
+                              e.target.style.backgroundColor = '#16a34a'
+                            }
+                          }}
                         >
-                          Apply Now
+                          {bookmark.isDeadlineExpired ? 'Closed' : 'Apply Now'}
                         </button>
                       </div>
                     </div>
@@ -1318,9 +1356,12 @@ ${user?.first_name} ${user?.last_name}`
                         fontWeight: '500'
                       }}>
                         <Calendar size={12} />
-                        <span>Deadline:</span>
-                        <span style={{ color: '#dc2626', fontWeight: '600' }}>
-                          {bookmark.deadline ? new Date(bookmark.deadline).toLocaleDateString() : 'Not specified'}
+                        <span>{bookmark.isDeadlineExpired ? 'Closed' : 'Deadline:'}</span>
+                        <span style={{ 
+                          color: bookmark.isDeadlineExpired ? '#6b7280' : '#dc2626', 
+                          fontWeight: '600' 
+                        }}>
+                          {bookmark.isDeadlineExpired ? '' : formatDeadline(bookmark.deadline)}
                         </span>
                       </div>
 
@@ -1340,21 +1381,31 @@ ${user?.first_name} ${user?.last_name}`
                             e.stopPropagation()
                             handleApply(bookmark)
                           }}
+                          disabled={bookmark.isDeadlineExpired}
                           style={{
-                            backgroundColor: '#16a34a',
+                            backgroundColor: bookmark.isDeadlineExpired ? '#6b7280' : '#16a34a',
                             color: 'white',
                             border: 'none',
                             padding: '8px 16px',
                             borderRadius: '6px',
                             fontSize: '14px',
                             fontWeight: '600',
-                            cursor: 'pointer',
-                            transition: 'background-color 0.2s'
+                            cursor: bookmark.isDeadlineExpired ? 'not-allowed' : 'pointer',
+                            transition: 'background-color 0.2s',
+                            opacity: bookmark.isDeadlineExpired ? 0.6 : 1
                           }}
-                          onMouseOver={(e) => e.target.style.backgroundColor = '#15803d'}
-                          onMouseOut={(e) => e.target.style.backgroundColor = '#16a34a'}
+                          onMouseOver={(e) => {
+                            if (!bookmark.isDeadlineExpired) {
+                              e.target.style.backgroundColor = '#15803d'
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (!bookmark.isDeadlineExpired) {
+                              e.target.style.backgroundColor = '#16a34a'
+                            }
+                          }}
                         >
-                          Apply Now
+                          {bookmark.isDeadlineExpired ? 'Closed' : 'Apply Now'}
                         </button>
                     </div>
                     </div>
@@ -1548,8 +1599,13 @@ ${user?.first_name} ${user?.last_name}`
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Calendar size={12} />
-                      <span>Deadline:</span>
-                      <span style={{ color: '#dc2626', fontWeight: 600 }}>{bookmark.deadline || 'Not specified'}</span>
+                      <span>{bookmark.isDeadlineExpired ? 'Closed' : 'Deadline:'}</span>
+                      <span style={{ 
+                        color: bookmark.isDeadlineExpired ? '#6b7280' : '#dc2626', 
+                        fontWeight: 600 
+                      }}>
+                        {bookmark.isDeadlineExpired ? '' : (bookmark.deadline || 'Not specified')}
+                      </span>
                     </div>
                   </div>
 
@@ -1586,27 +1642,33 @@ ${user?.first_name} ${user?.last_name}`
                         e.stopPropagation()
                         handleApply(bookmark)
                       }}
+                      disabled={bookmark.isDeadlineExpired}
                     style={{
-                      backgroundColor: '#16a34a',
+                      backgroundColor: bookmark.isDeadlineExpired ? '#6b7280' : '#16a34a',
                       color: 'white',
                       border: 'none',
                         padding: '8px 16px',
                       borderRadius: '6px',
                         fontSize: '12px',
                         fontWeight: '600',
-                      cursor: 'pointer',
-                        transition: 'all 0.2s ease-in-out'
+                      cursor: bookmark.isDeadlineExpired ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s ease-in-out',
+                        opacity: bookmark.isDeadlineExpired ? 0.6 : 1
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = '#15803d'
-                        e.target.style.transform = 'translateY(-1px)'
+                        if (!bookmark.isDeadlineExpired) {
+                          e.target.style.backgroundColor = '#15803d'
+                          e.target.style.transform = 'translateY(-1px)'
+                        }
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = '#16a34a'
-                        e.target.style.transform = 'translateY(0)'
+                        if (!bookmark.isDeadlineExpired) {
+                          e.target.style.backgroundColor = '#16a34a'
+                          e.target.style.transform = 'translateY(0)'
+                        }
                       }}
                     >
-                    Apply Now
+                    {bookmark.isDeadlineExpired ? 'Closed' : 'Apply Now'}
                   </button>
                 </div>
               </div>

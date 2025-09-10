@@ -1,4 +1,4 @@
-const { User, Job, Tender, Opportunity, Application, Course } = require('../models');
+const { User, Job, Tender, Opportunity, Application, Course, BlockedEmail } = require('../models');
 const { Op } = require('sequelize');
 const AdminLog = require('../models/AdminLog');
 const { validationResult } = require('express-validator');
@@ -594,17 +594,42 @@ const deleteUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Check if email is already blocked, if not, block it
+    const existingBlockedEmail = await BlockedEmail.findOne({ where: { email: user.email } });
+    if (!existingBlockedEmail) {
+      await BlockedEmail.create({
+        email: user.email,
+        reason: 'user_deleted',
+        blocked_by: req.user.id,
+        original_user_id: user.id,
+        notes: `User account deleted by admin ${req.user.first_name} ${req.user.last_name}`
+      });
+    } else {
+      // Update existing blocked email to remove the foreign key reference
+      await existingBlockedEmail.update({
+        original_user_id: null,
+        notes: `User account deleted by admin ${req.user.first_name} ${req.user.last_name} (updated)`
+      });
+    }
+
     // Log admin action
     await AdminLog.create({
       admin_id: req.user.id,
       action: 'DELETE_USER',
       resource_type: 'user',
       resource_id: req.params.id,
-      description: `Deleted user: ${user.email}`
+      description: `Deleted user: ${user.email}${existingBlockedEmail ? ' (email was already blocked)' : ' and blocked their email address'}`
     });
 
+    // Delete the user
     await user.destroy();
-    res.json({ message: 'User deleted successfully' });
+    
+    res.json({ 
+      message: existingBlockedEmail 
+        ? 'User deleted successfully (email was already blocked)' 
+        : 'User deleted successfully and email has been blocked from future registrations',
+      blockedEmail: user.email
+    });
   } catch (error) {
     console.error('Error deleting user:', error);
     res.status(500).json({ message: 'Error deleting user', error: error.message });

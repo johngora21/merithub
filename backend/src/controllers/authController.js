@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const BlockedEmail = require('../models/BlockedEmail');
 const { generateToken } = require('../../config/jwt');
 const { Op } = require('sequelize');
 const https = require('https');
@@ -52,6 +53,15 @@ const upload = multer({
 const register = async (req, res) => {
   try {
     const { email, password, first_name, last_name, phone, location, country, userType } = req.body;
+
+    // Check if email is blocked
+    const blockedEmail = await BlockedEmail.findOne({ where: { email } });
+    if (blockedEmail) {
+      return res.status(403).json({
+        success: false,
+        message: 'This email address has been blocked and cannot be used for registration'
+      });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });

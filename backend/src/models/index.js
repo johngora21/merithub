@@ -10,6 +10,7 @@ const UserSubscription = require('./UserSubscription');
 const Notification = require('./Notification');
 const SavedItem = require('./SavedItem');
 const CourseEnrollment = require('./CourseEnrollment');
+const BlockedEmail = require('./BlockedEmail');
 
 // Define associations
 User.hasMany(Job, { foreignKey: 'created_by', as: 'createdJobs' });
@@ -112,5 +113,6 @@ module.exports = {
   Notification,
   SavedItem,
   CourseEnrollment,
+  BlockedEmail,
   syncDatabase
 };
