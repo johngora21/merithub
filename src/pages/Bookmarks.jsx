@@ -115,6 +115,7 @@ const Bookmarks = () => {
         postedBy: j.posted_by || 'platform',
         externalUrl: j.external_url,
         contactEmail: j.contact_email,
+        contactPhone: j.contact_phone,
         applicationDeadline: j.application_deadline,
         deadline: formatDeadline(j.application_deadline),
         isFeatured: j.is_featured || false,
@@ -1762,22 +1763,6 @@ ${user?.first_name} ${user?.last_name}`
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Salary</label>
                         <p style={{ fontSize: '14px', color: '#16a34a', fontWeight: '600', margin: 0 }}>{selectedItem.salary || 'Not specified'}</p>
                       </div>
-                      {selectedItem.contactEmail && (
-                        <div>
-                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Email</label>
-                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
-                            <a href={`mailto:${selectedItem.contactEmail}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contactEmail}</a>
-                          </p>
-                        </div>
-                      )}
-                      {selectedItem.contactPhone && (
-                        <div>
-                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Contact Phone</label>
-                          <p style={{ fontSize: '14px', margin: 0, fontWeight: '500' }}>
-                            <a href={`tel:${selectedItem.contactPhone}`} style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedItem.contactPhone}</a>
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </div>
 

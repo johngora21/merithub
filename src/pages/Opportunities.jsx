@@ -1300,7 +1300,7 @@ const Opportunities = () => {
             }}
             onClick={(e) => e.stopPropagation()}>
               {/* Modal Header (match admin) */}
-              <div style={{
+                <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -1317,31 +1317,31 @@ const Opportunities = () => {
                 }}>
                   {selectedOpportunity.title}
                 </h2>
-                <button
-                  onClick={() => setShowDetails(false)}
-                  style={{
+                  <button
+                    onClick={() => setShowDetails(false)}
+                    style={{
                     backgroundColor: 'transparent',
-                    border: 'none',
-                    padding: '8px',
+                      border: 'none',
+                      padding: '8px',
                     borderRadius: '20px',
                     width: '32px',
                     height: '32px',
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    cursor: 'pointer'
-                  }}
-                >
+                      cursor: 'pointer'
+                    }}
+                  >
                   <X size={18} color="#64748b" />
-                </button>
+                  </button>
               </div>
 
               {/* Content */}
               <div style={{ padding: screenSize.isMobile ? '16px 24px 90px 24px' : '32px 40px 90px 40px', flex: 1 }}>
                 {/* Organization Profile Header (match admin) */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
                   gap: '16px',
                   marginBottom: '24px',
                   paddingBottom: '20px',
@@ -1363,8 +1363,8 @@ const Opportunities = () => {
                       {selectedOpportunity.organization || ''}
                     </h3>
                     <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 8px 0' }}>
-                      {selectedOpportunity.title}
-                    </h2>
+                    {selectedOpportunity.title}
+                  </h2>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '14px', color: '#64748b' }}>
                       <span>{selectedOpportunity.location}</span>
                       <span>•</span>
@@ -1382,11 +1382,11 @@ const Opportunities = () => {
                     <div>
                       <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Organization</label>
                       <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedOpportunity.organization || 'Not specified'}</p>
-                    </div>
+                </div>
                     <div>
                       <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Opportunity Type</label>
                       <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedOpportunity.type || 'Not specified'}</p>
-                    </div>
+                        </div>
                     <div>
                       <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Amount</label>
                       <p style={{ fontSize: '14px', color: '#16a34a', margin: 0, fontWeight: '600' }}>{selectedOpportunity.amount || 'Not specified'}</p>
@@ -1394,29 +1394,29 @@ const Opportunities = () => {
                     <div>
                       <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Duration</label>
                       <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedOpportunity.duration || 'Not specified'}</p>
-                    </div>
+                  </div>
                     <div>
                       <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Location</label>
                       <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedOpportunity.location || 'Not specified'}</p>
-                    </div>
+                        </div>
                     {selectedOpportunity.externalUrl && (
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Application URL</label>
                         <p style={{ fontSize: '14px', margin: 0, fontWeight: '500', wordBreak: 'break-all' }}>
                           <a href={selectedOpportunity.externalUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none' }}>{selectedOpportunity.externalUrl}</a>
                         </p>
-                      </div>
-                    )}
                   </div>
-                </div>
+                )}
+                        </div>
+                    </div>
 
                 {/* Opportunity Overview */}
-                <div style={{ marginBottom: '24px' }}>
+                  <div style={{ marginBottom: '24px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Opportunity Overview</h3>
                   <p style={{ fontSize: '15px', lineHeight: '1.6', color: '#374151', margin: 0 }}>
                     {selectedOpportunity.detailedDescription || selectedOpportunity.description}
                   </p>
-                </div>
+                        </div>
 
                 {/* Eligibility Requirements */}
                 {selectedOpportunity.requirements && selectedOpportunity.requirements.length > 0 && (
@@ -1445,10 +1445,10 @@ const Opportunities = () => {
                         </li>
                       ))}
                     </ul>
-                  </div>
+                    </div>
                 )}
 
-                {/* Tags */}
+                  {/* Tags */}
                 {((selectedOpportunity.tags && selectedOpportunity.tags.length > 0) || (selectedOpportunity.benefits && selectedOpportunity.benefits.length > 0)) && (
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Tags</h3>

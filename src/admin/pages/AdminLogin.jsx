@@ -13,10 +13,22 @@ const AdminLogin = ({ onSuccess }) => {
     e.preventDefault()
     setError('')
     setLoading(true)
+    
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      setError('Request timeout - please check your connection')
+      setLoading(false)
+    }, 10000) // 10 second timeout
+    
     try {
       const resp = await apiService.post('/auth/login', { email, password })
+      clearTimeout(timeoutId)
+      
+      console.log('Login response:', resp)
+      
       if (resp && resp.data && resp.data.token && resp.data.user) {
         localStorage.setItem('auth-token', resp.data.token)
+        localStorage.setItem('user-type', 'admin')
         // simple admin check: is_admin true or enterprise subscription
         const isAdmin = !!resp.data.user.is_admin || resp.data.user.subscription_type === 'enterprise'
         if (!isAdmin) {
@@ -28,13 +40,16 @@ const AdminLogin = ({ onSuccess }) => {
       } else if (resp && resp.success && resp.token) {
         // fallback shape
         localStorage.setItem('auth-token', resp.token)
+        localStorage.setItem('user-type', 'admin')
         onSuccess && onSuccess()
       } else {
-        setError(resp.message || 'Login failed')
+        setError(resp?.message || 'Login failed')
+        setLoading(false)
       }
     } catch (err) {
-      setError(err.message || 'Login failed')
-    } finally {
+      clearTimeout(timeoutId)
+      console.error('Login error:', err)
+      setError(err?.message || 'Connection failed - check backend server')
       setLoading(false)
     }
   }

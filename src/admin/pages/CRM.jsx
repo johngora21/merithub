@@ -3,7 +3,7 @@ import {
   Users, 
   Search, 
   Plus, 
-  Filter, 
+  SlidersHorizontal, 
   Phone, 
   Mail, 
   MapPin, 
@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 
 import { apiService } from '../../lib/api-service'
+import { countries } from '../../utils/countries'
 
 const CRM = () => {
   // Simple responsive detection
@@ -56,6 +57,49 @@ const CRM = () => {
   const [page, setPage] = useState(1)
   const [limit] = useState(20)
   const [totalPages, setTotalPages] = useState(1)
+  // Advanced filters modal
+  const [showFilters, setShowFilters] = useState(false)
+  // Multi-select filters using sets (checkbox UI)
+  const [filterStatuses, setFilterStatuses] = useState(new Set())
+  const [filterCountries, setFilterCountries] = useState(new Set())
+  const [filterEducations, setFilterEducations] = useState(new Set())
+  const [filterGenders, setFilterGenders] = useState(new Set())
+  // Use the same dropdown values as profile edit page
+  const educationOptions = [
+    'Ordinary Level',
+    'High School',
+    'Certificate/Diploma',
+    'Bachelor Degree',
+    'Masters Degree',
+    'Doctoral Degree(PhD)'
+  ]
+
+  const getActiveFilterCount = () =>
+    (filterStatuses.size ? 1 : 0) + (filterCountries.size ? 1 : 0) + (filterEducations.size ? 1 : 0) + (filterGenders.size ? 1 : 0)
+
+  // Match Applications profile helpers
+  const getEducationLevel = (level) => {
+    if (!level) return 0
+    const s = String(level).toLowerCase()
+    if (s.includes('phd') || s.includes('doctor')) return 7
+    if (s.includes('master') || s.includes('mba') || s.includes('m.')) return 6
+    if (s.includes('bachelor') || s.includes('bsc') || s.includes('ba')) return 5
+    if (s.includes('associate')) return 4
+    if (s.includes('diploma') || s.includes('certificate')) return 3
+    if (s.includes('high school') || s.includes('secondary')) return 2
+    if (s.includes('ordinary')) return 1.5
+    return 1
+  }
+  const getHighestEducation = (education) => {
+    if (!Array.isArray(education) || education.length === 0) return 'Not specified'
+    const highest = education.reduce((h, c) => (getEducationLevel(c.level) > getEducationLevel(h.level) ? c : h), education[0])
+    return highest.level || 'Not specified'
+  }
+  const getHighestEducationInstitution = (education) => {
+    if (!Array.isArray(education) || education.length === 0) return 'Not specified'
+    const highest = education.reduce((h, c) => (getEducationLevel(c.level) > getEducationLevel(h.level) ? c : h), education[0])
+    return highest.institution || highest.school || highest.university || 'Not specified'
+  }
 
   const normalizeStatus = (status) => {
     if (!status) return 'active'
@@ -155,10 +199,14 @@ const CRM = () => {
                          customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (customer.company && customer.company.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          customer.location?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = statusFilter === 'all' || customer.status === statusFilter
-    
-    return matchesSearch && matchesStatus
+    // Advanced filters (multi-select)
+    const matchesStatus = filterStatuses.size === 0 || filterStatuses.has((customer.status || '').toLowerCase())
+    const highestEdu = (getHighestEducation(customer.education) || '').toLowerCase()
+    const matchesEducation = filterEducations.size === 0 || filterEducations.has(highestEdu)
+    const customerCountry = (customer.country_of_residence || customer.location || '').toLowerCase()
+    const matchesCountry = filterCountries.size === 0 || filterCountries.has(customerCountry)
+    const matchesGender = filterGenders.size === 0 || filterGenders.has((customer.gender || '').toLowerCase())
+    return matchesSearch && matchesStatus && matchesCountry && matchesEducation && matchesGender
   })
 
   // Filter customers for bulk messaging
@@ -694,6 +742,85 @@ const CRM = () => {
     )
   }
 
+  // Advanced Filters Modal
+  const FiltersModal = () => {
+    if (!showFilters) return null
+    return (
+      <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+        <div style={{ backgroundColor: 'white', borderRadius: '16px', width: 'min(560px, 100%)', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#111827' }}>Filters</h3>
+            <button onClick={() => setShowFilters(false)} style={{ background: 'transparent', border: 'none', fontSize: '20px', color: '#9ca3af', cursor: 'pointer' }}>×</button>
+          </div>
+          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>Status</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {['vip','active','prospect','inactive'].map(opt => {
+                  const checked = filterStatuses.has(opt)
+                  return (
+                    <label key={opt} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '9999px', cursor: 'pointer', backgroundColor: checked ? '#f97316' : 'white', color: checked ? 'white' : '#374151' }}>
+                      <input type="checkbox" checked={checked} onChange={(e) => { const next = new Set(filterStatuses); if (e.target.checked) next.add(opt); else next.delete(opt); setFilterStatuses(next) }} style={{ display: 'none' }} />
+                      <span style={{ fontSize: '13px', fontWeight: 500, textTransform: 'capitalize' }}>{opt}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>Country of Residence</label>
+              <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px', backgroundColor: '#f9fafb' }}>
+                {countries.map(c => {
+                  const key = (c.name || c).toLowerCase()
+                  const checked = filterCountries.has(key)
+                  return (
+                    <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 4px', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={checked} onChange={(e) => { const next = new Set(filterCountries); if (e.target.checked) next.add(key); else next.delete(key); setFilterCountries(next) }} />
+                      <span style={{ fontSize: '14px', color: '#374151' }}>{c.name || c}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>Highest Level of Education</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {educationOptions.map(level => {
+                  const key = level.toLowerCase()
+                  const checked = filterEducations.has(key)
+                  return (
+                    <label key={key} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '9999px', cursor: 'pointer', backgroundColor: checked ? '#f97316' : 'white', color: checked ? 'white' : '#374151' }}>
+                      <input type="checkbox" checked={checked} onChange={(e) => { const next = new Set(filterEducations); if (e.target.checked) next.add(key); else next.delete(key); setFilterEducations(next) }} style={{ display: 'none' }} />
+                      <span style={{ fontSize: '13px', fontWeight: 500 }}>{level}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '8px' }}>Gender</label>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                {['male','female','other'].map(g => {
+                  const checked = filterGenders.has(g)
+                  return (
+                    <label key={g} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '9999px', cursor: 'pointer', backgroundColor: checked ? '#f97316' : 'white', color: checked ? 'white' : '#374151' }}>
+                      <input type="checkbox" checked={checked} onChange={(e) => { const next = new Set(filterGenders); if (e.target.checked) next.add(g); else next.delete(g); setFilterGenders(next) }} style={{ display: 'none' }} />
+                      <span style={{ fontSize: '13px', fontWeight: 500, textTransform: 'capitalize' }}>{g}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+          <div style={{ padding: '16px 20px', borderTop: '1px solid #e5e7eb', backgroundColor: '#f9fafb', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <button onClick={() => { setFilterStatuses(new Set()); setFilterCountries(new Set()); setFilterEducations(new Set()); setFilterGenders(new Set()); setShowFilters(false) }} style={{ padding: '8px 14px', backgroundColor: 'transparent', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '14px', cursor: 'pointer' }}>Clear</button>
+            <button onClick={() => setShowFilters(false)} style={{ padding: '8px 14px', backgroundColor: '#f97316', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', cursor: 'pointer' }}>Apply</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{
       maxWidth: '1280px',
@@ -919,22 +1046,35 @@ const CRM = () => {
                 />
               </div>
 
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+              <button
+                onClick={() => setShowFilters(true)}
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
                   padding: '8px 12px',
                   border: '1px solid #d1d5db',
                   borderRadius: '8px',
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  backgroundColor: 'white',
+                  color: '#374151',
+                  cursor: 'pointer'
                 }}
               >
-                <option value="all">All Status</option>
-                <option value="vip">VIP</option>
-                <option value="active">Active</option>
-                <option value="prospect">Prospect</option>
-                <option value="inactive">Inactive</option>
-              </select>
+                <SlidersHorizontal size={16} /> Filters
+                {getActiveFilterCount() > 0 && (
+                  <span style={{
+                    marginLeft: '4px',
+                    backgroundColor: '#f97316',
+                    color: 'white',
+                    borderRadius: '9999px',
+                    padding: '0 8px',
+                    fontSize: '12px',
+                    lineHeight: '18px',
+                    height: '18px'
+                  }}>{getActiveFilterCount()}</span>
+                )}
+              </button>
             </div>
 
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -1310,7 +1450,7 @@ const CRM = () => {
                 color: '#1a1a1a',
                 margin: 0
               }}>
-                {selectedCustomer.name}
+                {selectedCustomer.name}'s Profile
               </h2>
               <button
                 onClick={() => setSelectedCustomer(null)}
@@ -1336,6 +1476,10 @@ const CRM = () => {
               padding: screenSize.isMobile ? '16px 24px 90px 24px' : '32px 40px 90px 40px',
               flex: 1
             }}>
+              {/* Mirror Applications header computed base */}
+              {(() => {
+                return null
+              })()}
               {/* Profile Header */}
               <div style={{
                 display: 'flex',
@@ -1349,7 +1493,7 @@ const CRM = () => {
                   src={selectedCustomer.profilePicture ? 
                     (selectedCustomer.profilePicture.startsWith('http') ? 
                       selectedCustomer.profilePicture : 
-                      `http://localhost:8000${selectedCustomer.profilePicture}`) : 
+                      `${(import.meta?.env?.VITE_API_BASE_URL)||'http://localhost:8000'}${selectedCustomer.profilePicture}`) : 
                     'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop'} 
                   alt={selectedCustomer.name}
                   style={{
@@ -1375,7 +1519,7 @@ const CRM = () => {
                     color: '#64748b',
                     margin: '0 0 12px 0'
                   }}>
-                    {selectedCustomer.company ? selectedCustomer.company.charAt(0).toUpperCase() + selectedCustomer.company.slice(1) : 'No employment status'}
+                    @{selectedCustomer.username || selectedCustomer.email?.split('@')[0] || 'user'}
                   </h3>
                   <div style={{
                     display: 'flex',
@@ -1414,7 +1558,8 @@ const CRM = () => {
                 </div>
               </div>
 
-              {/* Profile Completion */}
+              {/* Profile Completion (hide to match Applications header compactness) */}
+              {false && (
               <div style={{
                 padding: '16px',
                 backgroundColor: '#f0fdf4',
@@ -1459,341 +1604,62 @@ const CRM = () => {
                   }} />
                 </div>
               </div>
+              )}
 
 
 
-              {/* Personal Information */}
+              {/* Basic Information */}
               <div style={{ marginBottom: '24px' }}>
-                <h3 style={{
-                  fontSize: '20px',
-                  fontWeight: '600',
-                  color: '#1a1a1a',
-                  margin: '0 0 16px 0'
-                }}>
-                  Personal Information
-                </h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Basic Information</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={{
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#64748b',
-                      marginBottom: '2px',
-                      display: 'block'
-                    }}>
-                      Username
-                    </label>
-                    <p style={{
-                      fontSize: '14px',
-                      color: '#1a1a1a',
-                      margin: 0,
-                      padding: '3px 0'
-                    }}>
-                      @{selectedCustomer.username || selectedCustomer.email?.split('@')[0] || 'user'}
-                    </p>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginBottom: '2px', display: 'block' }}>Full Name</label>
+                    <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>{selectedCustomer.name}</p>
                   </div>
-                  
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: '1fr 1fr', 
-                    gap: '6px' 
-                  }}>
                     <div>
-                      <label style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#64748b',
-                        marginBottom: '2px',
-                        display: 'block'
-                      }}>
-                        Employment Status
-                      </label>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#1a1a1a',
-                        margin: 0,
-                        padding: '3px 0'
-                      }}>
-                        {selectedCustomer.employment_status || ''}
-                      </p>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginBottom: '2px', display: 'block' }}>Username</label>
+                    <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>@{selectedCustomer.username || selectedCustomer.email?.split('@')[0] || 'user'}</p>
                     </div>
-                    
                     <div>
-                      <label style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#64748b',
-                        marginBottom: '2px',
-                        display: 'block'
-                      }}>
-                        Current Position
-                      </label>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#1a1a1a',
-                        margin: 0,
-                        padding: '3px 0'
-                      }}>
-                        {selectedCustomer.current_job_title || ''}
-                      </p>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginBottom: '2px', display: 'block' }}>Email</label>
+                    <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>{selectedCustomer.email}</p>
                     </div>
-                  </div>
-                  
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: '1fr 1fr', 
-                    gap: '6px' 
-                  }}>
                     <div>
-                      <label style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#64748b',
-                        marginBottom: '2px',
-                        display: 'block'
-                      }}>
-                        Industry
-                      </label>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#1a1a1a',
-                        margin: 0,
-                        padding: '3px 0'
-                      }}>
-                        {selectedCustomer.industry || ''}
-                      </p>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginBottom: '2px', display: 'block' }}>Phone</label>
+                    <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>{selectedCustomer.phone}</p>
                     </div>
-                    
                     <div>
-                      <label style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#64748b',
-                        marginBottom: '2px',
-                        display: 'block'
-                      }}>
-                        Years of Experience
-                      </label>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#1a1a1a',
-                        margin: 0,
-                        padding: '3px 0'
-                      }}>
-                        {selectedCustomer.years_experience || ''}
-                      </p>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginBottom: '2px', display: 'block' }}>Employment Status</label>
+                    <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>{selectedCustomer.employment_status ? (selectedCustomer.employment_status.charAt(0).toUpperCase() + selectedCustomer.employment_status.slice(1)) : ''}</p>
                     </div>
-                  </div>
-                  
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: '1fr 1fr', 
-                    gap: '6px' 
-                  }}>
                     <div>
-                      <label style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#64748b',
-                        marginBottom: '2px',
-                        display: 'block'
-                      }}>
-                        Marital Status
-                      </label>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#1a1a1a',
-                        margin: 0,
-                        padding: '3px 0'
-                      }}>
-                        {selectedCustomer.marital_status || ''}
-                      </p>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginBottom: '2px', display: 'block' }}>Industry</label>
+                    <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>{selectedCustomer.industry}</p>
                     </div>
-                    
                     <div>
-                      <label style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#64748b',
-                        marginBottom: '2px',
-                        display: 'block'
-                      }}>
-                        Nationality
-                      </label>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#1a1a1a',
-                        margin: 0,
-                        padding: '3px 0'
-                      }}>
-                        {selectedCustomer.nationality || ''}
-                      </p>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginBottom: '2px', display: 'block' }}>Nationality</label>
+                    <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>{selectedCustomer.nationality}</p>
                     </div>
-                  </div>
-                  
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: '1fr 1fr', 
-                    gap: '6px' 
-                  }}>
                     <div>
-                      <label style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#64748b',
-                        marginBottom: '2px',
-                        display: 'block'
-                      }}>
-                        Country of Residence
-                      </label>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#1a1a1a',
-                        margin: 0,
-                        padding: '3px 0'
-                      }}>
-                        {selectedCustomer.country_of_residence || ''}
-                      </p>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginBottom: '2px', display: 'block' }}>Country of Residence</label>
+                    <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>{selectedCustomer.country_of_residence}</p>
                     </div>
-                    
                     <div>
-                      <label style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#64748b',
-                        marginBottom: '2px',
-                        display: 'block'
-                      }}>
-                        Date of Birth
-                      </label>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#1a1a1a',
-                        margin: 0,
-                        padding: '3px 0'
-                      }}>
-                        {selectedCustomer.date_of_birth || ''}
-                      </p>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginBottom: '2px', display: 'block' }}>Date of Birth</label>
+                    <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>{selectedCustomer.date_of_birth}</p>
                     </div>
-                  </div>
-                  
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: '1fr 1fr', 
-                    gap: '6px' 
-                  }}>
                     <div>
-                      <label style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#64748b',
-                        marginBottom: '2px',
-                        display: 'block'
-                      }}>
-                        Gender
-                      </label>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#1a1a1a',
-                        margin: 0,
-                        padding: '3px 0'
-                      }}>
-                        {selectedCustomer.gender || ''}
-                      </p>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginBottom: '2px', display: 'block' }}>Gender</label>
+                    <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>{selectedCustomer.gender}</p>
                     </div>
-                    
                     <div>
-                      <label style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#64748b',
-                        marginBottom: '2px',
-                        display: 'block'
-                      }}>
-                        Disability Status
-                      </label>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#1a1a1a',
-                        margin: 0,
-                        padding: '3px 0'
-                      }}>
-                        {selectedCustomer.disability_status || ''}
-                      </p>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginBottom: '2px', display: 'block' }}>Disability Status</label>
+                    <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>{selectedCustomer.disability_status || 'No disability'}</p>
                     </div>
-                  </div>
-                  
                   <div>
-                    <label style={{
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#64748b',
-                      marginBottom: '2px',
-                      display: 'block'
-                    }}>
-                      Languages
-                    </label>
-                    <p style={{
-                      fontSize: '14px',
-                      color: '#1a1a1a',
-                      margin: 0,
-                      padding: '3px 0'
-                    }}>
-                      {selectedCustomer.languages || ''}
-                    </p>
+                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', marginBottom: '2px', display: 'block' }}>Languages</label>
+                    <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>{selectedCustomer.languages}</p>
                   </div>
-                  
-                  <div>
-                    <label style={{
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#64748b',
-                      marginBottom: '2px',
-                      display: 'block'
-                    }}>
-                      LinkedIn Profile
-                    </label>
-                    <p style={{
-                      fontSize: '14px',
-                      color: '#1a1a1a',
-                      margin: 0,
-                      padding: '3px 0'
-                    }}>
-                      {selectedCustomer.linkedin_url || ''}
-                    </p>
-                  </div>
-                  
-                  {(selectedCustomer.profile_link1_name || selectedCustomer.profile_link2_name || selectedCustomer.profile_link3_name) && (
-                    <div>
-                      <label style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#64748b',
-                        marginBottom: '2px',
-                        display: 'block'
-                      }}>
-                        Additional Profile Links
-                      </label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {selectedCustomer.profile_link1_name && selectedCustomer.profile_link1_url && (
-                          <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>
-                            {selectedCustomer.profile_link1_name}: {selectedCustomer.profile_link1_url}
-                          </p>
-                        )}
-                        {selectedCustomer.profile_link2_name && selectedCustomer.profile_link2_url && (
-                          <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>
-                            {selectedCustomer.profile_link2_name}: {selectedCustomer.profile_link2_url}
-                          </p>
-                        )}
-                        {selectedCustomer.profile_link3_name && selectedCustomer.profile_link3_url && (
-                          <p style={{ fontSize: '14px', color: '#1a1a1a', margin: 0, padding: '3px 0' }}>
-                            {selectedCustomer.profile_link3_name}: {selectedCustomer.profile_link3_url}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -1859,57 +1725,27 @@ const CRM = () => {
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {(selectedCustomer.experience && selectedCustomer.experience.length > 0 ? selectedCustomer.experience : [
-                    {
-                      title: 'No experience listed',
-                      company: '',
-                      duration: '',
-                      description: 'No work experience information provided.'
-                    }
+                    { title: 'No experience listed', company: '', industry: '', description: '' }
                   ]).map((exp, index) => (
-                    <div key={index} style={{
-                      padding: '16px',
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '12px',
-                      border: '1px solid #e5e7eb'
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        marginBottom: '8px'
-                      }}>
-                        <h4 style={{
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          color: '#1a1a1a',
-                          margin: 0
-                        }}>
+                    <div key={index} style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                      <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: 0 }}>
                           {exp.title}
                         </h4>
-                        <span style={{
-                          fontSize: '14px',
-                          color: '#64748b',
-                          fontWeight: '500'
-                        }}>
-                          {exp.duration}
-                        </span>
-                      </div>
-                      <p style={{
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: '#16a34a',
-                        margin: '0 0 8px 0'
-                      }}>
+                      {exp.company && (
+                        <p style={{ fontSize: '14px', fontWeight: '600', color: '#16a34a', margin: '6px 0 6px 0' }}>
                         {exp.company}
                       </p>
-                      <p style={{
-                        fontSize: '14px',
-                        lineHeight: '1.5',
-                        color: '#374151',
-                        margin: 0
-                      }}>
+                      )}
+                      {exp.industry && (
+                        <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 6px 0' }}>
+                          Industry: {exp.industry}
+                        </p>
+                      )}
+                      {exp.description && (
+                        <p style={{ fontSize: '14px', lineHeight: '1.5', color: '#374151', margin: 0 }}>
                         {exp.description}
                       </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1925,54 +1761,35 @@ const CRM = () => {
                 }}>
                   Education
                 </h3>
-                <div style={{
-                  padding: '16px',
-                  backgroundColor: '#f8fafc',
-                  borderRadius: '12px',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: '8px'
-                  }}>
-                    <h4 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: 0
-                    }}>
-                      {selectedCustomer.education?.[0]?.program || selectedCustomer.education?.[0]?.level || 'No education listed'}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {(Array.isArray(selectedCustomer.education) && selectedCustomer.education.length > 0 ? selectedCustomer.education : [
+                    { level: 'No education listed', program: '', institution: '', location: '', gpa: '' }
+                  ]).map((edu, idx) => (
+                    <div key={idx} style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                      <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: 0 }}>
+                        {edu.level}
                     </h4>
-                    <span style={{
-                      fontSize: '14px',
-                      color: '#64748b',
-                      fontWeight: '500'
-                    }}>
-                      {selectedCustomer.education?.[0]?.period || ''}
-                    </span>
-                  </div>
-                  <p style={{
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#16a34a',
-                    margin: '0 0 8px 0'
-                  }}>
-                    {selectedCustomer.education?.[0]?.institution || ''}
-                  </p>
-                  <p style={{
-                    fontSize: '14px',
-                    lineHeight: '1.5',
-                    color: '#374151',
-                    margin: 0
-                  }}>
-                    {selectedCustomer.education?.[0]?.description || ''}
-                  </p>
+                      {edu.program && (
+                        <p style={{ fontSize: '14px', fontWeight: '600', color: '#374151', margin: '6px 0 6px 0' }}>
+                          {edu.program}
+                        </p>
+                      )}
+                      {(edu.institution || edu.school || edu.university) && (
+                        <p style={{ fontSize: '14px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 6px 0' }}>
+                          {(edu.institution || edu.school || edu.university)}{(edu.location || edu.region) ? ` • ${edu.location || edu.region}` : ''}
+                        </p>
+                      )}
+                      {(edu.gpa || edu.grade) && (
+                        <p style={{ fontSize: '13px', color: '#059669', margin: 0 }}>
+                          GPA: {edu.gpa || edu.grade}
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Certificates Section */}
+              {/* Certificates Section (match Applications downloads) */}
               <div style={{ marginBottom: '24px' }}>
                 <h3 style={{
                   fontSize: '20px',
@@ -2011,7 +1828,7 @@ const CRM = () => {
                         src={cert.image ? 
                           (cert.image.startsWith('http') ? 
                             cert.image : 
-                            `http://localhost:8000${cert.image}`) : 
+                            `${(import.meta?.env?.VITE_API_BASE_URL)||'http://localhost:8000'}${cert.image}`) : 
                           'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop'} 
                         alt={cert.name}
                         style={{
@@ -2038,13 +1855,20 @@ const CRM = () => {
                           {cert.issuer} • {cert.date}
                         </p>
                       </div>
-                      {cert.certificate_file && (
+                      {(cert.file_path || cert.certificate_file) && (
                         <button
                           onClick={() => {
-                            const fileUrl = cert.certificate_file.startsWith('http') 
-                              ? cert.certificate_file 
-                              : `http://localhost:8000${cert.certificate_file}`;
-                            window.open(fileUrl, '_blank');
+                            const filePath = cert.file_path || cert.certificate_file
+                            if (filePath && filePath.startsWith('/uploads/')) {
+                              const apiBase = (import.meta?.env?.VITE_API_BASE_URL) || 'http://localhost:8000'
+                              const url = `${apiBase}/api/admin/download-by-path?path=${encodeURIComponent(filePath)}`
+                              fetch(url, { credentials: 'include' })
+                                .then(res => { if (!res.ok) throw new Error('Download failed'); return res.blob() })
+                                .then(blob => { const blobUrl = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = blobUrl; a.download = (filePath.split('/').pop()) || `${cert.name||'certificate'}.pdf`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(blobUrl) })
+                                .catch(() => alert('Failed to download the file. Please try again.'))
+                            } else {
+                              alert('File path not available for this certificate.')
+                            }
                           }}
                           style={{
                             padding: '6px 12px',
@@ -2069,7 +1893,7 @@ const CRM = () => {
                 </div>
               </div>
 
-              {/* Documents Section */}
+              {/* Documents Section (match Applications downloads) */}
               <div style={{ marginBottom: '24px' }}>
                 <h3 style={{
                   fontSize: '20px',
@@ -2131,13 +1955,20 @@ const CRM = () => {
                           {doc.type} • {doc.size} • {doc.date}
                         </p>
                       </div>
-                      {doc.file && (
+                      {(doc.file_path || doc.certificate_file || doc.file) && (
                         <button
                           onClick={() => {
-                            const fileUrl = doc.file.startsWith('http') 
-                              ? doc.file 
-                              : `http://localhost:8000${doc.file}`;
-                            window.open(fileUrl, '_blank');
+                            const filePath = doc.file_path || doc.certificate_file || doc.file
+                            if (filePath && String(filePath).startsWith('/uploads/')) {
+                              const apiBase = (import.meta?.env?.VITE_API_BASE_URL) || 'http://localhost:8000'
+                              const url = `${apiBase}/api/admin/download-by-path?path=${encodeURIComponent(filePath)}`
+                              fetch(url, { credentials: 'include' })
+                                .then(res => { if (!res.ok) throw new Error('Download failed'); return res.blob() })
+                                .then(blob => { const blobUrl = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = blobUrl; a.download = (String(filePath).split('/').pop()) || `${doc.name||'document'}.pdf`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(blobUrl) })
+                                .catch(() => alert('Failed to download the file. Please try again.'))
+                            } else {
+                              alert('File path not available for this document.')
+                            }
                           }}
                           style={{
                             padding: '6px 12px',
@@ -2161,6 +1992,35 @@ const CRM = () => {
                   })}
                 </div>
               </div>
+
+              {/* Profile Links (bottom, clickable names only) */}
+              {(selectedCustomer.profile_link1_name || selectedCustomer.profile_link2_name || selectedCustomer.profile_link3_name || selectedCustomer.linkedin_url) && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '20px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Profile Links</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {selectedCustomer.profile_link1_name && selectedCustomer.profile_link1_url && (
+                      <a href={selectedCustomer.profile_link1_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '14px', color: '#3b82f6', textDecoration: 'none', padding: '8px 12px', backgroundColor: '#f1f5f9', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                        {selectedCustomer.profile_link1_name}
+                      </a>
+                    )}
+                    {selectedCustomer.profile_link2_name && selectedCustomer.profile_link2_url && (
+                      <a href={selectedCustomer.profile_link2_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '14px', color: '#3b82f6', textDecoration: 'none', padding: '8px 12px', backgroundColor: '#f1f5f9', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                        {selectedCustomer.profile_link2_name}
+                      </a>
+                    )}
+                    {selectedCustomer.profile_link3_name && selectedCustomer.profile_link3_url && (
+                      <a href={selectedCustomer.profile_link3_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '14px', color: '#3b82f6', textDecoration: 'none', padding: '8px 12px', backgroundColor: '#f1f5f9', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                        {selectedCustomer.profile_link3_name}
+                      </a>
+                    )}
+                    {selectedCustomer.linkedin_url && (
+                      <a href={selectedCustomer.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '14px', color: '#3b82f6', textDecoration: 'none', padding: '8px 12px', backgroundColor: '#f1f5f9', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                        LinkedIn Profile
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -2627,6 +2487,8 @@ const CRM = () => {
 
       {/* Bulk Message Modal */}
       <ContactSelectorModal />
+      {/* Advanced Filters Modal */}
+      <FiltersModal />
     </div>
   )
 }

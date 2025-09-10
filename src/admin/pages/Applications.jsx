@@ -152,8 +152,8 @@ const Applications = () => {
       urgentHiring: !!(j.is_urgent || j.urgentHiring),
       isRemote: !!(j.is_remote || j.remote),
       postedBy: j.posted_by || j.source || (j.creator ? (j.creator.name || j.creator.email) : 'platform'),
-      contactEmail: j.contact_email || (j.creator ? j.creator.email : ''),
-      contactPhone: j.creator ? j.creator.phone : '',
+      contactEmail: j.contact_email || '',
+      contactPhone: j.contact_phone || '',
       approvalStatus: j.approval_status || 'pending',
       externalUrl: j.external_url || '',
       workType: toTitleCase(j.work_type) || (j.isRemote ? 'Remote' : 'Not specified'),
@@ -617,72 +617,6 @@ const Applications = () => {
     <div className="animate-fadeIn">
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
-        <div style={{
-          display: 'flex',
-          flexDirection: screenSize.isMobile ? 'column' : 'row',
-          alignItems: screenSize.isMobile ? 'flex-start' : 'center',
-          justifyContent: 'space-between',
-          gap: '16px'
-        }}>
-          <div>
-            <h1 style={{
-              fontSize: '32px',
-              fontWeight: '800',
-              color: '#0f172a',
-              margin: '0 0 8px 0',
-              fontFamily: 'var(--font-poppins)',
-              letterSpacing: '-0.025em'
-            }}>
-              Applications Management
-            </h1>
-            <p style={{
-              fontSize: '16px',
-              color: '#64748b',
-              margin: 0,
-              fontWeight: '500'
-            }}>
-              View all positions with their applications.
-            </p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button style={{
-              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-              color: 'white',
-              fontWeight: '600',
-              padding: '12px 24px',
-              borderRadius: '12px',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(22, 163, 74, 0.25)',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '14px'
-            }}>
-              <RefreshCw size={16} />
-              Refresh Data
-            </button>
-            <button style={{
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              color: 'white',
-              fontWeight: '600',
-              padding: '12px 24px',
-              borderRadius: '12px',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(59, 130, 246, 0.25)',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '14px'
-            }}>
-              <Download size={16} />
-              Export Data
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Tabs */}

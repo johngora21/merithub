@@ -24,7 +24,8 @@ import {
   Download,
   Upload,
   Play,
-  X
+  X,
+  MessageSquare
 } from 'lucide-react'
 import Post from '../../pages/Post'
 import { apiService, jobsAPI, tendersAPI, opportunitiesAPI } from '../../lib/api-service'
@@ -80,6 +81,13 @@ const Content = () => {
     dateFilter: ''
   })
   
+  const [contentFilters, setContentFilters] = useState({
+    searchTerm: '',
+    typeFilter: 'all',
+    statusFilter: 'all',
+    dateFilter: ''
+  })
+  
   // Helper functions to get current filters based on active tab
   const getCurrentFilters = () => {
     switch (activeTab) {
@@ -87,6 +95,7 @@ const Content = () => {
       case 'tenders': return tendersFilters
       case 'opportunities': return opportunitiesFilters
       case 'courses': return coursesFilters
+      case 'content': return contentFilters
       default: return jobsFilters
     }
   }
@@ -97,6 +106,7 @@ const Content = () => {
       case 'tenders': setTendersFilters(newFilters); break
       case 'opportunities': setOpportunitiesFilters(newFilters); break
       case 'courses': setCoursesFilters(newFilters); break
+      case 'content': setContentFilters(newFilters); break
     }
   }
   
@@ -106,11 +116,21 @@ const Content = () => {
   const [showForm, setShowForm] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [showApplicants, setShowApplicants] = useState(false)
+  const [applicants, setApplicants] = useState([])
+  const [loadingApplicants, setLoadingApplicants] = useState(false)
+  const [applicantFilterStatus, setApplicantFilterStatus] = useState('all')
+  const [showBulkSMS, setShowBulkSMS] = useState(false)
+  const [message, setMessage] = useState('')
+  const [messageFilterStatus, setMessageFilterStatus] = useState('all')
+  const [sendingMessage, setSendingMessage] = useState(false)
+  const [messageType, setMessageType] = useState('email')
   const [jobsData, setJobsData] = useState([])
   const [tendersData, setTendersData] = useState([])
   const [opportunitiesData, setOpportunitiesData] = useState([])
   const [coursesData, setCoursesData] = useState([])
   const [applicantsData, setApplicantsData] = useState([])
+  const [allContentData, setAllContentData] = useState([])
   const [courseFormData, setCourseFormData] = useState({
     type: 'video', // video, book, business-plan
     title: '',
@@ -177,38 +197,27 @@ const Content = () => {
         
         console.log('API responses:', { jobs, tenders, opportunities, courses, applications })
         
-        // Transform and sort by approval status (pending first for moderation)
-        const jobsArr = (jobs?.content || [])
-          .map(transformJobAdminItem)
-          .sort((a, b) => {
-            if (a.approval_status === 'pending' && b.approval_status !== 'pending') return -1
-            if (a.approval_status !== 'pending' && b.approval_status === 'pending') return 1
-            return 0
-          })
+        // Transform all content and combine into one array
+        const allContent = [
+          ...(jobs?.content || []).map(transformJobAdminItem),
+          ...(tenders?.content || []).map(transformTenderAdminItem),
+          ...(opportunities?.content || []).map(transformOpportunityAdminItem),
+          ...(courses?.content || []).map(transformCourseAdminItem)
+        ]
         
-        const tendersArr = (tenders?.content || [])
-          .map(transformTenderAdminItem)
-          .sort((a, b) => {
-            if (a.approval_status === 'pending' && b.approval_status !== 'pending') return -1
-            if (a.approval_status !== 'pending' && b.approval_status === 'pending') return 1
-            return 0
-          })
+        // Sort all content by approval status first (pending at top), then by date (latest first)
+        const sortedContent = allContent.sort((a, b) => {
+          if (a.approval_status === 'pending' && b.approval_status !== 'pending') return -1
+          if (a.approval_status !== 'pending' && b.approval_status === 'pending') return 1
+          // If same approval status, sort by date (latest first)
+          return new Date(b.createdAt) - new Date(a.createdAt)
+        })
         
-        const oppArr = (opportunities?.content || [])
-          .map(transformOpportunityAdminItem)
-          .sort((a, b) => {
-            if (a.approval_status === 'pending' && b.approval_status !== 'pending') return -1
-            if (a.approval_status !== 'pending' && b.approval_status === 'pending') return 1
-            return 0
-          })
-        
-        const coursesArr = (courses?.content || [])
-          .map(transformCourseAdminItem)
-          .sort((a, b) => {
-            if (a.approval_status === 'pending' && b.approval_status !== 'pending') return -1
-            if (a.approval_status !== 'pending' && b.approval_status === 'pending') return 1
-            return new Date(b.createdAt) - new Date(a.createdAt)
-          })
+        // Split back into separate arrays for display (but now properly sorted)
+        const jobsArr = sortedContent.filter(item => item.type === 'job')
+        const tendersArr = sortedContent.filter(item => item.type === 'tender')
+        const oppArr = sortedContent.filter(item => item.type === 'opportunity')
+        const coursesArr = sortedContent.filter(item => item.type === 'course')
         
         // Process applicants data - group by user and show all their applications
         console.log('Applications API response:', applications)
@@ -287,13 +296,18 @@ const Content = () => {
         console.log('Sample applicant:', applicantsArr[0])
 
         // Set real data into state used by the UI
-        console.log('📊 Setting jobs data:', jobsArr.length, 'jobs')
-        console.log('Job IDs:', jobsArr.map(j => j.id))
-        console.log('First job data:', jobsArr[0])
+        console.log('📊 Setting sorted content data:', sortedContent.length, 'total items')
+        console.log('Content IDs:', sortedContent.map(j => j.id))
+        console.log('First content data:', sortedContent[0])
+        
+        // Set the sorted content for unified display
         setJobsData([...jobsArr]) // Force new array reference
         setTendersData([...tendersArr])
         setOpportunitiesData([...oppArr])
         setCoursesData([...coursesArr])
+        
+        // Store the unified sorted content for the table view
+        setAllContentData([...sortedContent])
         setApplicantsData([...applicantsArr])
         
         
@@ -467,43 +481,311 @@ const Content = () => {
     setShowDetails(true)
   }
 
+  const handleViewApplicants = async (item, type) => {
+    try {
+      setLoadingApplicants(true)
+      setSelectedItem({ ...item, type })
+      const response = await apiService.getApplicantsForItem(type, item.id.toString())
+      setApplicants(response.applicants || [])
+      setShowApplicants(true)
+    } catch (error) {
+      console.error('Error fetching applicants:', error)
+      alert('Failed to fetch applicants: ' + error.message)
+    } finally {
+      setLoadingApplicants(false)
+    }
+  }
+
+  const handleExportApplicants = () => {
+    // Filter applicants based on selected status
+    const filteredApplicants = applicantFilterStatus === 'all' 
+      ? applicants 
+      : applicants.filter(applicant => applicant.status === applicantFilterStatus)
+
+    if (filteredApplicants.length === 0) {
+      alert('No applicants found for the selected status')
+      return
+    }
+
+    // Create CSV content
+    const csvContent = [
+      ['Full Name', 'Email', 'Phone'],
+      ...filteredApplicants.map(applicant => [
+        applicant.name || 'N/A',
+        applicant.email || 'N/A',
+        applicant.phone || 'N/A'
+      ])
+    ].map(row => row.join(',')).join('\n')
+
+    // Create status-specific title
+    const statusTitles = {
+      'all': 'All Candidates',
+      'pending': 'Pending Candidates',
+      'approved': 'Approved Candidates',
+      'shortlisted': 'Shortlisted Candidates',
+      'rejected': 'Rejected Candidates'
+    }
+
+    const title = statusTitles[applicantFilterStatus] || 'Candidates'
+    const filename = `${title.replace(/\s+/g, '_')}_${selectedItem.title.replace(/\s+/g, '_')}.csv`
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', filename)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const getTemplateMessage = (status, type) => {
+    const templates = {
+      all: {
+        email: `Dear {name},
+
+Thank you for your interest in our platform. We appreciate your application and will keep you updated on any relevant opportunities.
+
+Best regards,
+Merit Consultants Team`,
+        sms: `Hi {name}! Thank you for your interest. We'll keep you updated on opportunities. - Merit Consultants`
+      },
+      pending: {
+        email: `Dear {name},
+
+Thank you for your application. We have received your application and it is currently under review. We will notify you of the outcome within 5-7 business days.
+
+Best regards,
+Merit Consultants Team`,
+        sms: `Hi {name}! We received your application and it's under review. We'll notify you within 5-7 days. - Merit Consultants`
+      },
+      approved: {
+        email: `Dear {name},
+
+Congratulations! We are pleased to inform you that your application has been approved. Please check your email for further instructions and next steps.
+
+We look forward to working with you.
+
+Best regards,
+Merit Consultants Team`,
+        sms: `Congratulations {name}! Your application has been approved. Check your email for next steps. - Merit Consultants`
+      },
+      shortlisted: {
+        email: `Dear {name},
+
+Great news! Your application has been shortlisted. You are among the top candidates for this position. We will be in touch soon with further details about the next steps in the process.
+
+Thank you for your interest.
+
+Best regards,
+Merit Consultants Team`,
+        sms: `Great news {name}! You've been shortlisted. We'll contact you soon with next steps. - Merit Consultants`
+      },
+      rejected: {
+        email: `Dear {name},
+
+Thank you for your application. After careful consideration, we have decided not to proceed with your application at this time. We encourage you to apply for other opportunities that may be a better fit.
+
+We appreciate your interest in our platform.
+
+Best regards,
+Merit Consultants Team`,
+        sms: `Thank you for applying {name}. Unfortunately, we won't proceed this time. Please check other opportunities. - Merit Consultants`
+      }
+    }
+    return templates[status]?.[type] || ''
+  }
+
+  const handleBulkSMS = (item) => {
+    if (applicants.length === 0) {
+      alert('No applicants loaded. Please click "View" to load applicants first.')
+      return
+    }
+    setSelectedItem(item)
+    setShowBulkSMS(true)
+    // Set default message based on current filter
+    setMessage(getTemplateMessage(messageFilterStatus, messageType))
+  }
+
+  // Load template message when modal opens
+  useEffect(() => {
+    if (showBulkSMS) {
+      setMessage(getTemplateMessage(messageFilterStatus, messageType))
+    }
+  }, [showBulkSMS, messageFilterStatus, messageType])
+
+  const handleMessageTypeChange = (type) => {
+    setMessageType(type)
+    // Update message with template for new type
+    setMessage(getTemplateMessage(messageFilterStatus, type))
+  }
+
+  const handleMessageStatusChange = (status) => {
+    setMessageFilterStatus(status)
+    // Update message with template for new status
+    setMessage(getTemplateMessage(status, messageType))
+  }
+
+  const handleSendBulkMessage = async () => {
+    if (!message.trim()) {
+      alert('Please enter a message')
+      return
+    }
+
+    // Filter applicants based on selected status
+    const filteredApplicants = messageFilterStatus === 'all' 
+      ? applicants 
+      : applicants.filter(applicant => applicant.status === messageFilterStatus)
+
+    if (filteredApplicants.length === 0) {
+      alert('No applicants found for the selected status')
+      return
+    }
+
+    const contactsWithMessages = filteredApplicants
+      .filter(applicant => {
+        if (messageType === 'email') {
+          return applicant.email && applicant.email !== 'N/A'
+        } else {
+          return applicant.phone && applicant.phone !== 'N/A'
+        }
+      })
+      .map(applicant => {
+        // Personalize the message for each applicant
+        const personalizedMessage = message.replace(/\{name\}/g, applicant.name)
+        return {
+          contact: messageType === 'email' ? applicant.email : applicant.phone,
+          name: applicant.name,
+          message: personalizedMessage,
+          type: messageType
+        }
+      })
+
+    if (contactsWithMessages.length === 0) {
+      alert(`No valid ${messageType === 'email' ? 'email addresses' : 'phone numbers'} found for the selected applicants`)
+      return
+    }
+
+    try {
+      setSendingMessage(true)
+      
+      // Here you would integrate with your email/SMS service
+      // For now, we'll just show a confirmation
+      const confirmed = window.confirm(
+        `Send ${messageType.toUpperCase()} to ${contactsWithMessages.length} applicants?\n\n` +
+        `Status: ${messageFilterStatus === 'all' ? 'All' : messageFilterStatus}\n` +
+        `Type: ${messageType === 'email' ? 'Email' : 'SMS'}\n` +
+        `Message: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"\n\n` +
+        `Each message will be personalized with the applicant's name.\n` +
+        `Recipients: ${contactsWithMessages.map(p => p.name).join(', ')}`
+      )
+
+      if (confirmed) {
+        // TODO: Implement actual message sending logic here
+        // await apiService.post('/admin/send-bulk-messages', { messages: contactsWithMessages })
+        
+        alert(`${messageType === 'email' ? 'Email' : 'SMS'} sent successfully to ${contactsWithMessages.length} applicants!`)
+        setShowBulkSMS(false)
+        setMessage('')
+      }
+    } catch (error) {
+      console.error('Error sending bulk messages:', error)
+      alert(`Failed to send ${messageType}: ` + error.message)
+    } finally {
+      setSendingMessage(false)
+    }
+  }
+
   const handleDelete = async (item, type) => {
     try {
-      if (!window.confirm('Delete this item?')) return
-      await apiService.delete(`/admin/content/${type}/${item.id}`)
-      if (type === 'jobs') setJobsData(prev => prev.filter(x => x.id !== item.id))
-      if (type === 'tenders') setTendersData(prev => prev.filter(x => x.id !== item.id))
-      if (type === 'opportunities') setOpportunitiesData(prev => prev.filter(x => x.id !== item.id))
-      if (type === 'courses') setCoursesData(prev => prev.filter(x => x.id !== item.id))
-    } catch (e) {
-      console.error('Delete failed', e)
-      alert(e.message || 'Delete failed')
+      // Convert singular type to plural for API
+      const apiType = type === 'job' ? 'jobs' : 
+                     type === 'tender' ? 'tenders' : 
+                     type === 'opportunity' ? 'opportunities' : 
+                     type === 'course' ? 'courses' : type
+      
+      // Enhanced confirmation message
+      const confirmMessage = `Are you sure you want to delete "${item.title || item.name}"?\n\nThis will permanently delete:\n• The ${type} content\n• All related applications\n• All associated data\n\nThis action cannot be undone.`
+      
+      if (!window.confirm(confirmMessage)) return
+      
+      // Show loading state
+      const deleteButton = document.querySelector(`[data-delete-id="${item.id}"]`)
+      if (deleteButton) {
+        deleteButton.disabled = true
+        deleteButton.textContent = 'Deleting...'
+      }
+      
+      // Call API to delete with correct plural type
+      await apiService.delete(`/admin/content/${apiType}/${item.id}`)
+      
+      // Update all data arrays to remove the deleted item
+      const updateArrays = () => {
+        if (type === 'job') setJobsData(prev => prev.filter(x => x.id !== item.id))
+        if (type === 'tender') setTendersData(prev => prev.filter(x => x.id !== item.id))
+        if (type === 'opportunity') setOpportunitiesData(prev => prev.filter(x => x.id !== item.id))
+        if (type === 'course') setCoursesData(prev => prev.filter(x => x.id !== item.id))
+        
+        // Update the unified content data
+        setAllContentData(prev => prev.filter(x => x.id !== item.id))
+      }
+      
+      // Update UI immediately
+      updateArrays()
+      
+      // Close details modal if open
+      setShowDetails(false)
+      
+      // Show success message
+      alert(`✅ "${item.title || item.name}" has been permanently deleted from the database.`)
+      
+    } catch (error) {
+      console.error('Delete failed:', error)
+      
+      // Reset button state
+      const deleteButton = document.querySelector(`[data-delete-id="${item.id}"]`)
+      if (deleteButton) {
+        deleteButton.disabled = false
+        deleteButton.textContent = 'Delete'
+      }
+      
+      // Show detailed error message
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete content'
+      alert(`❌ Delete failed: ${errorMessage}`)
     }
   }
 
   const handleApprove = async (item, type) => {
+    // Convert singular type to plural for API
+    const apiType = type === 'job' ? 'jobs' : 
+                   type === 'tender' ? 'tenders' : 
+                   type === 'opportunity' ? 'opportunities' : 
+                   type === 'course' ? 'courses' : type
+    
     // Update UI immediately
       const updateItem = (prev) => prev.map(x => 
         x.id === item.id ? { ...x, approval_status: 'approved' } : x
       )
-      if (type === 'jobs') setJobsData(updateItem)
-      if (type === 'tenders') setTendersData(updateItem)
-      if (type === 'opportunities') setOpportunitiesData(updateItem)
-      if (type === 'courses') setCoursesData(updateItem)
+      if (type === 'job') setJobsData(updateItem)
+      if (type === 'tender') setTendersData(updateItem)
+      if (type === 'opportunity') setOpportunitiesData(updateItem)
+      if (type === 'course') setCoursesData(updateItem)
     
     // Then make API call
     try {
-      await apiService.put(`/admin/content/${type}/${item.id}/approve`)
+      await apiService.put(`/admin/content/${apiType}/${item.id}/approve`)
     } catch (e) {
       console.error('Approve failed', e)
       // Revert on error
       const revert = (prev) => prev.map(x => 
         x.id === item.id ? { ...x, approval_status: item.approval_status } : x
       )
-      if (type === 'jobs') setJobsData(revert)
-      if (type === 'tenders') setTendersData(revert)
-      if (type === 'opportunities') setOpportunitiesData(revert)
-      if (type === 'courses') setCoursesData(revert)
+      if (type === 'job') setJobsData(revert)
+      if (type === 'tender') setTendersData(revert)
+      if (type === 'opportunity') setOpportunitiesData(revert)
+      if (type === 'course') setCoursesData(revert)
       alert(e.message || 'Approve failed')
     }
   }
@@ -515,18 +797,24 @@ const Content = () => {
       return
     }
     
+    // Convert singular type to plural for API
+    const apiType = type === 'job' ? 'jobs' : 
+                   type === 'tender' ? 'tenders' : 
+                   type === 'opportunity' ? 'opportunities' : 
+                   type === 'course' ? 'courses' : type
+    
     // Update UI immediately
       const updateItem = (prev) => prev.map(x => 
         x.id === item.id ? { ...x, approval_status: 'rejected', rejection_reason: rejectionReason.trim() } : x
       )
-      if (type === 'jobs') setJobsData(updateItem)
-      if (type === 'tenders') setTendersData(updateItem)
-      if (type === 'opportunities') setOpportunitiesData(updateItem)
-      if (type === 'courses') setCoursesData(updateItem)
+      if (type === 'job') setJobsData(updateItem)
+      if (type === 'tender') setTendersData(updateItem)
+      if (type === 'opportunity') setOpportunitiesData(updateItem)
+      if (type === 'course') setCoursesData(updateItem)
     
     // Then make API call
     try {
-      await apiService.put(`/admin/content/${type}/${item.id}/reject`, {
+      await apiService.put(`/admin/content/${apiType}/${item.id}/reject`, {
         rejection_reason: rejectionReason.trim()
       })
     } catch (e) {
@@ -535,33 +823,39 @@ const Content = () => {
       const revert = (prev) => prev.map(x => 
         x.id === item.id ? { ...x, approval_status: item.approval_status, rejection_reason: item.rejection_reason } : x
       )
-      if (type === 'jobs') setJobsData(revert)
-      if (type === 'tenders') setTendersData(revert)
-      if (type === 'opportunities') setOpportunitiesData(revert)
-      if (type === 'courses') setCoursesData(revert)
+      if (type === 'job') setJobsData(revert)
+      if (type === 'tender') setTendersData(revert)
+      if (type === 'opportunity') setOpportunitiesData(revert)
+      if (type === 'course') setCoursesData(revert)
       alert(e.message || 'Reject failed')
     }
   }
 
   const handleStatusChange = async (item, type, nextStatus) => {
+    // Convert singular type to plural for API
+    const apiType = type === 'job' ? 'jobs' : 
+                   type === 'tender' ? 'tenders' : 
+                   type === 'opportunity' ? 'opportunities' : 
+                   type === 'course' ? 'courses' : type
+    
     // Update UI immediately
       const update = (arr) => arr.map(x => x.id === item.id ? { ...x, status: nextStatus } : x)
-      if (type === 'jobs') setJobsData(update)
-      if (type === 'tenders') setTendersData(update)
-      if (type === 'opportunities') setOpportunitiesData(update)
-      if (type === 'courses') setCoursesData(update)
+      if (type === 'job') setJobsData(update)
+      if (type === 'tender') setTendersData(update)
+      if (type === 'opportunity') setOpportunitiesData(update)
+      if (type === 'course') setCoursesData(update)
     
     // Then make API call
     try {
-      await apiService.put(`/admin/content/${type}/${item.id}/status`, { status: nextStatus })
+      await apiService.put(`/admin/content/${apiType}/${item.id}/status`, { status: nextStatus })
     } catch (e) {
       console.error('Status update failed', e)
       // Revert on error
       const revert = (arr) => arr.map(x => x.id === item.id ? { ...x, status: item.status } : x)
-      if (type === 'jobs') setJobsData(revert)
-      if (type === 'tenders') setTendersData(revert)
-      if (type === 'opportunities') setOpportunitiesData(revert)
-      if (type === 'courses') setCoursesData(revert)
+      if (type === 'job') setJobsData(revert)
+      if (type === 'tender') setTendersData(revert)
+      if (type === 'opportunity') setOpportunitiesData(revert)
+      if (type === 'course') setCoursesData(revert)
       alert(e.message || 'Status update failed')
     }
   }
@@ -569,29 +863,40 @@ const Content = () => {
   const handlePriceToggle = async (item, type) => {
     const newPrice = item.price === 'Free' ? 'Pro' : 'Free'
     
+    // Convert singular type to plural for API
+    const apiType = type === 'job' ? 'jobs' : 
+                   type === 'tender' ? 'tenders' : 
+                   type === 'opportunity' ? 'opportunities' : 
+                   type === 'course' ? 'courses' : type
+    
     // Update UI immediately
     const update = (arr) => arr.map(x => x.id === item.id ? { ...x, price: newPrice } : x)
-    if (type === 'jobs') setJobsData(update)
-    if (type === 'tenders') setTendersData(update)
-    if (type === 'opportunities') setOpportunitiesData(update)
-    if (type === 'courses') setCoursesData(update)
+    if (type === 'job') setJobsData(update)
+    if (type === 'tender') setTendersData(update)
+    if (type === 'opportunity') setOpportunitiesData(update)
+    if (type === 'course') setCoursesData(update)
     
     // Then make API call
     try {
-      await apiService.put(`/admin/content/${type}/${item.id}/price`, { price: newPrice })
+      await apiService.put(`/admin/content/${apiType}/${item.id}/price`, { price: newPrice })
     } catch (e) {
       console.error('Price update failed', e)
       // Revert on error
       const revert = (arr) => arr.map(x => x.id === item.id ? { ...x, price: item.price } : x)
-      if (type === 'jobs') setJobsData(revert)
-      if (type === 'tenders') setTendersData(revert)
-      if (type === 'opportunities') setOpportunitiesData(revert)
-      if (type === 'courses') setCoursesData(revert)
+      if (type === 'job') setJobsData(revert)
+      if (type === 'tender') setTendersData(revert)
+      if (type === 'opportunity') setOpportunitiesData(revert)
+      if (type === 'course') setCoursesData(revert)
       alert(e.message || 'Price update failed')
     }
   }
 
   const handleEdit = (item, type) => {
+    // Debug logging
+    console.log('Edit item received:', item);
+    console.log('Contact email from item:', item.contact_email);
+    console.log('Contact phone from item:', item.contact_phone);
+    
     // Transform admin data to match Post form field names
     const editData = {
       ...item,
@@ -625,6 +930,7 @@ const Content = () => {
       evaluation_criteria: Array.isArray(item.evaluation_criteria) ? item.evaluation_criteria.join('\n') : (item.evaluation_criteria || ''),
       external_url: item.external_url || item.application_url || '',
       contact_email: item.contact_email || '',
+      contact_phone: item.contact_phone || '',
       price: item.price || '',
       tags: Array.isArray(item.tags) ? item.tags.join(', ') : (item.tags || ''),
       customTag: '',
@@ -820,7 +1126,7 @@ const Content = () => {
     return {
       ...apiJob,
       salary,
-      type: apiJob?.job_type ? apiJob.job_type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('-') : 'Not specified',
+      type: 'job', // Content type identifier
       jobType: apiJob?.job_type ? apiJob.job_type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('-') : 'Not specified',
       workType: apiJob?.work_type ? apiJob.work_type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('-') : 'Not specified',
       experience: apiJob?.experience_years ? `${apiJob.experience_years} years` : 'Not specified',
@@ -864,6 +1170,7 @@ const Content = () => {
     return {
       ...apiTender,
       amount,
+      type: 'tender', // Content type identifier
       sector: (apiTender?.sector || '').split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('-'),
       postedTime: apiTender?.created_at ? new Date(apiTender.created_at).toLocaleDateString() : 'Recently',
       description: apiTender?.description || apiTender?.tender_description || '',
@@ -895,7 +1202,8 @@ const Content = () => {
     return {
       ...apiOpp,
       amount,
-      type: apiOpp?.type ? titleCaseDash(apiOpp.type) : apiOpp?.type,
+      type: 'opportunity', // Content type identifier
+      opportunityType: apiOpp?.type ? titleCaseDash(apiOpp.type) : apiOpp?.type,
       postedTime: apiOpp?.created_at ? new Date(apiOpp.created_at).toLocaleDateString() : 'Recently',
       description: apiOpp?.description || apiOpp?.opportunity_description || '',
       detailed_description: apiOpp?.detailed_description || '',
@@ -916,6 +1224,7 @@ const Content = () => {
     return {
       id: apiCourse.id,
       title: apiCourse.title || '',
+      type: 'course', // Content type identifier
       instructor: apiCourse.instructor || '',
       duration: apiCourse.duration || '',
       level: apiCourse.level || '',
@@ -1045,6 +1354,7 @@ const Content = () => {
             e.stopPropagation()
             handleDelete(item, type)
           }}
+          data-delete-id={item.id}
           style={{
             backgroundColor: 'transparent',
             border: 'none',
@@ -2348,20 +2658,61 @@ const Content = () => {
     // Date filter
     if (filters.dateFilter) {
       const beforeCount = out.length
-      const selectedDate = new Date(filters.dateFilter)
-      if (!isNaN(selectedDate.getTime())) {
-        out = out.filter(i => {
-          const itemDate = new Date(i.postedTime || i.created_at || i.createdAt || i.posted_at)
-          if (isNaN(itemDate.getTime())) return false
+      const now = new Date()
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      
+      console.log(`🔍 Date filter applied: ${filters.dateFilter}`)
+      
+      out = out.filter(i => {
+        const itemDate = new Date(i.createdAt || i.created_at || i.posted_at || i.postedTime)
+        if (isNaN(itemDate.getTime())) {
+          return false
+        }
+        
+        const itemDateOnly = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate())
+        
+        let matches = false
+        switch (filters.dateFilter) {
+          case 'today':
+            matches = itemDateOnly.getTime() === today.getTime()
+            break
           
-          // Compare dates (ignore time)
-          const itemDateOnly = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate())
-          const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate())
+          case 'this_week':
+            const startOfWeek = new Date(today)
+            startOfWeek.setDate(today.getDate() - today.getDay())
+            matches = itemDateOnly >= startOfWeek
+            break
           
-          return itemDateOnly.getTime() === selectedDateOnly.getTime()
-        })
-        console.log(`Date filter (${filters.dateFilter}): ${beforeCount} -> ${out.length}`)
-      }
+          case 'this_month':
+            matches = itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear()
+            break
+          
+          case 'last_3_months':
+            const threeMonthsAgo = new Date(now)
+            threeMonthsAgo.setMonth(now.getMonth() - 3)
+            matches = itemDate >= threeMonthsAgo
+            break
+          
+          case 'last_6_months':
+            const sixMonthsAgo = new Date(now)
+            sixMonthsAgo.setMonth(now.getMonth() - 6)
+            matches = itemDate >= sixMonthsAgo
+            break
+          
+          case 'last_year':
+            const oneYearAgo = new Date(now)
+            oneYearAgo.setFullYear(now.getFullYear() - 1)
+            matches = itemDate >= oneYearAgo
+            break
+          
+          default:
+            matches = true
+        }
+        
+        
+        return matches
+      })
+      console.log(`Date filter (${filters.dateFilter}): ${beforeCount} -> ${out.length}`)
     }
     
     console.log('Final filtered count:', out.length)
@@ -2410,7 +2761,7 @@ const Content = () => {
               { 
                 key: 'postedDate', 
                 label: 'Posted Date',
-                render: (item) => formatDate(item.postedDate)
+                render: (item) => formatDate(item.createdAt)
               }
             ]}
           />
@@ -2532,30 +2883,20 @@ const Content = () => {
         )
 
       case 'content':
-        // Combine all content types for the table
-        const allContent = [
-          ...jobsData.map(item => ({ 
-            ...item, 
-            type: 'Job', 
-            applicantCount: item.applicants || 0
-          })),
-          ...tendersData.map(item => ({ 
-            ...item, 
-            type: 'Tender', 
-            applicantCount: item.applicants || 0
-          })),
-          ...opportunitiesData.map(item => ({ 
-            ...item, 
-            type: 'Opportunity', 
-            applicantCount: item.applicants || 0
-          })),
-          ...coursesData.map(item => ({ 
-            ...item, 
-            type: 'Course', 
-            applicantCount: item.applicants || 0
-          }))
-        ]
-
+        // Use the unified sorted content for the table
+        console.log('🔍 Content tab - allContentData:', allContentData.length, 'items')
+        console.log('🔍 Content tab - allContentData types:', allContentData.map(item => ({ id: item.id, type: item.type, title: item.title })))
+        
+        const allContent = allContentData.map(item => ({ 
+          ...item, 
+          type: item.type === 'job' ? 'Job' : 
+                item.type === 'tender' ? 'Tender' : 
+                item.type === 'opportunity' ? 'Opportunity' : 
+                item.type === 'course' ? 'Course' : 'Unknown',
+          applicantCount: item.applications || item.applications_count || 0
+        }))
+        
+        // Apply filters to the unified content
         const filteredContent = applyFilters(allContent)
         
         return (
@@ -2660,8 +3001,7 @@ const Content = () => {
 
                 {/* Posted Date Filter */}
                   <div>
-                  <input
-                    type="date"
+                  <select
                     value={getCurrentFilters().dateFilter}
                     onChange={(e) => {
                       console.log('Date filter changed:', e.target.value)
@@ -2670,13 +3010,21 @@ const Content = () => {
                     style={{
                       padding: '8px 12px',
                       border: '1px solid #d1d5db',
-                          borderRadius: '8px',
+                      borderRadius: '8px',
                       fontSize: '14px',
                       backgroundColor: 'white',
                       minWidth: '150px'
                     }}
-                  />
-                </div>
+                  >
+                    <option value="">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="this_week">This Week</option>
+                    <option value="this_month">This Month</option>
+                    <option value="last_3_months">Last 3 Months</option>
+                    <option value="last_6_months">Last 6 Months</option>
+                    <option value="last_year">Last Year</option>
+                  </select>
+                  </div>
 
               </div>
             </div>
@@ -2746,52 +3094,76 @@ const Content = () => {
                           </div>
                         </td>
                         <td style={{ padding: '12px 16px', color: '#6b7280', fontSize: '14px' }}>
-                          {item.postedTime ? new Date(item.postedTime).toLocaleDateString() : 
-                           item.created_at ? new Date(item.created_at).toLocaleDateString() : 
-                           item.createdAt ? new Date(item.createdAt).toLocaleDateString() :
+                          {console.log('🔍 Date debug for item', item.id, ':', {
+                            createdAt: item.createdAt,
+                            created_at: item.created_at,
+                            posted_at: item.posted_at,
+                            debug_created_at: item.debug_created_at,
+                            debug_createdAt: item.debug_createdAt
+                          })}
+                          {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 
+                           item.created_at ? new Date(item.created_at).toLocaleDateString() :
                            item.posted_at ? new Date(item.posted_at).toLocaleDateString() : 'Not available'}
                         </td>
                         <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                               <button 
-                                onClick={() => {
-                                const t = (item.type || '').toLowerCase()
-                                let pathname = '/jobs'
-                                if (t === 'tenders' || t === 'tender') pathname = '/tenders'
-                                else if (t === 'opportunities' || t === 'opportunity') pathname = '/opportunities'
-                                const url = `${pathname}?openId=${item.id}`
-                                window.open(url, '_blank')
-                                }}
+                                onClick={() => handleViewApplicants(item, item.type.toLowerCase())}
                                 style={{
                                   padding: '6px 12px',
                                   backgroundColor: '#3b82f6',
                                   color: 'white',
                                   border: 'none',
                                   borderRadius: '6px',
-                                  fontSize: '12px',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
-                                  gap: '4px'
+                                  justifyContent: 'center',
+                                  gap: '6px',
+                                  fontSize: '12px'
                                 }}
+                                title="View Applicants"
                               >
                                 <Eye size={14} />
                                 View
                               </button>
+                              <button 
+                                onClick={() => handleBulkSMS(item)}
+                                style={{
+                                  padding: '6px 12px',
+                                  backgroundColor: '#f97316',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '6px',
+                                  fontSize: '12px'
+                                }}
+                                title="Send Message"
+                              >
+                                <MessageSquare size={14} />
+                                Message
+                              </button>
                             <button
                               onClick={() => handleDelete(item, item.type.toLowerCase())}
+                              data-delete-id={item.id}
                               style={{
                                 padding: '6px 12px',
                                 backgroundColor: '#dc2626',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
-                                fontSize: '12px',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '4px'
+                                justifyContent: 'center',
+                                gap: '6px',
+                                fontSize: '12px'
                               }}
+                              title="Delete"
                             >
                               <Trash2 size={14} />
                               Delete
@@ -4399,13 +4771,13 @@ const Content = () => {
                         }}>
                           Contact Email
                         </label>
-                        <a href={`mailto:${selectedItem.creator?.email || 'no-email@example.com'}`} style={{
+                        <a href={`mailto:${selectedItem.contact_email || 'no-email@example.com'}`} style={{
                           fontSize: '14px',
                           color: '#2563eb',
                           fontWeight: '500',
                           textDecoration: 'none'
                         }}>
-                          {selectedItem.creator?.email || 'No email provided'}
+                          {selectedItem.contact_email || 'No email provided'}
                         </a>
                       </div>
                       <div>
@@ -4418,13 +4790,13 @@ const Content = () => {
                         }}>
                           Contact Phone
                         </label>
-                        <a href={`tel:${selectedItem.creator?.phone || '0000000000'}`} style={{
+                        <a href={`tel:${selectedItem.contact_phone || '0000000000'}`} style={{
                           fontSize: '14px',
                           color: '#2563eb',
                           fontWeight: '500',
                           textDecoration: 'none'
                         }}>
-                          {selectedItem.creator?.phone || 'No phone provided'}
+                          {selectedItem.contact_phone || 'No phone provided'}
                         </a>
                       </div>
                       <div>
@@ -6384,6 +6756,338 @@ const Content = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Applicants Modal */}
+      {showApplicants && selectedItem && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '900px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowApplicants(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: '#6b7280'
+              }}
+            >
+              ×
+            </button>
+            
+            <div style={{ marginBottom: '20px', paddingRight: '40px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                <div style={{ flex: 1 }}>
+                  <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '600', color: '#1e293b' }}>
+                    Applicants for {selectedItem.title}
+                  </h2>
+                  <p style={{ margin: '0', color: '#64748b', fontSize: '14px' }}>
+                    {selectedItem.type} • {applicants.length} applicant{applicants.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexShrink: 0 }}>
+                  <select
+                    value={applicantFilterStatus}
+                    onChange={(e) => setApplicantFilterStatus(e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      backgroundColor: 'white',
+                      minWidth: '120px'
+                    }}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="shortlisted">Shortlisted</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                  <button
+                    onClick={handleExportApplicants}
+                    style={{
+                      padding: '8px 16px',
+                      backgroundColor: '#10b981',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    📄 Export CSV
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {loadingApplicants ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <div style={{ fontSize: '16px', color: '#64748b' }}>Loading applicants...</div>
+              </div>
+            ) : applicants.filter(applicant => applicantFilterStatus === 'all' || applicant.status === applicantFilterStatus).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <div style={{ fontSize: '16px', color: '#64748b' }}>
+                  {applicantFilterStatus === 'all' ? 'No applicants found' : `No ${applicantFilterStatus} applicants found`}
+                </div>
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#374151' }}>Full Name</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#374151' }}>Email</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#374151' }}>Phone</th>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#374151' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {applicants
+                      .filter(applicant => applicantFilterStatus === 'all' || applicant.status === applicantFilterStatus)
+                      .map((applicant, index) => (
+                      <tr key={applicant.id || index} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '12px', fontSize: '14px', color: '#1e293b' }}>
+                          {applicant.name}
+                        </td>
+                        <td style={{ padding: '12px', fontSize: '14px', color: '#1e293b' }}>
+                          {applicant.email || 'Not provided'}
+                        </td>
+                        <td style={{ padding: '12px', fontSize: '14px', color: '#1e293b' }}>
+                          {applicant.phone || 'Not provided'}
+                        </td>
+                        <td style={{ padding: '12px', fontSize: '14px', color: '#1e293b' }}>
+                          <span style={{
+                            padding: '4px 8px',
+                            backgroundColor: applicant.status === 'pending' ? '#fed7aa' : 
+                                           applicant.status === 'approved' ? '#d1fae5' : 
+                                           applicant.status === 'shortlisted' ? '#dbeafe' : '#fee2e2',
+                            color: applicant.status === 'pending' ? '#ea580c' : 
+                                   applicant.status === 'approved' ? '#065f46' : 
+                                   applicant.status === 'shortlisted' ? '#1e40af' : '#991b1b',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            textTransform: 'capitalize'
+                          }}>
+                            {applicant.status || 'pending'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Bulk SMS Modal */}
+      {showBulkSMS && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            width: '90%',
+            maxWidth: '600px',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowBulkSMS(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: '#6b7280'
+              }}
+            >
+              ×
+            </button>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '600', color: '#1e293b' }}>
+                Send Bulk Messages
+              </h2>
+              <p style={{ margin: '0', color: '#64748b', fontSize: '14px' }}>
+                Send {messageType === 'email' ? 'emails' : 'SMS'} to {applicants.length} applicants for "{selectedItem?.title || 'this content'}"
+              </p>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+                Message Type
+              </label>
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="messageType"
+                    value="email"
+                    checked={messageType === 'email'}
+                    onChange={(e) => handleMessageTypeChange(e.target.value)}
+                  />
+                  <span style={{ fontSize: '14px' }}>Email</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="messageType"
+                    value="sms"
+                    checked={messageType === 'sms'}
+                    onChange={(e) => handleMessageTypeChange(e.target.value)}
+                  />
+                  <span style={{ fontSize: '14px' }}>SMS</span>
+                </label>
+              </div>
+            </div>
+
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+                Filter by Status
+              </label>
+              <select
+                value={messageFilterStatus}
+                onChange={(e) => handleMessageStatusChange(e.target.value)}
+                style={{
+                  width: '200px',
+                  padding: '8px 12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  backgroundColor: 'white',
+                  marginBottom: '20px'
+                }}
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="shortlisted">Shortlisted</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+                {messageType === 'email' ? 'Email' : 'SMS'} Message
+                <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '400', marginLeft: '8px' }}>
+                  (Template loaded for {messageFilterStatus} status)
+                </span>
+              </label>
+              
+
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={`Enter your ${messageType} message here...`}
+                rows={messageType === 'email' ? 8 : 4}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  resize: 'vertical',
+                  fontFamily: 'inherit'
+                }}
+              />
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                {message.length} characters • {messageType === 'email' ? 'Email' : 'SMS'} will be sent to {applicants.filter(applicant => 
+                  messageFilterStatus === 'all' || applicant.status === messageFilterStatus
+                ).length} recipients
+                {messageType === 'sms' && message.length > 160 && (
+                  <span style={{ color: '#dc2626', marginLeft: '8px' }}>
+                    (SMS will be split into {Math.ceil(message.length / 160)} messages)
+                  </span>
+                )}
+              </div>
+            </div>
+
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowBulkSMS(false)}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendBulkMessage}
+                disabled={sendingMessage || !message.trim()}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: sendingMessage ? '#9ca3af' : (messageType === 'email' ? '#3b82f6' : '#f97316'),
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  cursor: sendingMessage ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                {sendingMessage ? 'Sending...' : `Send ${messageType === 'email' ? 'Email' : 'SMS'}`}
+              </button>
             </div>
           </div>
         </div>

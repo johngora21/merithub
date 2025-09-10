@@ -56,10 +56,14 @@ const Post = ({ onClose, editItem = null }) => {
     coverImage: null,
     isUrgent: false
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Populate form data when editing an item
   useEffect(() => {
     if (editItem) {
+      console.log('Post component received editItem:', editItem);
+      console.log('Contact email from editItem:', editItem.contact_email);
+      console.log('Contact phone from editItem:', editItem.contact_phone);
       const normalizeCountryToCode = (input) => {
         if (!input) return ''
         const match = countries.find(c => c.code === input || c.name === input)
@@ -150,7 +154,7 @@ const Post = ({ onClose, editItem = null }) => {
         contactEmail: editItem.contact_email || '',
         price: editItem.price || '',
         currency: editItem.currency || 'USD',
-        tags: ensureArrayTags(editItem.tags || editItem.benefits || []),
+        tags: Array.isArray(editItem.tags) ? editItem.tags : (editItem.tags || '').split(',').map(t => t.trim()).filter(Boolean),
         customTag: '',
         documents: Array.isArray(editItem.documents) ? editItem.documents : [],
         companyLogo: editItem.company_logo || editItem.logo || null,
@@ -176,6 +180,10 @@ const Post = ({ onClose, editItem = null }) => {
       console.log('DEBUG - salaryType mapped to:', newFormData.salaryType)
       console.log('DEBUG - newFormData.opportunityType:', newFormData.opportunityType)
       console.log('DEBUG - newFormData.salaryType:', newFormData.salaryType)
+      console.log('DEBUG - Final form data contact fields:', {
+        contactEmail: newFormData.contactEmail,
+        contactPhone: newFormData.contactPhone
+      });
       setFormData(newFormData);
     }
   }, [editItem])
@@ -252,6 +260,14 @@ const Post = ({ onClose, editItem = null }) => {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault()
+    
+    if (isSubmitting) {
+      console.log('Form already submitting, ignoring duplicate submission')
+      return
+    }
+    
+    setIsSubmitting(true)
+    console.log('Form submission started')
     try {
       const payload = {
         title: formData.title,
@@ -260,7 +276,8 @@ const Post = ({ onClose, editItem = null }) => {
         country: formData.country,
         deadline: formData.deadline || undefined,
         external_url: formData.applicationUrl || undefined,
-        contact_email: formData.contactEmail || undefined,
+        contact_email: formData.contactEmail || '',
+        contact_phone: formData.contactPhone || '',
         is_urgent: !!formData.isUrgent
       }
 
@@ -298,9 +315,21 @@ const Post = ({ onClose, editItem = null }) => {
           application_deadline: formData.deadline || undefined,
           posted_by: 'individual',
           country: formData.country || 'Global',
+          contact_email: formData.contactEmail || '',
+          contact_phone: formData.contactPhone || '',
         }
         Object.entries(jobBody).forEach(([k, v]) => {
-          if (v !== undefined && v !== null) fd.append(k, String(v))
+          if (v !== undefined && v !== null) {
+            fd.append(k, String(v))
+          }
+        })
+        
+        // Debug: Log what's being sent
+        console.log('Job form data being sent:', {
+          contact_email: formData.contactEmail,
+          contact_phone: formData.contactPhone,
+          payload: payload,
+          jobBody: jobBody
         })
         ;(formData.benefits ? formData.benefits.split(',').map(s => s.trim()).filter(Boolean) : []).forEach(b => fd.append('benefits[]', b))
         ;(formData.skills ? formData.skills.split(',').map(s => s.trim()).filter(Boolean) : []).forEach(s => fd.append('skills[]', s))
@@ -310,11 +339,30 @@ const Post = ({ onClose, editItem = null }) => {
         const url = editItem ? `http://localhost:8000/api/jobs/${editItem.id}` : 'http://localhost:8000/api/jobs'
         const method = editItem ? 'PUT' : 'POST'
         
-        await fetch(url, {
+        console.log('Sending job request to:', url)
+        console.log('Request method:', method)
+        console.log('FormData contents:')
+        for (let [key, value] of fd.entries()) {
+          console.log(key, ':', value)
+        }
+        
+        const response = await fetch(url, {
           method,
           headers: { 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` },
           body: fd
-        }).then(async r => { if (!r.ok) throw new Error((await r.json()).message || `Failed to ${editItem ? 'update' : 'create'} job`); return r.json() })
+        })
+        
+        console.log('Response status:', response.status)
+        console.log('Response ok:', response.ok)
+        
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error('Response error:', errorData)
+          throw new Error(errorData.message || `Failed to ${editItem ? 'update' : 'create'} job`)
+        }
+        
+        const result = await response.json()
+        console.log('Job creation success:', result)
       } else if (formData.type === 'tender') {
         if (!payload.location) {
           alert('City/Town is required for tenders')
@@ -365,11 +413,19 @@ const Post = ({ onClose, editItem = null }) => {
 
         const tenderUrl = editItem ? `http://localhost:8000/api/tenders/${editItem.id}` : 'http://localhost:8000/api/tenders'
         const tenderMethod = editItem ? 'PUT' : 'POST'
-        await fetch(tenderUrl, {
+        const tenderResponse = await fetch(tenderUrl, {
           method: tenderMethod,
           headers: { 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` },
           body: fd2
-        }).then(async r => { if (!r.ok) throw new Error((await r.json()).message || 'Failed to create tender'); return r.json() })
+        })
+        
+        if (!tenderResponse.ok) {
+          const errorData = await tenderResponse.json()
+          throw new Error(errorData.message || 'Failed to create tender')
+        }
+        
+        const tenderResult = await tenderResponse.json()
+        console.log('Tender creation success:', tenderResult)
       } else if (formData.type === 'opportunity') {
         // multipart so we can upload cover + organization logo
         const fd3 = new FormData()
@@ -409,25 +465,43 @@ const Post = ({ onClose, editItem = null }) => {
 
         const oppUrl = editItem ? `http://localhost:8000/api/opportunities/${editItem.id}` : 'http://localhost:8000/api/opportunities'
         const oppMethod = editItem ? 'PUT' : 'POST'
-        await fetch(oppUrl, {
+        const oppResponse = await fetch(oppUrl, {
           method: oppMethod,
           headers: { 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` },
           body: fd3
-        }).then(async r => { if (!r.ok) throw new Error((await r.json()).message || 'Failed to create opportunity'); return r.json() })
+        })
+        
+        if (!oppResponse.ok) {
+          const errorData = await oppResponse.json()
+          throw new Error(errorData.message || 'Failed to create opportunity')
+        }
+        
+        const oppResult = await oppResponse.json()
+        console.log('Opportunity creation success:', oppResult)
       }
 
       // Show success message
-      alert(editItem ? 'Job updated successfully!' : 'Job created successfully!')
+      const typeName = formData.type === 'job' ? 'Job' : formData.type === 'tender' ? 'Tender' : 'Opportunity'
+      alert(editItem ? `${typeName} updated successfully!` : `${typeName} created successfully!`)
       
       if (onClose) {
         onClose()
       } else if (navigate) {
-        navigate('/jobs')
+        // Navigate to the appropriate page based on type
+        if (formData.type === 'job') {
+          navigate('/jobs')
+        } else if (formData.type === 'tender') {
+          navigate('/tenders')
+        } else if (formData.type === 'opportunity') {
+          navigate('/opportunities')
+        }
       }
     } catch (error) {
       console.error('Post submit failed:', error)
       const message = error?.response?.data?.message || error?.message || 'Failed to submit. Please try again.'
       alert(message)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -973,6 +1047,67 @@ const Post = ({ onClose, editItem = null }) => {
                   </select>
                 </div>
 
+                {/* Contact Information */}
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                  gap: '12px', 
+                  marginBottom: '16px' 
+                }}>
+                  <div>
+                    <label style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '6px',
+                      display: 'block'
+                    }}>
+                      Contact Email
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.contactEmail}
+                      onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                      placeholder="Enter contact email..."
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '6px',
+                      display: 'block'
+                    }}>
+                      Contact Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.contactPhone}
+                      onChange={(e) => handleInputChange('contactPhone', e.target.value)}
+                      placeholder="Enter contact phone..."
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                </div>
+
                 {/* Currency selection */}
                 {(formData.type === 'job' || formData.type === 'tender') && (
                 <div style={{ marginBottom: '16px' }}>
@@ -1165,12 +1300,12 @@ const Post = ({ onClose, editItem = null }) => {
                   }}>
                     Skills Required *
                   </label>
-                  <input
-                    type="text"
+                  <textarea
                     required
                     value={formData.skills}
                     onChange={(e) => handleInputChange('skills', e.target.value)}
                     placeholder="e.g., React, Node.js, TypeScript (comma separated)"
+                    rows={3}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -1178,7 +1313,9 @@ const Post = ({ onClose, editItem = null }) => {
                       borderRadius: '8px',
                       fontSize: '14px',
                       outline: 'none',
-                      boxSizing: 'border-box'
+                      boxSizing: 'border-box',
+                      resize: 'vertical',
+                      minHeight: '80px'
                     }}
                   />
                 </div>
@@ -1193,11 +1330,11 @@ const Post = ({ onClose, editItem = null }) => {
                   }}>
                     Benefits
                   </label>
-                  <input
-                    type="text"
+                  <textarea
                     value={formData.benefits}
                     onChange={(e) => handleInputChange('benefits', e.target.value)}
                     placeholder="e.g., Health Insurance, Remote Work, 401k (comma separated)"
+                    rows={3}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -1205,7 +1342,9 @@ const Post = ({ onClose, editItem = null }) => {
                       borderRadius: '8px',
                       fontSize: '14px',
                       outline: 'none',
-                      boxSizing: 'border-box'
+                      boxSizing: 'border-box',
+                      resize: 'vertical',
+                      minHeight: '80px'
                     }}
                   />
                 </div>
@@ -2838,18 +2977,25 @@ const Post = ({ onClose, editItem = null }) => {
               </button>
               <button
                 type="submit"
+                disabled={isSubmitting}
                 style={{
-                  backgroundColor: '#16a34a',
+                  backgroundColor: isSubmitting ? '#9ca3af' : '#16a34a',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
                   padding: '10px 16px',
                   fontSize: '14px',
                   fontWeight: '500',
-                  cursor: 'pointer'
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting ? 0.7 : 1
                 }}
               >
-                {editItem ? 'Update' : `Post ${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)}`}
+                {isSubmitting 
+                  ? 'Submitting...' 
+                  : editItem 
+                    ? 'Update' 
+                    : `Post ${formData.type.charAt(0).toUpperCase() + formData.type.slice(1)}`
+                }
               </button>
             </div>
           </form>

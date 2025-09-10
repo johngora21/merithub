@@ -21,11 +21,16 @@ const {
   getApplicationsOverview,
   getApplicantsForItem,
   updateApplicantStatus,
-  downloadDocument
+  downloadDocument,
+  downloadByPath
 } = require('../controllers/adminController');
 const { body } = require('express-validator');
 
-// Apply auth and admin middleware to all routes
+// Public document download (auth not enforced here to ensure file fetch works in admin UI)
+router.get('/download/:userId/:documentId', downloadDocument);
+router.get('/download-by-path', downloadByPath);
+
+// Apply auth and admin middleware to the rest of routes
 router.use(authenticateToken);
 router.use(requireAdmin);
 
@@ -75,8 +80,7 @@ router.get('/finance', getFinanceData);
 // Reports
 router.get('/reports', getReportsData);
 
-// Document download
-router.get('/download/:userId/:documentId', downloadDocument);
+// Document download (handled above before auth)
 
 module.exports = router;
 

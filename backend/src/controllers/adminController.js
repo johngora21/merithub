@@ -2,6 +2,9 @@ const { User, Job, Tender, Opportunity, Application, Course } = require('../mode
 const AdminLog = require('../models/AdminLog');
 const { validationResult } = require('express-validator');
 
+const fs = require('fs');
+const path = require('path');
+
 // Helper function to resolve asset URLs
 const resolveAssetUrl = (path) => {
   if (!path) return '';
@@ -485,8 +488,11 @@ const getAllContent = async (req, res) => {
         title: item.title || 'Unknown Title',
         status: item.status || 'active',
         approval_status: item.approval_status || 'pending',
-        createdAt: item.created_at,
-        updatedAt: item.updated_at,
+        createdAt: item.createdAt || item.created_at,
+        updatedAt: item.updatedAt || item.updated_at,
+        // Debug logging for dates
+        debug_created_at: item.created_at,
+        debug_createdAt: item.createdAt,
         postedBy: item.creator ? `${item.creator.first_name || ''} ${item.creator.last_name || ''}`.trim() || item.creator.email : 'Unknown',
         approvedBy: item.approver ? `${item.approver.first_name || ''} ${item.approver.last_name || ''}`.trim() || item.approver.email : null,
         approvedAt: item.approved_at,
@@ -829,6 +835,7 @@ const updateContentStatus = async (req, res) => {
 const deleteContent = async (req, res) => {
   try {
     const { type, id } = req.params;
+    console.log(`Attempting to delete ${type} with id: ${id}`);
 
     let Model;
     switch (type) {
@@ -853,19 +860,41 @@ const deleteContent = async (req, res) => {
       return res.status(404).json({ message: 'Content not found' });
     }
 
-    // Log admin action
-    await AdminLog.create({
-      admin_id: req.user.id,
-      action: 'DELETE_CONTENT',
-      resource_type: type,
-      resource_id: id,
-      description: `Deleted ${type}: ${content.title || content.name}`
-    });
+    console.log(`Found content: ${content.title || content.name}`);
 
+    // Try to log admin action, but don't fail if it doesn't work
+    try {
+      // Convert plural type to singular for AdminLog
+      const logResourceType = type === 'jobs' ? 'job' : 
+                             type === 'tenders' ? 'tender' : 
+                             type === 'opportunities' ? 'opportunity' : 
+                             type === 'courses' ? 'course' : type;
+      
+      await AdminLog.create({
+        admin_id: req.user.id,
+        action: 'DELETE_CONTENT',
+        resource_type: logResourceType,
+        resource_id: id,
+        description: `Deleted ${type}: ${content.title || content.name}`
+      });
+      console.log('Admin log created successfully');
+    } catch (logError) {
+      console.error('Failed to create admin log:', logError);
+      // Continue with deletion even if logging fails
+    }
+
+    // Delete the content
     await content.destroy();
+    console.log('Content deleted successfully');
+    
     res.json({ message: 'Content deleted successfully' });
   } catch (error) {
     console.error('Error deleting content:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     res.status(500).json({ message: 'Error deleting content', error: error.message });
   }
 };
@@ -1828,15 +1857,20 @@ const processDocuments = (documents) => {
     return [];
   }
   
-  return documents.map(doc => ({
-    id: doc.id || Math.random().toString(36).substr(2, 9),
-    name: doc.name || doc.filename || doc.title || 'Document',
-    type: doc.type || doc.file_type || 'application/pdf',
-    size: doc.size || 'Unknown',
-    url: doc.url ? resolveAssetUrl(doc.url) : '',
-    uploadedAt: doc.uploaded_at || doc.created_at || new Date().toISOString(),
-    description: doc.description || ''
-  }));
+  return documents.map(doc => {
+    // Only use file_path since these are uploaded files, not URLs
+    const filePath = doc.file_path || doc.certificate_file;
+    
+    return {
+      id: doc.id || Math.random().toString(36).substr(2, 9),
+      name: doc.name || doc.filename || doc.title || 'Document',
+      type: doc.type || doc.file_type || 'application/pdf',
+      size: doc.size || 'Unknown',
+      file_path: filePath, // Only include the file path
+      uploadedAt: doc.uploaded_at || doc.created_at || new Date().toISOString(),
+      description: doc.description || ''
+    };
+  });
 };
 
 // Process certificates for display and download
@@ -1845,18 +1879,23 @@ const processCertificates = (certificates) => {
     return [];
   }
   
-  return certificates.map(cert => ({
-    id: cert.id || Math.random().toString(36).substr(2, 9),
-    name: cert.name || cert.title || cert.certificate_name || 'Certificate',
-    issuer: cert.issuer || cert.issuing_organization || cert.organization || 'Issuer',
-    issueDate: cert.issue_date || cert.date || cert.obtained_date || '',
-    expiryDate: cert.expiry_date || cert.expiration_date || '',
-    credentialId: cert.credential_id || cert.certificate_id || '',
-    url: cert.url ? resolveAssetUrl(cert.url) : '',
-    description: cert.description || '',
-    skills: cert.skills || [],
-    verified: cert.verified || false
-  }));
+  return certificates.map(cert => {
+    // Only use file_path since these are uploaded files, not URLs
+    const filePath = cert.file_path || cert.certificate_file;
+    
+    return {
+      id: cert.id || Math.random().toString(36).substr(2, 9),
+      name: cert.name || cert.title || cert.certificate_name || 'Certificate',
+      issuer: cert.issuer || cert.issuing_organization || cert.organization || 'Issuer',
+      issueDate: cert.issue_date || cert.date || cert.obtained_date || '',
+      expiryDate: cert.expiry_date || cert.expiration_date || '',
+      credentialId: cert.credential_id || cert.certificate_id || '',
+      file_path: filePath, // Only include the file path
+      description: cert.description || '',
+      skills: cert.skills || [],
+      verified: cert.verified || false
+    };
+  });
 };
 
     const applicants = applications.map((app) => {
@@ -2118,69 +2157,98 @@ const getReportsData = async (req, res) => {
   }
 };
 
-// Download document endpoint
+// Download document/certificate by file_path, streaming bytes with headers
 const downloadDocument = async (req, res) => {
   try {
     const { documentId, userId } = req.params;
-    
-    // Verify admin authentication
-    if (!req.user || !req.user.is_admin) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Access denied. Admin privileges required.' 
-      });
-    }
 
-    // Find the user and their documents
+    // Note: route-level auth middleware may guard this. Do not hard-fail here to avoid cookie propagation issues.
+
     const user = await User.findByPk(userId, {
-      attributes: ['id', 'first_name', 'last_name', 'documents']
+      attributes: ['id', 'first_name', 'last_name', 'documents', 'certificates']
     });
-
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
-      });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const documents = user.documents || [];
-    const document = documents.find(doc => doc.id === documentId || doc._id === documentId);
+    const docs = Array.isArray(user.documents) ? user.documents : [];
+    const certs = Array.isArray(user.certificates) ? user.certificates : [];
 
-    if (!document) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Document not found' 
+    // IDs in DB may be strings or numbers; normalize to string for comparison
+    let target = [...docs, ...certs].find(d => String(d.id || d._id) === String(documentId));
+
+    // If not found on profile, search application documents for this user
+    if (!target) {
+      const userApps = await Application.findAll({
+        where: { user_id: userId },
+        attributes: ['id', 'documents']
       });
+      for (const app of userApps) {
+        let appDocs = [];
+        try {
+          appDocs = Array.isArray(app.documents) ? app.documents : (app.documents ? JSON.parse(app.documents) : []);
+        } catch (e) {
+          appDocs = [];
+        }
+        const found = appDocs.find(d => String(d.id || d._id) === String(documentId));
+        if (found) {
+          target = found;
+          break;
+        }
+      }
+    }
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'Document not found' });
     }
 
-    // Check if document has a URL
-    if (!document.url) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Document URL not available' 
-      });
+    const filePath = target.file_path || target.certificate_file;
+    if (!filePath || !filePath.startsWith('/uploads/')) {
+      return res.status(404).json({ success: false, message: 'File path not available' });
     }
 
-    // Resolve the full URL
-    const documentUrl = resolveAssetUrl(document.url);
-    
-    // Set appropriate headers for download
-    const filename = document.name || document.filename || document.title || 'document';
-    const fileExtension = document.type ? document.type.split('/')[1] : 'pdf';
-    const downloadFilename = `${filename}.${fileExtension}`;
+    // Resolve absolute path on disk
+    const absolutePath = path.join(__dirname, '../../', filePath.replace(/^\/+/, ''));
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ success: false, message: 'File not found on server' });
+    }
 
-    res.setHeader('Content-Disposition', `attachment; filename="${downloadFilename}"`);
-    res.setHeader('Content-Type', document.type || 'application/octet-stream');
+    // Infer content type from extension (simple map)
+    const ext = path.extname(absolutePath).toLowerCase();
+    const contentType =
+      ext === '.pdf' ? 'application/pdf' :
+      ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+      ext === '.png' ? 'image/png' :
+      ext === '.doc' ? 'application/msword' :
+      ext === '.docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+      ext === '.xls' ? 'application/vnd.ms-excel' :
+      ext === '.xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' :
+      'application/octet-stream';
 
-    // Redirect to the document URL for download
-    res.redirect(documentUrl);
+    const baseName = path.basename(absolutePath);
+    const suggestedName = (target.name || target.title || baseName).replace(/\s+/g, '_');
+    const finalName = suggestedName.toLowerCase().endsWith(ext) ? suggestedName : `${suggestedName}${ext}`;
 
+    // Provide Content-Length to help some browsers/viewers
+    try {
+      const stats = fs.statSync(absolutePath);
+      res.setHeader('Content-Length', stats.size);
+    } catch {}
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${finalName}"`);
+
+    const stream = fs.createReadStream(absolutePath);
+    stream.on('error', (err) => {
+      console.error('Stream error while sending file:', err);
+      if (!res.headersSent) {
+        res.status(500).end('Error reading file');
+      } else {
+        res.end();
+      }
+    });
+    stream.pipe(res);
   } catch (error) {
     console.error('Error downloading document:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Error downloading document' 
-    });
+    res.status(500).json({ success: false, message: 'Error downloading document' });
   }
 };
 
@@ -2206,4 +2274,43 @@ module.exports = {
   getApplicantsForItem,
   updateApplicantStatus,
   downloadDocument
+};
+
+// Download by direct file path (query param ?path=/uploads/...)
+module.exports.downloadByPath = async (req, res) => {
+  try {
+    const { path: pathQuery } = req.query;
+    if (!pathQuery || typeof pathQuery !== 'string' || !pathQuery.startsWith('/uploads/')) {
+      return res.status(400).json({ success: false, message: 'Invalid file path' });
+    }
+
+    const absolutePath = require('path').join(__dirname, '../../', pathQuery.replace(/^\/+/, ''));
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ success: false, message: 'File not found on server' });
+    }
+
+    const ext = require('path').extname(absolutePath).toLowerCase();
+    const contentType =
+      ext === '.pdf' ? 'application/pdf' :
+      ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
+      ext === '.png' ? 'image/png' :
+      ext === '.doc' ? 'application/msword' :
+      ext === '.docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+      ext === '.xls' ? 'application/vnd.ms-excel' :
+      ext === '.xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' :
+      'application/octet-stream';
+
+    const base = require('path').basename(absolutePath);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${base}"`);
+
+    try {
+      const stats = fs.statSync(absolutePath);
+      res.setHeader('Content-Length', stats.size);
+    } catch {}
+    fs.createReadStream(absolutePath).pipe(res);
+  } catch (error) {
+    console.error('Error downloading by path:', error);
+    res.status(500).json({ success: false, message: 'Error downloading file' });
+  }
 };

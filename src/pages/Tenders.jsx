@@ -251,7 +251,7 @@ const Tenders = () => {
           delete copy[idStr]
           return copy
         })
-      } else {
+    } else {
         const resp = await apiService.post('/saved-items', { item_type: 'tender', tender_id: Number(tenderId) })
         const savedItem = resp?.data?.saved_item || resp?.data
         const next = new Set(savedTenders)
@@ -1239,23 +1239,23 @@ const Tenders = () => {
             onClick={(e) => e.stopPropagation()}>
               
               {/* Header */}
-              <div style={{ 
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                      alignItems: 'center',
                 padding: screenSize.isMobile ? '16px 12px 0 12px' : '24px 24px 0 24px',
                 borderBottom: '1px solid #e5e7eb',
                 paddingBottom: '16px',
                 marginBottom: '16px'
               }}>
-                <h2 style={{
+                      <h2 style={{
                   fontSize: '18px',
                   fontWeight: '600',
-                  color: '#1a1a1a',
+                        color: '#1a1a1a',
                   margin: 0
-                }}>
-                  {selectedTender.title}
-                </h2>
+                      }}>
+                        {selectedTender.title}
+                      </h2>
                 <button
                   onClick={() => setShowDetails(false)}
                   style={{
@@ -1278,10 +1278,10 @@ const Tenders = () => {
               {/* Content */}
               <div style={{ padding: screenSize.isMobile ? '16px 24px 90px 24px' : '32px 40px 90px 40px', flex: 1 }}>
                 {/* Organization Profile Header (match admin) */}
-                <div style={{
-                  display: 'flex',
+                      <div style={{
+                        display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '16px',
+                        gap: '16px',
                   marginBottom: '24px',
                   paddingBottom: '20px',
                   borderBottom: '1px solid #e5e7eb'
@@ -1299,7 +1299,7 @@ const Tenders = () => {
                   />
                   <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 4px 0' }}>
-                      {selectedTender.organization}
+                            {selectedTender.organization}
                     </h3>
                     <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 8px 0' }}>
                       {selectedTender.title}
@@ -1311,15 +1311,15 @@ const Tenders = () => {
                       <span>•</span>
                       <span style={{ color: '#dc2626', fontWeight: '600' }}>
                         Deadline: {selectedTender.deadline ? new Date(selectedTender.deadline).toLocaleDateString() : 'Not specified'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
+                          </span>
+                        </div>
+                        </div>
+                      </div>
+                      
                 {/* Tender Details */}
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 12px 0' }}>Tender Details</h3>
-                  <div style={{ 
+                      <div style={{
                     display: 'grid', 
                     gridTemplateColumns: '1fr 1fr', 
                     gap: '16px' 
@@ -1327,19 +1327,19 @@ const Tenders = () => {
                     <div>
                       <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Organization</span>
                       <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedTender.organization || 'Not specified'}</p>
-                    </div>
+                        </div>
                     <div>
                       <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Sector</span>
                       <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedTender.sector || 'Not specified'}</p>
-                    </div>
+                        </div>
                     <div>
                       <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Contract Value</span>
                       <p style={{ fontSize: '14px', color: '#16a34a', margin: '2px 0 0 0', fontWeight: '600' }}>{selectedTender.contractValue || 'Not specified'}</p>
-                    </div>
+                        </div>
                     <div>
                       <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Location</span>
                       <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedTender.location || 'Not specified'}</p>
-                    </div>
+                      </div>
                     <div>
                       <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Country</span>
                       <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{getCountryName(selectedTender.country) || 'Not specified'}</p>
@@ -1347,13 +1347,13 @@ const Tenders = () => {
                     <div>
                       <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Duration</span>
                       <p style={{ fontSize: '14px', color: '#1a1a1a', margin: '2px 0 0 0', fontWeight: '500' }}>{selectedTender.duration || 'Not specified'}</p>
-                    </div>
-                    
                   </div>
+                  
                 </div>
+              </div>
 
                 
-
+                
                 {/* Tender Overview */}
                 <div style={{ marginBottom: '32px' }}>
                   <h3 style={{
@@ -1569,7 +1569,7 @@ const Tenders = () => {
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                       {selectedTender.submissionProcess.map((step, index) => (
                         <li key={index} style={{ fontSize: '14px', color: '#1a1a1a', lineHeight: '1.6', marginBottom: '6px' }}>
-                          {step}
+                            {step}
                         </li>
                       ))}
                     </ul>
@@ -1593,27 +1593,27 @@ const Tenders = () => {
 
                 {/* Tags */}
                 {Array.isArray(selectedTender.tags) && selectedTender.tags.length > 0 && (
-                  <div style={{ marginBottom: '24px' }}>
+                <div style={{ marginBottom: '24px' }}>
                     <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>Tags</h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                       {selectedTender.tags.map((tag, index) => {
                         const label = typeof tag === 'string' ? tag : (tag?.name || tag?.title || '')
                         if (!label) return null
                         return (
-                          <span key={index} style={{
+                      <span key={index} style={{
                             backgroundColor: '#f1f5f9',
                             color: '#475569',
                             padding: '6px 10px',
                             borderRadius: '9999px',
-                            fontSize: '12px',
-                            fontWeight: '600'
-                          }}>
+                        fontSize: '12px',
+                        fontWeight: '600'
+                      }}>
                             {label}
-                          </span>
+                      </span>
                         )
                       })}
-                    </div>
                   </div>
+                </div>
                 )}
 
                 {/* No separate Required Documents section in admin tender modal */}

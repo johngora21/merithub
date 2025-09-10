@@ -137,7 +137,6 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
       console.error('Status update error:', e)
     }
   }
-  useEffect(() => {
     const loadApplicants = async () => {
       try {
         setLoading(true)
@@ -157,7 +156,11 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
         setLoading(false)
       }
     }
+
+  useEffect(() => {
+    if (selectedItem) {
     loadApplicants()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedItem?.id])
 
@@ -265,6 +268,26 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
               </p>
             </div>
           </div>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button 
+              onClick={loadApplicants}
+              disabled={loading}
+              style={{
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.6 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </button>
           <button style={{
             backgroundColor: '#ea580c',
             color: 'white',
@@ -281,6 +304,7 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
             <Download size={16} />
             Export List
           </button>
+          </div>
         </div>
 
         {/* Job Details */}
@@ -1522,24 +1546,73 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
                             {doc.type} • {doc.size}
                           </div>
                         </div>
-                        {doc.url && (
-                          <a
-                            href={`/api/admin/download/${selectedApplicant.id}/${doc.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <button
+                          onClick={() => {
+                            const filePath = doc.file_path || doc.certificate_file
+                            console.log('Document download attempt:', { 
+                              docName: doc.name,
+                              docKeys: Object.keys(doc),
+                              doc: doc,
+                              filePath: filePath,
+                              hasFilePath: !!doc.file_path,
+                              filePathValue: doc.file_path
+                            })
+                            
+                            if (filePath && filePath.startsWith('/uploads/')) {
+                              // Use backend base URL (avoid frontend dev server origin)
+                              const apiBase = (import.meta?.env?.VITE_API_BASE_URL) || 'http://localhost:8000'
+                              const downloadUrl = `${apiBase}/api/admin/download-by-path?path=${encodeURIComponent(filePath)}`
+                              fetch(downloadUrl, { credentials: 'include' })
+                                .then(res => {
+                                  if (!res.ok) throw new Error('Download failed')
+                                  return res.blob()
+                                })
+                                .then(blob => {
+                                  const blobUrl = URL.createObjectURL(blob)
+                                  const link = document.createElement('a')
+                                  link.href = blobUrl
+                                  const suggested = (filePath.split('/').pop()) || `${doc.name || 'document'}.pdf`
+                                  link.download = suggested
+                                  document.body.appendChild(link)
+                                  link.click()
+                                  document.body.removeChild(link)
+                                  URL.revokeObjectURL(blobUrl)
+                                })
+                                .catch(() => {
+                                  alert('Failed to download the file. Please try again.')
+                                })
+                            } else {
+                              // If no URL or invalid path, create a placeholder download
+                              const link = document.createElement('a')
+                              const blob = new Blob([`Document: ${doc.name || 'Unknown'}\n\nFile not available for download.\nThis may be because:\n- The file was not properly uploaded\n- The file path is incomplete\n- The file was deleted from the server\n\nPlease contact the applicant to re-upload this document.`], { type: 'text/plain' })
+                              link.href = URL.createObjectURL(blob)
+                              link.download = `${doc.name || 'document'}_not_available.txt`
+                              document.body.appendChild(link)
+                              link.click()
+                              document.body.removeChild(link)
+                              URL.revokeObjectURL(link.href)
+                            }
+                          }}
                             style={{
                               padding: '6px 12px',
                               backgroundColor: '#3b82f6',
                               color: 'white',
-                              textDecoration: 'none',
+                            border: 'none',
                               borderRadius: '6px',
                               fontSize: '12px',
-                              fontWeight: '500'
-                            }}
-                          >
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseOver={(e) => e.target.style.backgroundColor = '#2563eb'}
+                          onMouseOut={(e) => e.target.style.backgroundColor = '#3b82f6'}
+                        >
+                          <Download size={14} />
                             Download
-                          </a>
-                        )}
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -1621,23 +1694,65 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
                         </div>
                         
                         {/* Download Button */}
-                        {cert.url && (
                           <div style={{ marginLeft: '16px' }}>
-                            <a
-                              href={`/api/admin/download/${selectedApplicant.id}/${cert.id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                          <button
+                            onClick={() => {
+                              const filePath = cert.file_path || cert.certificate_file
+                              console.log('Certificate download attempt:', { 
+                                certName: cert.name,
+                                certKeys: Object.keys(cert),
+                                cert: cert,
+                                filePath: filePath,
+                                hasCertificateFile: !!cert.certificate_file,
+                                certificateFileValue: cert.certificate_file
+                              })
+                              
+                              if (filePath && filePath.startsWith('/uploads/')) {
+                                const apiBase = (import.meta?.env?.VITE_API_BASE_URL) || 'http://localhost:8000'
+                                const downloadUrl = `${apiBase}/api/admin/download-by-path?path=${encodeURIComponent(filePath)}`
+                                fetch(downloadUrl, { credentials: 'include' })
+                                  .then(res => {
+                                    if (!res.ok) throw new Error('Download failed')
+                                    return res.blob()
+                                  })
+                                  .then(blob => {
+                                    const blobUrl = URL.createObjectURL(blob)
+                                    const link = document.createElement('a')
+                                    link.href = blobUrl
+                                    const suggested = (filePath.split('/').pop()) || `${cert.name || 'certificate'}.pdf`
+                                    link.download = suggested
+                                    document.body.appendChild(link)
+                                    link.click()
+                                    document.body.removeChild(link)
+                                    URL.revokeObjectURL(blobUrl)
+                                  })
+                                  .catch(() => {
+                                    alert('Failed to download the file. Please try again.')
+                                  })
+                              } else {
+                                // If no URL or invalid path, create a placeholder download
+                                const link = document.createElement('a')
+                                const blob = new Blob([`Certificate: ${cert.name || 'Unknown'}\nIssuing Organization: ${cert.issuing_organization || 'Not specified'}\nIssue Date: ${cert.issue_date || 'Not specified'}\nCredential ID: ${cert.credential_id || 'Not specified'}\n\nFile not available for download.\nThis may be because:\n- The file was not properly uploaded\n- The file path is incomplete\n- The file was deleted from the server\n\nPlease contact the applicant to re-upload this certificate.`], { type: 'text/plain' })
+                                link.href = URL.createObjectURL(blob)
+                                link.download = `${cert.name || 'certificate'}_not_available.txt`
+                                document.body.appendChild(link)
+                                link.click()
+                                document.body.removeChild(link)
+                                URL.revokeObjectURL(link.href)
+                              }
+                            }}
                               style={{
                                 padding: '8px 16px',
                                 backgroundColor: '#10b981',
                                 color: 'white',
-                                textDecoration: 'none',
+                              border: 'none',
                                 borderRadius: '6px',
                                 fontSize: '12px',
                                 fontWeight: '600',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '6px',
+                              cursor: 'pointer',
                                 transition: 'background-color 0.2s'
                               }}
                               onMouseOver={(e) => e.target.style.backgroundColor = '#059669'}
@@ -1645,9 +1760,8 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
                             >
                               <Download size={14} />
                               Download
-                            </a>
+                          </button>
                           </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -1696,24 +1810,65 @@ const ApplicantsList = ({ selectedItem, onBack }) => {
                             {doc.type} • {doc.size}
                           </div>
                         </div>
-                        {doc.url && (
-                          <a
-                            href={`/api/admin/download/${selectedApplicant.id}/${doc.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <button
+                          onClick={() => {
+                            const filePath = doc.file_path || doc.certificate_file
+                            console.log('Application document download attempt:', { doc, filePath })
+                            
+                            if (filePath && filePath.startsWith('/uploads/')) {
+                              const apiBase = (import.meta?.env?.VITE_API_BASE_URL) || 'http://localhost:8000'
+                              const downloadUrl = `${apiBase}/api/admin/download-by-path?path=${encodeURIComponent(filePath)}`
+                              fetch(downloadUrl, { credentials: 'include' })
+                                .then(res => {
+                                  if (!res.ok) throw new Error('Download failed')
+                                  return res.blob()
+                                })
+                                .then(blob => {
+                                  const blobUrl = URL.createObjectURL(blob)
+                                  const link = document.createElement('a')
+                                  link.href = blobUrl
+                                  const suggested = (filePath.split('/').pop()) || `${doc.name || 'application_document'}.pdf`
+                                  link.download = suggested
+                                  document.body.appendChild(link)
+                                  link.click()
+                                  document.body.removeChild(link)
+                                  URL.revokeObjectURL(blobUrl)
+                                })
+                                .catch(() => {
+                                  alert('Failed to download the file. Please try again.')
+                                })
+                            } else {
+                              // If no URL or invalid path, create a placeholder download
+                              const link = document.createElement('a')
+                              const blob = new Blob([`Application Document: ${doc.name || 'Unknown'}\nType: ${doc.type || 'Not specified'}\nCategory: ${doc.category || 'Not specified'}\nDescription: ${doc.description || 'Not specified'}\n\nFile not available for download.\nThis may be because:\n- The file was not properly uploaded\n- The file path is incomplete\n- The file was deleted from the server\n\nPlease contact the applicant to re-upload this document.`], { type: 'text/plain' })
+                              link.href = URL.createObjectURL(blob)
+                              link.download = `${doc.name || 'application_document'}_not_available.txt`
+                              document.body.appendChild(link)
+                              link.click()
+                              document.body.removeChild(link)
+                              URL.revokeObjectURL(link.href)
+                            }
+                          }}
                             style={{
                               padding: '6px 12px',
                               backgroundColor: '#f59e0b',
                               color: 'white',
-                              textDecoration: 'none',
+                            border: 'none',
                               borderRadius: '6px',
                               fontSize: '12px',
-                              fontWeight: '500'
-                            }}
-                          >
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseOver={(e) => e.target.style.backgroundColor = '#d97706'}
+                          onMouseOut={(e) => e.target.style.backgroundColor = '#f59e0b'}
+                        >
+                          <Download size={14} />
                             Download
-                          </a>
-                        )}
+                        </button>
                       </div>
                     ))}
                   </div>

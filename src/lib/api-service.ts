@@ -130,6 +130,31 @@ export const apiService = {
     }
   },
 
+  // Get applicants for a specific content item
+  async getApplicantsForItem(type: string, id: string) {
+    try {
+      const token = localStorage.getItem('auth-token');
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/admin/applications/applicants?type=${type}&id=${id}`, {
+        headers
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Request failed');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API GET applicants error:', error);
+      throw error;
+    }
+  },
+
   async uploadProfileImage(file: File): Promise<{ profile_image: string; user: User }> {
     return await authAPI.uploadProfileImage(file);
   },
