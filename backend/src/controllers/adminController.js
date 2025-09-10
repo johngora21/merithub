@@ -1,4 +1,5 @@
 const { User, Job, Tender, Opportunity, Application, Course } = require('../models');
+const { Op } = require('sequelize');
 const AdminLog = require('../models/AdminLog');
 const { validationResult } = require('express-validator');
 
@@ -115,6 +116,27 @@ const getDashboardStats = async (req, res) => {
       totalApplications,
       activeUsers,
       pendingApprovals,
+      basicUsers,
+      proUsers,
+      enterpriseUsers,
+      approvedApplications,
+      shortlistedApplications,
+      rejectedApplications,
+      // Jobs status counts
+      activeJobs,
+      expiredJobs,
+      rejectedJobs,
+      pendingJobs,
+      // Tenders status counts
+      activeTenders,
+      expiredTenders,
+      rejectedTenders,
+      pendingTenders,
+      // Opportunities status counts
+      activeOpportunities,
+      expiredOpportunities,
+      rejectedOpportunities,
+      pendingOpportunities,
       recentUsers,
       recentApplications
     ] = await Promise.all([
@@ -126,11 +148,41 @@ const getDashboardStats = async (req, res) => {
       Application.count(),
       User.count({ where: { is_active: true } }),
       User.count({ where: { is_verified: false } }),
-      Promise.resolve([]),
-      Promise.resolve([])
+      User.count({ where: { subscription_type: null } }),
+      User.count({ where: { subscription_type: 'premium' } }),
+      User.count({ where: { subscription_type: 'enterprise' } }),
+      Application.count({ where: { status: { [Op.in]: ['approved', 'accepted'] } } }),
+      Application.count({ where: { status: 'shortlisted' } }),
+      Application.count({ where: { status: 'rejected' } }),
+      // Jobs status counts
+      Job.count({ where: { status: 'active' } }),
+      Job.count({ where: { status: 'expired' } }),
+      Job.count({ where: { status: 'rejected' } }),
+      Job.count({ where: { status: 'pending' } }),
+      // Tenders status counts
+      Tender.count({ where: { status: 'active' } }),
+      Tender.count({ where: { status: 'expired' } }),
+      Tender.count({ where: { status: 'rejected' } }),
+      Tender.count({ where: { status: 'pending' } }),
+      // Opportunities status counts
+      Opportunity.count({ where: { status: 'active' } }),
+      Opportunity.count({ where: { status: 'expired' } }),
+      Opportunity.count({ where: { status: 'rejected' } }),
+      Opportunity.count({ where: { status: 'pending' } }),
+      // Recent users (last 5)
+      User.findAll({
+        limit: 5,
+        order: [['created_at', 'DESC']],
+        attributes: ['id', 'first_name', 'last_name', 'email', 'created_at', 'user_type']
+      }),
+      // Recent applications (last 5)
+      Application.findAll({
+        limit: 5,
+        order: [['applied_at', 'DESC']]
+      })
     ]);
 
-    // Generate monthly subscription data (last 12 months)
+    // Generate monthly subscription data (last 12 months) - using real data
     const monthlySubscriptions = [];
     const currentDate = new Date();
     for (let i = 11; i >= 0; i--) {
@@ -139,9 +191,23 @@ const getDashboardStats = async (req, res) => {
       const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       
-      // Mock data for subscriptions and applications (in real app, you'd query actual data)
-      const subscriptions = Math.floor(Math.random() * 500) + 1000;
-      const applications = subscriptions * 10;
+      // Get real subscription data for this month
+      const subscriptions = await User.count({
+        where: {
+          created_at: {
+            [require('sequelize').Op.between]: [monthStart, monthEnd]
+          }
+        }
+      });
+      
+      // Get real applications data for this month
+      const applications = await Application.count({
+        where: {
+          applied_at: {
+            [require('sequelize').Op.between]: [monthStart, monthEnd]
+          }
+        }
+      });
       
       monthlySubscriptions.push({
         month: monthName,
@@ -166,39 +232,157 @@ const getDashboardStats = async (req, res) => {
       { status: 'Inactive', count: totalUsers - activeUsers - pendingApprovals, color: '#ef4444' }
     ];
 
-    // Daily stats (last 7 days)
+    // Daily stats (last 7 days) - using real data
     const dailyStats = [];
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+      
+      const [jobsCount, tendersCount, opportunitiesCount] = await Promise.all([
+        Job.count({
+          where: {
+            created_at: {
+              [require('sequelize').Op.between]: [dayStart, dayEnd]
+            }
+          }
+        }),
+        Tender.count({
+          where: {
+            created_at: {
+              [require('sequelize').Op.between]: [dayStart, dayEnd]
+            }
+          }
+        }),
+        Opportunity.count({
+          where: {
+            created_at: {
+              [require('sequelize').Op.between]: [dayStart, dayEnd]
+            }
+          }
+        })
+      ]);
+      
       dailyStats.push({
         day: days[6 - i],
-        jobs: Math.floor(Math.random() * 100) + 150,
-        tenders: Math.floor(Math.random() * 20) + 15,
-        opportunities: Math.floor(Math.random() * 50) + 60
+        jobs: jobsCount,
+        tenders: tendersCount,
+        opportunities: opportunitiesCount
       });
     }
 
-    // Status distribution data
+    // Status distribution data - using real counts
     const jobsStatusDistribution = [
-      { name: 'Active', value: Math.floor(totalJobs * 0.8), color: '#16a34a' },
-      { name: 'Expired', value: Math.floor(totalJobs * 0.1), color: '#ef4444' },
-      { name: 'Rejected', value: Math.floor(totalJobs * 0.05), color: '#dc2626' },
-      { name: 'Pending', value: Math.floor(totalJobs * 0.05), color: '#f59e0b' }
+      { name: 'Active', value: activeJobs, color: '#16a34a' },
+      { name: 'Expired', value: expiredJobs, color: '#ef4444' },
+      { name: 'Rejected', value: rejectedJobs, color: '#dc2626' },
+      { name: 'Pending', value: pendingJobs, color: '#f59e0b' }
     ];
 
     const tendersStatusDistribution = [
-      { name: 'Active', value: Math.floor(totalTenders * 0.7), color: '#16a34a' },
-      { name: 'Expired', value: Math.floor(totalTenders * 0.2), color: '#ef4444' },
-      { name: 'Rejected', value: Math.floor(totalTenders * 0.08), color: '#dc2626' },
-      { name: 'Pending', value: Math.floor(totalTenders * 0.02), color: '#f59e0b' }
+      { name: 'Active', value: activeTenders, color: '#16a34a' },
+      { name: 'Expired', value: expiredTenders, color: '#ef4444' },
+      { name: 'Rejected', value: rejectedTenders, color: '#dc2626' },
+      { name: 'Pending', value: pendingTenders, color: '#f59e0b' }
     ];
 
     const opportunitiesStatusDistribution = [
-      { name: 'Active', value: Math.floor(totalOpportunities * 0.7), color: '#16a34a' },
-      { name: 'Expired', value: Math.floor(totalOpportunities * 0.2), color: '#ef4444' },
-      { name: 'Rejected', value: Math.floor(totalOpportunities * 0.08), color: '#dc2626' },
-      { name: 'Pending', value: Math.floor(totalOpportunities * 0.02), color: '#f59e0b' }
+      { name: 'Active', value: activeOpportunities, color: '#16a34a' },
+      { name: 'Expired', value: expiredOpportunities, color: '#ef4444' },
+      { name: 'Rejected', value: rejectedOpportunities, color: '#dc2626' },
+      { name: 'Pending', value: pendingOpportunities, color: '#f59e0b' }
     ];
+
+    const applicationsStatusDistribution = [
+      { name: 'Approved', value: approvedApplications, color: '#16a34a' },
+      { name: 'Shortlisted', value: shortlistedApplications, color: '#3b82f6' },
+      { name: 'Rejected', value: rejectedApplications, color: '#ef4444' }
+    ];
+
+    // Generate recent activity data
+    const recentActivity = [];
+    
+    // Add recent users
+    recentUsers.forEach(user => {
+      const timeAgo = getTimeAgo(user.created_at);
+      const userType = user.user_type || 'user';
+      recentActivity.push({
+        type: 'user_registration',
+        message: `New ${userType} registered: ${user.first_name} ${user.last_name}`,
+        timeAgo,
+        timestamp: user.created_at
+      });
+    });
+
+    // Add recent applications
+    recentApplications.forEach(app => {
+      const timeAgo = getTimeAgo(app.applied_at);
+      recentActivity.push({
+        type: 'application',
+        message: `New application submitted`,
+        timeAgo,
+        timestamp: app.applied_at
+      });
+    });
+
+    // Add recent jobs, tenders, and opportunities
+    const [recentJobs, recentTenders, recentOpportunities] = await Promise.all([
+      Job.findAll({
+        limit: 3,
+        order: [['created_at', 'DESC']],
+        attributes: ['title', 'company', 'created_at']
+      }),
+      Tender.findAll({
+        limit: 3,
+        order: [['created_at', 'DESC']],
+        attributes: ['title', 'organization', 'created_at']
+      }),
+      Opportunity.findAll({
+        limit: 3,
+        order: [['created_at', 'DESC']],
+        attributes: ['title', 'organization', 'created_at']
+      })
+    ]);
+
+    recentJobs.forEach(job => {
+      const timeAgo = getTimeAgo(job.created_at);
+      recentActivity.push({
+        type: 'job',
+        message: `New job posted: ${job.title} at ${job.company}`,
+        timeAgo,
+        timestamp: job.created_at
+      });
+    });
+
+    recentTenders.forEach(tender => {
+      const timeAgo = getTimeAgo(tender.created_at);
+      recentActivity.push({
+        type: 'tender',
+        message: `Tender submitted: ${tender.title}`,
+        timeAgo,
+        timestamp: tender.created_at
+      });
+    });
+
+    recentOpportunities.forEach(opportunity => {
+      const timeAgo = getTimeAgo(opportunity.created_at);
+      recentActivity.push({
+        type: 'opportunity',
+        message: `New opportunity added: ${opportunity.title}`,
+        timeAgo,
+        timestamp: opportunity.created_at
+      });
+    });
+
+    // Sort by timestamp and take the most recent 10
+    recentActivity.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const topRecentActivity = recentActivity.slice(0, 10);
+
+    // Calculate job seekers and employers based on your logic
+    const jobSeekers = totalUsers; // All users are job seekers
+    const employers = totalJobs; // Each job post = 1 employer
 
     const dashboardData = {
       stats: {
@@ -208,9 +392,17 @@ const getDashboardStats = async (req, res) => {
         totalOpportunities,
         totalCourses,
         totalApplications,
-        totalRevenue: totalApplications * 50, // Mock revenue calculation
+        totalRevenue: 0, // No revenue system implemented yet
         activeUsers,
-        pendingApprovals
+        pendingApprovals,
+        basicUsers,
+        proUsers,
+        enterpriseUsers,
+        approvedApplications,
+        shortlistedApplications,
+        rejectedApplications,
+        jobSeekers,
+        employers
       },
       monthlySubscriptions,
       contentDistribution,
@@ -219,8 +411,8 @@ const getDashboardStats = async (req, res) => {
       jobsStatusDistribution,
       tendersStatusDistribution,
       opportunitiesStatusDistribution,
-      recentUsers,
-      recentApplications
+      applicationsStatusDistribution,
+      recentActivity: topRecentActivity
     };
 
     res.json(dashboardData);
@@ -2250,6 +2442,21 @@ const downloadDocument = async (req, res) => {
     console.error('Error downloading document:', error);
     res.status(500).json({ success: false, message: 'Error downloading document' });
   }
+};
+
+// Helper function to get time ago string
+const getTimeAgo = (date) => {
+  if (!date) return 'Recently';
+  
+  const now = new Date();
+  const diffInSeconds = Math.floor((now - new Date(date)) / 1000);
+  
+  if (diffInSeconds < 60) return 'Just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)} months ago`;
+  return `${Math.floor(diffInSeconds / 31536000)} years ago`;
 };
 
 module.exports = {

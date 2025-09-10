@@ -69,16 +69,18 @@ const AdminLogin = ({ onSuccess }) => {
             <div style={{ textAlign: 'center', padding: 0, background: 'linear-gradient(90deg, #f97316, #ea580c)', color: 'white' }}>
               <div style={{ padding: '20px 16px 0 16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
-                  <div style={{ width: '72px', height: '72px', borderRadius: '36px', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px' }}>
-                    <img 
-                      src="/assets/images/merit-logo.png" 
-                      alt="Merit Logo" 
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain'
-                      }}
-                    />
+                  <div style={{ width: '72px', height: '72px', borderRadius: '36px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
+                    <div style={{
+                      width: '64px',
+                      height: '64px',
+                      background: '#f97316',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mask: 'url(/assets/images/merit-logo.png) no-repeat center/contain',
+                      WebkitMask: 'url(/assets/images/merit-logo.png) no-repeat center/contain'
+                    }}></div>
                   </div>
                 </div>
                 <div style={{ fontSize: '22px', fontWeight: 800 }}>Welcome to Merit Admin</div>

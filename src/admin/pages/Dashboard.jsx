@@ -80,6 +80,7 @@ const AdminDashboard = ({ user, onLogout }) => {
         setError('')
         const resp = await apiService.get('/admin/dashboard')
         const data = resp?.data || resp || {}
+        console.log('Dashboard data received:', data)
         setChartData({
           monthlySubscriptions: data.monthlySubscriptions || [],
           contentDistribution: data.contentDistribution || [],
@@ -87,15 +88,24 @@ const AdminDashboard = ({ user, onLogout }) => {
           dailyStats: data.dailyStats || [],
           jobsStatusDistribution: data.jobsStatusDistribution || [],
           tendersStatusDistribution: data.tendersStatusDistribution || [],
-          opportunitiesStatusDistribution: data.opportunitiesStatusDistribution || []
+          opportunitiesStatusDistribution: data.opportunitiesStatusDistribution || [],
+          applicationsStatusDistribution: data.applicationsStatusDistribution || [],
+          recentActivity: data.recentActivity || []
         })
         const s = data.stats || {}
+        console.log('Stats data:', s)
         setStats({
           totalUsers: s.totalUsers || 0,
           totalContent: (s.totalJobs || 0) + (s.totalTenders || 0) + (s.totalOpportunities || 0) + (s.totalCourses || 0),
           totalApplications: s.totalApplications || 0,
           totalRevenue: s.totalRevenue || 0,
-          breakdown: { free: s.totalUsers ? s.totalUsers - (s.activeUsers || 0) : 0, premium: 0, enterprise: 0 }
+          jobSeekers: s.jobSeekers || 0,
+          employers: s.employers || 0,
+          breakdown: { 
+            free: s.basicUsers || 0, 
+            premium: s.proUsers || 0, 
+            enterprise: s.enterpriseUsers || 0 
+          }
         })
       } catch (e) {
         console.error('Failed to load dashboard', e)
@@ -181,19 +191,19 @@ const AdminDashboard = ({ user, onLogout }) => {
               }}>
                 Total Users
               </p>
-              <p style={{
-                fontSize: '32px',
-                fontWeight: '700',
-                margin: 0,
-                color: '#0f172a'
-              }}>
-                {stats.totalUsers.toLocaleString()}
-              </p>
+                <p style={{
+                  fontSize: '32px',
+                  fontWeight: '700',
+                  margin: 0,
+                  color: '#0f172a'
+                }}>
+                  {(stats.totalUsers || 0).toLocaleString()}
+                </p>
             </div>
             <Users style={{ height: '32px', width: '32px', color: '#3b82f6' }} />
           </div>
           
-          {/* Subscription Breakdown */}
+          {/* User Type Breakdown */}
           <div style={{
             display: 'flex',
             flexDirection: 'column',
@@ -212,9 +222,9 @@ const AdminDashboard = ({ user, onLogout }) => {
                   borderRadius: '50%',
                   backgroundColor: '#0ea5e9'
                 }}></div>
-                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Free Users</span>
+                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Job Seekers</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{stats.breakdown.free.toLocaleString()}</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(stats.jobSeekers || 0).toLocaleString()}</span>
             </div>
             
             <div style={{
@@ -230,9 +240,9 @@ const AdminDashboard = ({ user, onLogout }) => {
                   borderRadius: '50%',
                   backgroundColor: '#16a34a'
                 }}></div>
-                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Premium</span>
+                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Employers</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{stats.breakdown.premium.toLocaleString()}</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(stats.employers || 0).toLocaleString()}</span>
             </div>
             
             <div style={{
@@ -248,9 +258,9 @@ const AdminDashboard = ({ user, onLogout }) => {
                   borderRadius: '50%',
                   backgroundColor: '#f59e0b'
                 }}></div>
-                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Enterprise</span>
+                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Admins</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{stats.breakdown.enterprise.toLocaleString()}</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(stats.breakdown?.enterprise || 0).toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -279,14 +289,14 @@ const AdminDashboard = ({ user, onLogout }) => {
               }}>
                 Total Content
               </p>
-              <p style={{
-                fontSize: '32px',
-                fontWeight: '700',
-                margin: 0,
-                color: '#0f172a'
-              }}>
-                {stats.totalContent.toLocaleString()}
-              </p>
+                <p style={{
+                  fontSize: '32px',
+                  fontWeight: '700',
+                  margin: 0,
+                  color: '#0f172a'
+                }}>
+                  {(stats.totalContent || 0).toLocaleString()}
+                </p>
             </div>
             <FileText style={{ height: '32px', width: '32px', color: '#8b5cf6' }} />
           </div>
@@ -312,7 +322,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                 }}></div>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Jobs</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(chartData.contentDistribution.find(c => c.name === 'Jobs')?.value || 0).toLocaleString()}</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(chartData?.contentDistribution?.find(c => c.name === 'Jobs')?.value || 0).toLocaleString()}</span>
             </div>
             
             <div style={{
@@ -330,7 +340,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                 }}></div>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Tenders</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(chartData.contentDistribution.find(c => c.name === 'Tenders')?.value || 0).toLocaleString()}</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(chartData?.contentDistribution?.find(c => c.name === 'Tenders')?.value || 0).toLocaleString()}</span>
             </div>
             
             <div style={{
@@ -348,7 +358,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                 }}></div>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Opportunities</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(chartData.contentDistribution.find(c => c.name === 'Opportunities')?.value || 0).toLocaleString()}</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(chartData?.contentDistribution?.find(c => c.name === 'Opportunities')?.value || 0).toLocaleString()}</span>
             </div>
             
 
@@ -377,21 +387,21 @@ const AdminDashboard = ({ user, onLogout }) => {
                 fontWeight: '500',
                 margin: 0
               }}>
-                Applications
+                Applicants
               </p>
-              <p style={{
-                fontSize: '32px',
-                fontWeight: '700',
-                margin: 0,
-                color: '#0f172a'
-              }}>
-                {stats.totalApplications.toLocaleString()}
-              </p>
+                <p style={{
+                  fontSize: '32px',
+                  fontWeight: '700',
+                  margin: 0,
+                  color: '#0f172a'
+                }}>
+                  {(stats.totalApplications || 0).toLocaleString()}
+                </p>
             </div>
             <CheckCircle style={{ height: '32px', width: '32px', color: '#10b981' }} />
           </div>
           
-          {/* Applications Breakdown */}
+          {/* Applicants Breakdown */}
           <div style={{
             display: 'flex',
             flexDirection: 'column',
@@ -410,9 +420,27 @@ const AdminDashboard = ({ user, onLogout }) => {
                   borderRadius: '50%',
                   backgroundColor: '#16a34a'
                 }}></div>
-                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Active</span>
+                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Approved</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(stats.totalApplications * 0.65).toFixed(0)}</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{chartData?.applicationsStatusDistribution?.find(a => a.name === 'Approved')?.value || 0}</span>
+            </div>
+            
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '4px 0'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: '#3b82f6'
+                }}></div>
+                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Shortlisted</span>
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{chartData?.applicationsStatusDistribution?.find(a => a.name === 'Shortlisted')?.value || 0}</span>
             </div>
             
 
@@ -432,26 +460,9 @@ const AdminDashboard = ({ user, onLogout }) => {
                 }}></div>
                 <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Rejected</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>1,234</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{chartData?.applicationsStatusDistribution?.find(a => a.name === 'Rejected')?.value || 0}</span>
             </div>
             
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '4px 0'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  backgroundColor: '#64748b'
-                }}></div>
-                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Expired</span>
-              </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>923</span>
-            </div>
           </div>
         </div>
 
@@ -477,21 +488,21 @@ const AdminDashboard = ({ user, onLogout }) => {
                 fontWeight: '500',
                 margin: 0
               }}>
-                Revenue
+                Active Users
               </p>
-              <p style={{
-                fontSize: '32px',
-                fontWeight: '700',
-                margin: 0,
-                color: '#0f172a'
-              }}>
-                ${stats.totalRevenue.toLocaleString()}
-              </p>
+                <p style={{
+                  fontSize: '32px',
+                  fontWeight: '700',
+                  margin: 0,
+                  color: '#0f172a'
+                }}>
+                  {(stats.activeUsers || 0).toLocaleString()}
+                </p>
             </div>
-            <DollarSign style={{ height: '32px', width: '32px', color: '#f97316' }} />
+            <Users style={{ height: '32px', width: '32px', color: '#10b981' }} />
           </div>
           
-          {/* Revenue Breakdown */}
+          {/* User Subscription Breakdown */}
           <div style={{
             display: 'flex',
             flexDirection: 'column',
@@ -508,11 +519,29 @@ const AdminDashboard = ({ user, onLogout }) => {
                   width: '8px',
                   height: '8px',
                   borderRadius: '50%',
+                  backgroundColor: '#3b82f6'
+                }}></div>
+                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Merit Basic</span>
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(stats.breakdown?.free || 0).toLocaleString()}</span>
+            </div>
+            
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '4px 0'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
                   backgroundColor: '#16a34a'
                 }}></div>
-                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Premium Subscriptions</span>
+                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Merit Pro</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>$623K</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(stats.breakdown?.premium || 0).toLocaleString()}</span>
             </div>
             
             <div style={{
@@ -528,12 +557,10 @@ const AdminDashboard = ({ user, onLogout }) => {
                   borderRadius: '50%',
                   backgroundColor: '#f59e0b'
                 }}></div>
-                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Enterprise</span>
+                <span style={{ fontSize: '12px', fontWeight: '500', color: '#64748b' }}>Merit Enterprise</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>$156K</span>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a' }}>{(stats.breakdown?.enterprise || 0).toLocaleString()}</span>
             </div>
-            
-
           </div>
         </div>
       </div>
@@ -1123,14 +1150,23 @@ const AdminDashboard = ({ user, onLogout }) => {
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {[
-            { icon: Briefcase, text: 'New job posted: Senior Developer at TechCorp', time: '2 minutes ago' },
-            { icon: Users, text: '15 new user registrations', time: '1 hour ago' },
-            { icon: Gavel, text: 'Tender submitted: City Infrastructure Project', time: '3 hours ago' },
-            { icon: GraduationCap, text: 'New scholarship opportunity added', time: '5 hours ago' },
-            { icon: BookOpen, text: '3 new courses published', time: '1 day ago' }
-          ].map((activity, index) => (
-            <div key={index} style={{
+          {(chartData.recentActivity || []).map((activity, index) => {
+            // Get appropriate icon based on activity type
+            const getActivityIcon = (type) => {
+              switch (type) {
+                case 'job': return Briefcase;
+                case 'user_registration': return Users;
+                case 'tender': return Gavel;
+                case 'opportunity': return GraduationCap;
+                case 'application': return FileText;
+                default: return Activity;
+              }
+            };
+            
+            const ActivityIcon = getActivityIcon(activity.type);
+            
+            return (
+              <div key={index} style={{
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
@@ -1149,7 +1185,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                 justifyContent: 'center',
                 border: '1px solid #e2e8f0'
               }}>
-                <activity.icon size={16} color="#16a34a" />
+                <ActivityIcon size={16} color="#16a34a" />
               </div>
               <div style={{ flex: 1 }}>
                 <p style={{
@@ -1158,24 +1194,25 @@ const AdminDashboard = ({ user, onLogout }) => {
                   color: '#0f172a',
                   margin: '0 0 2px 0'
                 }}>
-                  {activity.text}
+                  {activity.message}
                 </p>
                 <p style={{
                   fontSize: '12px',
                   color: '#64748b',
                   margin: 0
                 }}>
-                  {activity.time}
+                  {activity.timeAgo}
                 </p>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>
   )
 
-           const renderModuleContent = () => {
+  const renderModuleContent = () => {
            switch(activeModule) {
              case 'overview':
                return renderOverview()
@@ -1224,8 +1261,34 @@ const AdminDashboard = ({ user, onLogout }) => {
         {/* Logo */}
         <div style={{
           padding: '16px 20px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
         }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '20px',
+            background: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '4px'
+          }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              background: '#f97316',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mask: 'url(/assets/images/merit-logo.png) no-repeat center/contain',
+              WebkitMask: 'url(/assets/images/merit-logo.png) no-repeat center/contain'
+            }}></div>
+          </div>
           <h2 style={{
             fontSize: '20px',
             fontWeight: '700',
