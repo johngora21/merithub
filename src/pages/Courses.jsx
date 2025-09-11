@@ -138,12 +138,21 @@ const Courses = () => {
       const response = await apiService.get('/courses')
       const apiCourses = response.courses || []
       
+      console.log('🔍 API Response:', response)
+      console.log('📚 Raw courses:', apiCourses)
+      console.log('📊 Course count:', apiCourses.length)
+      
       // Transform and categorize courses
       const transformedCourses = {
-        videos: apiCourses.filter(course => course.type === 'video').map(transformCourseData),
-        books: apiCourses.filter(course => course.type === 'book').map(transformCourseData),
-        businessPlans: apiCourses.filter(course => course.type === 'business-plan').map(transformCourseData)
+        videos: apiCourses.filter(course => course.type === 'video' || course.course_type === 'video').map(transformCourseData),
+        books: apiCourses.filter(course => course.type === 'book' || course.course_type === 'book').map(transformCourseData),
+        businessPlans: apiCourses.filter(course => course.type === 'business-plan' || course.course_type === 'business-plan').map(transformCourseData)
       }
+      
+      console.log('🎯 Transformed courses:', transformedCourses)
+      console.log('📹 Videos:', transformedCourses.videos.length)
+      console.log('📖 Books:', transformedCourses.books.length)
+      console.log('📋 Business Plans:', transformedCourses.businessPlans.length)
       
       setCourses(transformedCourses)
     } catch (error) {
