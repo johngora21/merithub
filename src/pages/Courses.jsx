@@ -443,20 +443,9 @@ const Courses = () => {
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <span style={{
-            backgroundColor: video.isPro ? '#3b82f6' : '#10b981',
-            color: 'white',
-            padding: '6px 12px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '600'
-          }}>
-            {video.isPro ? 'Pro' : 'Free'}
-          </span>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }}>
           <button style={{
-            marginLeft: 'auto',
-            backgroundColor: '#3b82f6',
+            backgroundColor: '#16a34a',
             color: 'white',
             border: 'none',
             padding: '8px 16px',
@@ -637,20 +626,11 @@ const Courses = () => {
         {/* Actions */}
         <div style={{
             display: 'flex',
-          gap: '8px'
+          gap: '8px',
+          justifyContent: 'flex-end'
         }}>
-          <span style={{
-            backgroundColor: book.isPro ? '#3b82f6' : '#10b981',
-            color: 'white',
-            padding: '6px 12px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '600'
-          }}>
-            {book.isPro ? 'Pro' : 'Free'}
-          </span>
           <button style={{
-            backgroundColor: '#3b82f6',
+            backgroundColor: '#16a34a',
             color: 'white',
             border: 'none',
             padding: '8px 16px',
@@ -658,8 +638,7 @@ const Courses = () => {
             fontSize: '14px',
             fontWeight: '600',
             cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            marginLeft: 'auto'
+            transition: 'all 0.2s ease'
           }}
           onClick={(e) => {
             e.stopPropagation();
@@ -842,20 +821,11 @@ const Courses = () => {
         {/* Actions */}
         <div style={{
             display: 'flex',
-          gap: '8px'
+          gap: '8px',
+          justifyContent: 'flex-end'
         }}>
-          <span style={{
-            backgroundColor: plan.isPro ? '#3b82f6' : '#10b981',
-            color: 'white',
-            padding: '6px 12px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '600'
-          }}>
-            {plan.isPro ? 'Pro' : 'Free'}
-          </span>
           <button style={{
-            backgroundColor: '#3b82f6',
+            backgroundColor: '#16a34a',
             color: 'white',
             border: 'none',
             padding: '8px 16px',
@@ -863,8 +833,7 @@ const Courses = () => {
             fontSize: '14px',
             fontWeight: '600',
             cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            marginLeft: 'auto'
+            transition: 'all 0.2s ease'
           }}
           onClick={(e) => {
             e.stopPropagation();
