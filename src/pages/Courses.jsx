@@ -282,212 +282,189 @@ const Courses = () => {
       backgroundColor: 'white',
       borderRadius: '12px',
       overflow: 'hidden',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-      border: '1px solid #f0f0f0',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      border: '1px solid #e5e7eb',
       transition: 'all 0.2s ease-in-out',
       cursor: 'pointer'
     }}
-    onClick={() => handleCardClick(video, 'video')}
+    onClick={() => setSelectedItem({ ...video, type: 'course' })}
     onMouseEnter={(e) => {
-      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'
       e.currentTarget.style.transform = 'translateY(-2px)'
     }}
     onMouseLeave={(e) => {
-      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'
       e.currentTarget.style.transform = 'translateY(0)'
     }}>
       {/* Thumbnail */}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
         <img 
-          src={video.thumbnail} 
+          src={video.thumbnail_url ? (video.thumbnail_url.startsWith('/uploads') ? `http://localhost:8000${video.thumbnail_url}` : video.thumbnail_url) : video.thumbnail} 
           alt={video.title}
           style={{
             width: '100%',
-            height: '180px',
+            height: '100%',
             objectFit: 'cover'
           }}
         />
         <div style={{
           position: 'absolute',
           top: '12px',
-          right: '12px'
+          right: '12px',
+          display: 'flex',
+          gap: '8px'
         }}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleSave(video.id)
-            }}
-            style={{
-              background: savedItems.has(video.id) ? 'rgba(22, 163, 74, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-              border: 'none',
-              padding: '6px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease-in-out'
-            }}
-          >
-            <Bookmark 
-              size={16} 
-              color={savedItems.has(video.id) ? 'white' : '#64748b'}
-              fill={savedItems.has(video.id) ? 'white' : 'none'}
-            />
-          </button>
-        </div>
-        <div style={{
-          position: 'absolute',
-          bottom: '8px',
-          left: '8px',
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          {video.isPro && (
+            <span style={{
+              backgroundColor: '#3b82f6',
           color: 'white',
           padding: '4px 8px',
-          borderRadius: '4px',
+              borderRadius: '6px',
           fontSize: '12px',
-          fontWeight: '500'
-        }}>
-          {video.duration}
+            fontWeight: '600'
+          }}>
+              PRO
+          </span>
+          )}
+          <span style={{
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            color: 'white',
+            padding: '4px 8px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: '600'
+          }}>
+            {video.duration || 
+              (video.duration_hours && video.duration_minutes ? 
+                `${video.duration_hours}h ${video.duration_minutes}m` :
+                video.duration_hours ? `${video.duration_hours}h` :
+                video.duration_minutes ? `${video.duration_minutes}m` : 'N/A')}
+          </span>
         </div>
-      </div>
+            </div>
 
       {/* Content */}
-      <div style={{ padding: '16px' }}>
-                        <div style={{
+      <div style={{ padding: '20px' }}>
+        {/* Header */}
+        <div style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '8px'
+          alignItems: 'flex-start',
+          marginBottom: '12px'
         }}>
+        <h3 style={{
+            fontSize: '18px',
+          fontWeight: '600',
+          color: '#1a1a1a',
+            margin: 0,
+            lineHeight: '1.4',
+            flex: 1
+        }}>
+          {video.title}
+        </h3>
+        </div>
+
+        {/* Instructor */}
+        <p style={{
+          fontSize: '14px',
+          color: '#64748b',
+          margin: '0 0 12px 0',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}>
+          <Users size={14} />
+          by {video.instructor || video.author || 'Unknown Instructor'}
+        </p>
+
+        {/* Industry (from category) */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          color: '#64748b',
+          fontSize: '14px',
+          marginBottom: '12px'
+        }}>
+          <Building size={14} />
+          <span>{video.category || '—'}</span>
+        </div>
+
+        {/* Stats */}
+                <div style={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: '#64748b'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Download size={14} />
+              {(video.download_count ?? video.enrollment_count ?? video.students ?? 0)} downloads
+            </div>
+            <span style={{
+              backgroundColor: '#f3f4f6',
+              color: '#374151',
+              padding: '4px 8px',
+            borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: '500'
+            }}>
+              {video.format || '—'}
+            </span>
+          </div>
           <span style={{
-            fontSize: '11px',
-            color: '#16a34a',
-            backgroundColor: '#f0fdf4',
-            padding: '2px 6px',
-            borderRadius: '4px',
+            backgroundColor: '#dbeafe',
+            color: '#1d4ed8',
+            padding: '4px 8px',
+            borderRadius: '6px',
+            fontSize: '12px',
             fontWeight: '600'
           }}>
             {video.level}
           </span>
-          <span style={{
-            fontSize: '11px',
-            color: 'white',
-            backgroundColor: video.isPro ? '#3b82f6' : '#16a34a',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            fontWeight: '600'
-          }}>
-            {video.isPro ? 'PRO' : 'FREE'}
-          </span>
-            </div>
-
-        <h3 style={{
-          fontSize: '16px',
-          fontWeight: '600',
-          color: '#1a1a1a',
-          margin: '0 0 4px 0',
-          lineHeight: '1.4'
-        }}>
-          {video.title}
-        </h3>
-
-        <p style={{
-          fontSize: '13px',
-          color: '#64748b',
-          margin: '0 0 12px 0'
-        }}>
-          by {video.instructor}
-        </p>
-
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          marginBottom: '8px',
-          fontSize: '12px',
-          color: '#64748b'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <Play size={12} />
-            {video.lessons} lessons
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <Users size={12} />
-            {video.students.toLocaleString()}
-          </div>
         </div>
 
-        {renderStars(video.rating)}
-
-                <div style={{ 
-          display: 'flex', 
-          gap: '8px', 
-          marginTop: '12px' 
-        }}>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              if (video.video_url) {
-                const fullUrl = video.video_url.startsWith('http')
-                  ? video.video_url
-                  : `http://localhost:8000${video.video_url}`;
-                setVideoUrl(fullUrl);
-                setVideoTitle(video.title);
-                setShowVideoPlayer(true);
-              } else {
-                alert('Video file not available');
-              }
-            }}
-            style={{
-            flex: 1,
-            backgroundColor: 'white',
-            color: '#16a34a',
-            border: '1px solid #16a34a',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease-in-out',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#16a34a'
-            e.target.style.color = 'white'
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'white'
-            e.target.style.color = '#16a34a'
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <span style={{
+            backgroundColor: video.isPro ? '#3b82f6' : '#10b981',
+            color: 'white',
+            padding: '6px 12px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600'
           }}>
-            <Play size={14} />
-            Watch
-          </button>
-          <button 
-            onClick={(e) => e.stopPropagation()}
-            style={{
-            flex: 1,
-            backgroundColor: '#16a34a',
+            {video.isPro ? 'Pro' : 'Free'}
+          </span>
+          <button style={{
+            marginLeft: 'auto',
+            backgroundColor: '#3b82f6',
             color: 'white',
             border: 'none',
-            padding: '8px 12px',
-            borderRadius: '6px',
-            fontSize: '13px',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '14px',
             fontWeight: '600',
             cursor: 'pointer',
-            transition: 'all 0.2s ease-in-out',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px'
+            transition: 'all 0.2s ease'
           }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = '#15803d'
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = '#16a34a'
+          onClick={(e) => {
+            e.stopPropagation();
+            if (video.video_url) {
+              const fullUrl = video.video_url.startsWith('http')
+                ? video.video_url
+                : `http://localhost:8000${video.video_url}`;
+              setVideoUrl(fullUrl);
+              setVideoTitle(video.title);
+              setShowVideoPlayer(true);
+            } else {
+              alert('Video file not available');
+            }
           }}>
-            <Download size={14} />
-            Download
+            Watch
           </button>
         </div>
       </div>
@@ -499,176 +476,187 @@ const Courses = () => {
       backgroundColor: 'white',
       borderRadius: '12px',
       overflow: 'hidden',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-      border: '1px solid #f0f0f0',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      border: '1px solid #e5e7eb',
       transition: 'all 0.2s ease-in-out',
       cursor: 'pointer'
     }}
-    onClick={() => handleCardClick(book, 'book')}
+    onClick={() => setSelectedItem({ ...book, type: 'course' })}
     onMouseEnter={(e) => {
-      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'
       e.currentTarget.style.transform = 'translateY(-2px)'
     }}
     onMouseLeave={(e) => {
-      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'
       e.currentTarget.style.transform = 'translateY(0)'
     }}>
       {/* Cover */}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
         <img 
-          src={book.cover} 
+          src={book.thumbnail_url ? (book.thumbnail_url.startsWith('/uploads') ? `http://localhost:8000${book.thumbnail_url}` : book.thumbnail_url) : book.cover} 
           alt={book.title}
           style={{
             width: '100%',
-            height: '180px',
+            height: '100%',
             objectFit: 'cover'
           }}
         />
         <div style={{
           position: 'absolute',
           top: '12px',
-          right: '12px'
-        }}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleSave(book.id)
-            }}
-            style={{
-              background: savedItems.has(book.id) ? 'rgba(22, 163, 74, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-              border: 'none',
-              padding: '6px',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            <Bookmark 
-              size={16} 
-              color={savedItems.has(book.id) ? 'white' : '#64748b'}
-              fill={savedItems.has(book.id) ? 'white' : 'none'}
-            />
-          </button>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div style={{ padding: '16px' }}>
-                        <div style={{
+          right: '12px',
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '8px'
+          gap: '8px'
         }}>
+          {book.isPro && (
           <span style={{
-            fontSize: '11px',
-            color: '#7c3aed',
-            backgroundColor: '#f3e8ff',
-            padding: '2px 6px',
-            borderRadius: '4px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              fontSize: '12px',
             fontWeight: '600'
           }}>
-            {book.format}
+              PRO
           </span>
+          )}
           <span style={{
-            fontSize: '11px',
+            backgroundColor: 'rgba(0,0,0,0.7)',
             color: 'white',
-            backgroundColor: book.isPro ? '#3b82f6' : '#16a34a',
-            padding: '2px 6px',
-            borderRadius: '4px',
+            padding: '4px 8px',
+            borderRadius: '6px',
+            fontSize: '12px',
             fontWeight: '600'
           }}>
-            {book.isPro ? 'PRO' : 'FREE'}
+            {book.format || 'PDF'}
           </span>
+        </div>
                 </div>
 
+      {/* Content */}
+      <div style={{ padding: '20px' }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '12px'
+        }}>
         <h3 style={{
-          fontSize: '16px',
+            fontSize: '18px',
           fontWeight: '600',
           color: '#1a1a1a',
-          margin: '0 0 4px 0',
-          lineHeight: '1.4'
+            margin: 0,
+            lineHeight: '1.4',
+            flex: 1
         }}>
           {book.title}
         </h3>
+        </div>
 
+        {/* Author */}
         <p style={{
-          fontSize: '13px',
+          fontSize: '14px',
           color: '#64748b',
-          margin: '0 0 12px 0'
+          margin: '0 0 12px 0',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
         }}>
-          by {book.author}
+          <Users size={14} />
+          by {book.instructor || book.author || 'Unknown Author'}
         </p>
 
+        {/* Industry (from category) */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
-          marginBottom: '8px',
-          fontSize: '12px',
-          color: '#64748b'
+          gap: '6px',
+          color: '#64748b',
+          fontSize: '14px',
+          marginBottom: '12px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <BookOpen size={12} />
-            {book.pages} pages
-              </div>
-          <div>{book.category}</div>
+          <Building size={14} />
+          <span>{book.category || '—'}</span>
+          {book.author_type && (
+            <>
+              <span style={{ color: '#cbd5e1' }}>|</span>
+              <span>{book.author_type}</span>
+            </>
+          )}
               </div>
 
-        {renderStars(book.rating)}
-
+        {/* Stats */}
         <div style={{ 
           display: 'flex', 
-          gap: '8px', 
-          marginTop: '12px' 
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: '#64748b'
         }}>
-          <button 
-            onClick={(e) => e.stopPropagation()}
-            style={{
-            flex: 1,
-            backgroundColor: 'white',
-            color: '#64748b',
-            border: '1px solid #e2e8f0',
-            padding: '6px 12px',
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <FileText size={14} />
+              {book.page_count || book.pages || 0} pages
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Download size={14} />
+              {(book.download_count ?? 0)} downloads
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <span style={{
+              backgroundColor: '#dbeafe',
+              color: '#1d4ed8',
+              padding: '4px 8px',
             borderRadius: '6px',
             fontSize: '12px',
-            fontWeight: '600',
-            cursor: 'pointer',
+              fontWeight: '600'
+            }}>
+              {book.level || 'Beginner'}
+            </span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px'
+          gap: '8px'
+        }}>
+          <span style={{
+            backgroundColor: book.isPro ? '#3b82f6' : '#10b981',
+            color: 'white',
+            padding: '6px 12px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600'
           }}>
-            <Eye size={12} />
-            Preview
-          </button>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              if (book.download_url) {
-                const fullUrl = book.download_url.startsWith('http')
-                  ? book.download_url
-                  : `http://localhost:8000${book.download_url}`;
-                window.open(fullUrl, '_blank');
-              } else {
-                alert('Download file not available');
-              }
-            }}
-            style={{
-            flex: 1,
-            backgroundColor: '#16a34a',
+            {book.isPro ? 'Pro' : 'Free'}
+          </span>
+          <button style={{
+            backgroundColor: '#3b82f6',
             color: 'white',
             border: 'none',
-            padding: '6px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '14px',
             fontWeight: '600',
             cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px'
+            transition: 'all 0.2s ease',
+            marginLeft: 'auto'
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (book.download_url) {
+              const fullUrl = book.download_url.startsWith('http')
+                ? book.download_url
+                : `http://localhost:8000${book.download_url}`;
+              window.open(fullUrl, '_blank');
+            } else {
+              alert('Download file not available');
+            }
           }}>
-            <Download size={12} />
             Download
           </button>
             </div>
@@ -681,177 +669,199 @@ const Courses = () => {
       backgroundColor: 'white',
       borderRadius: '12px',
       overflow: 'hidden',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-      border: '1px solid #f0f0f0',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      border: '1px solid #e5e7eb',
       transition: 'all 0.2s ease-in-out',
       cursor: 'pointer'
     }}
-    onClick={() => handleCardClick(plan, 'business-plan')}
+    onClick={() => setSelectedItem({ ...plan, type: 'course' })}
     onMouseEnter={(e) => {
-      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
+      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'
       e.currentTarget.style.transform = 'translateY(-2px)'
     }}
     onMouseLeave={(e) => {
-      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'
       e.currentTarget.style.transform = 'translateY(0)'
     }}>
       {/* Preview */}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
         <img 
-          src={plan.preview} 
+          src={plan.thumbnail_url ? (plan.thumbnail_url.startsWith('/uploads') ? `http://localhost:8000${plan.thumbnail_url}` : plan.thumbnail_url) : plan.preview} 
           alt={plan.title}
           style={{
             width: '100%',
-            height: '180px',
+            height: '100%',
             objectFit: 'cover'
           }}
         />
         <div style={{
           position: 'absolute',
           top: '12px',
-          right: '12px'
+          right: '12px',
+          display: 'flex',
+          gap: '8px'
         }}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleSave(plan.id)
-            }}
-            style={{
-              background: savedItems.has(plan.id) ? 'rgba(22, 163, 74, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-              border: 'none',
-              padding: '6px',
+          {plan.isPro && (
+          <span style={{
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              padding: '4px 8px',
               borderRadius: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            <Bookmark 
-              size={16} 
-              color={savedItems.has(plan.id) ? 'white' : '#64748b'}
-              fill={savedItems.has(plan.id) ? 'white' : 'none'}
-            />
-                  </button>
+              fontSize: '12px',
+            fontWeight: '600'
+          }}>
+              PRO
+                  </span>
+          )}
+          <span style={{
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            color: 'white',
+            padding: '4px 8px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: '600'
+          }}>
+            {(() => {
+              const fmt = (plan.format || '').toString().trim();
+              if (fmt) return fmt.toUpperCase();
+              const url = plan.download_url || '';
+              const m = url.match(/\.([a-zA-Z0-9]+)(?:\?|#|$)/);
+              const ext = m ? m[1].toLowerCase() : '';
+              if (!ext) return 'N/A';
+              if (ext === 'pdf') return 'PDF';
+              if (ext === 'doc' || ext === 'docx') return 'DOCX';
+              if (ext === 'ppt' || ext === 'pptx') return 'PPTX';
+              if (ext === 'xls' || ext === 'xlsx') return 'XLSX';
+              return ext.toUpperCase();
+            })()}
+                  </span>
+        </div>
                 </div>
-              </div>
 
       {/* Content */}
-      <div style={{ padding: '16px' }}>
-                        <div style={{
+      <div style={{ padding: '20px' }}>
+        {/* Header */}
+        <div style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '8px'
+          alignItems: 'flex-start',
+          marginBottom: '12px'
         }}>
-          <span style={{
-            fontSize: '11px',
-            color: '#dc2626',
-            backgroundColor: '#fee2e2',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            fontWeight: '600'
-          }}>
-            {plan.format}
-                  </span>
-          <span style={{
-            fontSize: '11px',
-            color: 'white',
-            backgroundColor: plan.isPro ? '#3b82f6' : '#16a34a',
-            padding: '2px 6px',
-            borderRadius: '4px',
-            fontWeight: '600'
-          }}>
-            {plan.isPro ? 'PRO' : 'FREE'}
-                  </span>
-                </div>
-
         <h3 style={{
-          fontSize: '16px',
+            fontSize: '18px',
           fontWeight: '600',
           color: '#1a1a1a',
-          margin: '0 0 4px 0',
-          lineHeight: '1.4'
+            margin: 0,
+            lineHeight: '1.4',
+            flex: 1
         }}>
           {plan.title}
                 </h3>
+        </div>
 
-        <p style={{
-          fontSize: '13px',
-          color: '#64748b',
-          margin: '0 0 12px 0'
-        }}>
-          {plan.category}
-        </p>
-
+        {/* Instructor line */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
-          marginBottom: '8px',
-          fontSize: '12px',
+          marginBottom: '12px',
+          fontSize: '14px',
           color: '#64748b'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <FileText size={12} />
-            {plan.pages} pages
-                  </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <Users size={12} />
-            {plan.downloads} downloads
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Users size={14} />
+            <span>{plan.instructor || plan.author || 'Instructor'}</span>
+          </div>
+        </div>
+
+        {/* Industry sector and Business type line */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '12px',
+          fontSize: '14px',
+          color: '#64748b'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Building size={14} />
+            <span>{plan.category || '—'}</span>
+            <Briefcase size={14} />
+            <span style={{ fontWeight: 600 }}>{plan.business_type || '—'}</span>
                   </div>
                 </div>
 
+        {/* Stats */}
         <div style={{ 
           display: 'flex', 
-          gap: '8px', 
-          marginTop: '12px' 
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '16px',
+          fontSize: '13px',
+          color: '#64748b'
         }}>
-          <button 
-            onClick={(e) => e.stopPropagation()}
-            style={{
-            flex: 1,
-            backgroundColor: 'white',
-            color: '#64748b',
-            border: '1px solid #e2e8f0',
-            padding: '6px 12px',
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <FileText size={14} />
+              {plan.page_count || plan.pages || 0} pages
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Download size={14} />
+              {(plan.download_count ?? plan.enrollment_count ?? plan.downloads ?? 0)} downloads
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <span style={{
+              backgroundColor: '#dbeafe',
+              color: '#1d4ed8',
+              padding: '4px 8px',
             borderRadius: '6px',
             fontSize: '12px',
-            fontWeight: '600',
-            cursor: 'pointer',
+              fontWeight: '600'
+            }}>
+              {plan.stage || 'Startup'}
+            </span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px'
+          gap: '8px'
+        }}>
+          <span style={{
+            backgroundColor: plan.isPro ? '#3b82f6' : '#10b981',
+            color: 'white',
+            padding: '6px 12px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600'
           }}>
-            <Eye size={12} />
-            Preview
-          </button>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              if (plan.download_url) {
-                const fullUrl = plan.download_url.startsWith('http')
-                  ? plan.download_url
-                  : `http://localhost:8000${plan.download_url}`;
-                window.open(fullUrl, '_blank');
-              } else {
-                alert('Download file not available');
-              }
-            }}
-            style={{
-            flex: 1,
-            backgroundColor: '#16a34a',
+            {plan.isPro ? 'Pro' : 'Free'}
+          </span>
+          <button style={{
+            backgroundColor: '#3b82f6',
             color: 'white',
             border: 'none',
-            padding: '6px 12px',
-            borderRadius: '6px',
-            fontSize: '12px',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '14px',
             fontWeight: '600',
             cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '4px'
+            transition: 'all 0.2s ease',
+            marginLeft: 'auto'
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (plan.download_url) {
+              const fullUrl = plan.download_url.startsWith('http')
+                ? plan.download_url
+                : `http://localhost:8000${plan.download_url}`;
+              window.open(fullUrl, '_blank');
+            } else {
+              alert('Download file not available');
+            }
           }}>
-            <Download size={12} />
             Download
           </button>
         </div>
