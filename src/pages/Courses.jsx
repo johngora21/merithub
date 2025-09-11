@@ -95,7 +95,9 @@ const Courses = () => {
       file_size: apiCourse.file_size || null,
       target_audience: apiCourse.target_audience || null,
       download_url: apiCourse.download_url || null,
-      video_url: apiCourse.video_url || null
+      video_url: apiCourse.video_url || null,
+      // Map category from industry_sector for display
+      category: apiCourse.industry_sector || apiCourse.category || 'General'
     }
 
     // Transform based on course type
@@ -104,6 +106,7 @@ const Courses = () => {
         ...baseCourse,
         instructor: apiCourse.instructor || 'Unknown Instructor',
         thumbnail: apiCourse.thumbnail_url || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=240&fit=crop',
+        thumbnail_url: apiCourse.thumbnail_url || null,
         lessons: apiCourse.lessons_count || 0,
         level: apiCourse.level || 'Beginner',
         curriculum: apiCourse.curriculum || [],
@@ -115,6 +118,7 @@ const Courses = () => {
         ...baseCourse,
         author: apiCourse.instructor || apiCourse.author || 'Unknown Author',
         cover: apiCourse.thumbnail_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=240&fit=crop',
+        thumbnail_url: apiCourse.thumbnail_url || null,
         pages: apiCourse.page_count || 0,
         chapters: apiCourse.chapters || [],
         keyTopics: apiCourse.key_topics || []
@@ -123,6 +127,7 @@ const Courses = () => {
       return {
         ...baseCourse,
         preview: apiCourse.thumbnail_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=240&fit=crop',
+        thumbnail_url: apiCourse.thumbnail_url || null,
         pages: apiCourse.page_count || 0,
         sections: apiCourse.sections_count || 0,
         downloads: apiCourse.downloads_count || 0,
@@ -143,6 +148,14 @@ const Courses = () => {
       console.log('🔍 API Response:', response)
       console.log('📚 Raw courses:', apiCourses)
       console.log('📊 Course count:', apiCourses.length)
+      
+      // Debug first course data
+      if (apiCourses.length > 0) {
+        console.log('🔍 First course raw data:', apiCourses[0])
+        console.log('🔍 First course industry_sector:', apiCourses[0].industry_sector)
+        console.log('🔍 First course category:', apiCourses[0].category)
+        console.log('🔍 First course thumbnail_url:', apiCourses[0].thumbnail_url)
+      }
       
       // Transform and categorize courses
       const transformedCourses = {
