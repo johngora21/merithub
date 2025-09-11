@@ -3,7 +3,9 @@ const { Course, CourseEnrollment, User } = require('../models');
 const list = async (req, res) => {
   try {
     const { page = 1, limit = 10, status, search } = req.query;
-    const where = {};
+    const where = {
+      approval_status: 'approved' // Only show approved courses
+    };
     if (status) where.status = status;
     if (search) where.title = { $like: `%${search}%` };
 
@@ -12,7 +14,8 @@ const list = async (req, res) => {
     const normalized = rows.map((c) => {
       const obj = c.toJSON();
       obj.price = obj.is_free ? 'Free' : 'Pro';
-      delete obj.approval_status;
+      // Keep approval_status in response for frontend to know courses are approved
+      // delete obj.approval_status;
       delete obj.approved_by;
       delete obj.approved_at;
       delete obj.rejection_reason;
