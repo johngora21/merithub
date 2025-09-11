@@ -972,15 +972,32 @@ const getAllContent = async (req, res) => {
       } else if (type === 'courses') {
         return {
           ...baseItem,
+          category: item.category || item.subcategory || null,
           instructor: item.instructor || 'Unknown Instructor',
-          type: item.type || 'Video',
-          duration: item.duration || 'Not specified',
+          course_type: item.course_type || item.type || 'video',
+          duration: item.duration || item.duration_hours || 'Not specified',
+          duration_hours: item.duration_hours || null,
+          duration_minutes: item.duration_minutes || null,
           level: item.level || 'Beginner',
           rating: item.rating || 4.5,
-          students: item.studentsCount || Math.floor(Math.random() * 1000),
-          thumbnail: item.thumbnail || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=240&fit=crop',
-          isPro: item.isPro || false,
-          price: item.price || 'Free'
+          students: item.enrollment_count || item.studentsCount || Math.floor(Math.random() * 1000),
+          thumbnail_url: item.thumbnail_url || item.thumbnail || null,
+          video_url: item.video_url || null,
+          download_url: item.download_url || null,
+          description: item.description || '',
+          learning_objectives: item.learning_objectives || [],
+          language: item.language || 'English',
+          // Additional course fields needed by admin UI
+          format: item.format || null,
+          business_type: item.business_type || null,
+          industry_sector: item.industry_sector || null,
+          stage: item.stage || null,
+          page_count: item.page_count != null ? item.page_count : null,
+          file_size: item.file_size || null,
+          author_type: item.author_type || null,
+          target_audience: item.target_audience || null,
+          isPro: item.is_free === false,
+          price: item.is_free ? 'Free' : 'Pro'
         };
       }
 
@@ -1249,7 +1266,13 @@ const updateContentPrice = async (req, res) => {
       return res.status(404).json({ message: 'Content not found' });
     }
 
-    await content.update({ price });
+    if (type === 'courses') {
+      // Map string Free/Pro to boolean is_free and clear numeric price
+      const isFree = String(price).toLowerCase() === 'free';
+      await content.update({ is_free: isFree, price: null });
+    } else {
+      await content.update({ price });
+    }
 
     await AdminLog.create({
       admin_id: req.user.id,

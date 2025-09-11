@@ -10,6 +10,7 @@ const applicationRoutes = require('./applications');
 const coursesRoutes = require('./courses');
 const adminRoutes = require('./admin');
 const savedItemsRoutes = require('./savedItems');
+const uploadRoutes = require('./uploads');
 const notificationsRoutes = require('./notifications');
 
 // API version prefix
@@ -25,6 +26,7 @@ router.use(`${API_PREFIX}/courses`, coursesRoutes);
 router.use(`${API_PREFIX}/admin`, adminRoutes);
 router.use(`${API_PREFIX}/saved-items`, savedItemsRoutes);
 router.use(`${API_PREFIX}/notifications`, notificationsRoutes);
+router.use(`${API_PREFIX}/uploads`, uploadRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

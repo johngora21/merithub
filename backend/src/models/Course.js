@@ -43,6 +43,10 @@ const Course = sequelize.define('Course', {
     type: DataTypes.INTEGER,
     allowNull: true
   },
+  duration_minutes: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   price: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true
@@ -113,7 +117,7 @@ const Course = sequelize.define('Course', {
   },
   approval_status: {
     type: DataTypes.ENUM('pending', 'approved', 'rejected'),
-    defaultValue: 'pending'
+    defaultValue: 'approved'
   },
   approved_by: {
     type: DataTypes.INTEGER,
@@ -131,10 +135,50 @@ const Course = sequelize.define('Course', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  price: {
-    type: DataTypes.ENUM('Free', 'Pro'),
-    defaultValue: 'Free',
-    allowNull: false
+  course_type: {
+    type: DataTypes.ENUM('video', 'book', 'business-plan'),
+    allowNull: true
+  },
+  language: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    defaultValue: 'English'
+  },
+  format: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  business_type: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  industry_sector: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  stage: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  page_count: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  file_size: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  target_audience: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  download_url: {
+    type: DataTypes.STRING(500),
+    allowNull: true
+  },
+  author_type: {
+    type: DataTypes.STRING(100),
+    allowNull: true
   }
 }, {
   tableName: 'courses',

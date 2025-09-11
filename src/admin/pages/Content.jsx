@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { resolveAssetUrl } from '../../lib/api-service'
 import {
   Briefcase,
   FileText,
@@ -25,7 +26,9 @@ import {
   Upload,
   Play,
   X,
-  MessageSquare
+  MessageSquare,
+  SlidersHorizontal,
+  Check
 } from 'lucide-react'
 import Post from '../../pages/Post'
 import { apiService, jobsAPI, tendersAPI, opportunitiesAPI } from '../../lib/api-service'
@@ -116,13 +119,113 @@ const Content = () => {
   const [showForm, setShowForm] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false)
+  const [videoUrl, setVideoUrl] = useState('')
+  const [videoTitle, setVideoTitle] = useState('')
   const [showApplicants, setShowApplicants] = useState(false)
   const [applicants, setApplicants] = useState([])
+  const [activeCourseTab, setActiveCourseTab] = useState('videos')
+  const [showCourseFilters, setShowCourseFilters] = useState(false)
+  const [courseFilters, setCourseFilters] = useState({
+    videos: {
+      category: [],
+      level: [],
+      language: [],
+      price: [],
+      format: []
+    },
+    books: {
+      category: [],
+      format: [],
+      language: [],
+      authorType: []
+    },
+    businessPlans: {
+      industrySector: [],
+      businessType: [],
+      stage: []
+    }
+  })
   const [loadingApplicants, setLoadingApplicants] = useState(false)
   const [applicantFilterStatus, setApplicantFilterStatus] = useState('all')
   const [showBulkSMS, setShowBulkSMS] = useState(false)
   const [message, setMessage] = useState('')
   const [messageFilterStatus, setMessageFilterStatus] = useState('all')
+
+  // Course filter options (copied from Merit app)
+  const courseFilterOptions = {
+    videos: {
+      category: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
+      level: ['Beginner', 'Intermediate', 'Advanced', 'Expert'],
+      language: ['English', 'Swahili', 'Arabic', 'French', 'Spanish', 'Portuguese', 'Italian', 'Dutch'],
+      price: ['Free', 'Paid'],
+      format: ['Course', 'Tutorial', 'Webinar', 'Documentary', 'Interview', 'Workshop']
+    },
+    books: {
+      category: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
+      format: ['PDF', 'EPUB', 'MOBI', 'Audiobook', 'Physical'],
+      language: ['English', 'Swahili', 'Arabic', 'French', 'Spanish', 'Portuguese', 'Italian', 'Dutch'],
+      authorType: ['Bestselling Author', 'Industry Expert', 'Academic', 'Entrepreneur']
+    },
+    businessPlans: {
+      industrySector: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
+      businessType: ['Startup', 'Small Business', 'Enterprise', 'Non-profit', 'Franchise', 'Online Business'],
+      stage: ['Idea', 'Planning', 'Launch', 'Growth', 'Established']
+    }
+  }
+
+  const toggleCourseFilter = (category, value) => {
+    const tabKey = activeCourseTab === 'business-plans' ? 'businessPlans' : activeCourseTab
+    setCourseFilters(prev => ({
+      ...prev,
+      [tabKey]: {
+        ...prev[tabKey],
+        [category]: prev[tabKey][category].includes(value)
+          ? prev[tabKey][category].filter(item => item !== value)
+          : [...prev[tabKey][category], value]
+      }
+    }))
+  }
+
+  const clearAllCourseFilters = () => {
+    const tabKey = activeCourseTab === 'business-plans' ? 'businessPlans' : activeCourseTab
+    const defaultFilters = {
+      videos: {
+        category: [],
+        level: [],
+        language: [],
+        price: [],
+        format: []
+      },
+      books: {
+        category: [],
+        format: [],
+        language: [],
+        authorType: []
+      },
+      businessPlans: {
+        industrySector: [],
+        businessType: [],
+        stage: []
+      }
+    }
+    
+    setCourseFilters(prev => ({
+      ...prev,
+      [tabKey]: defaultFilters[tabKey]
+    }))
+  }
+
+  const getActiveCourseFilterCount = () => {
+    const tabKey = activeCourseTab === 'business-plans' ? 'businessPlans' : activeCourseTab
+    const currentFilters = courseFilters[tabKey]
+    if (!currentFilters) return 0
+    let count = 0
+    Object.values(currentFilters).forEach(filterArray => {
+      count += filterArray.length
+    })
+    return count
+  }
   const [sendingMessage, setSendingMessage] = useState(false)
   const [messageType, setMessageType] = useState('email')
   const [jobsData, setJobsData] = useState([])
@@ -138,8 +241,9 @@ const Content = () => {
     instructor: '',
     author: '',
     authorType: '',
-    companyName: '',
     duration: '',
+    duration_hours: '',
+    duration_minutes: '',
     language: 'English',
     category: '',
     level: 'Beginner',
@@ -349,8 +453,9 @@ const Content = () => {
       instructor: '',
       author: '',
       authorType: '',
-      companyName: '',
       duration: '',
+    duration_hours: '',
+    duration_minutes: '',
       language: 'English',
       category: '',
       level: 'Beginner',
@@ -373,23 +478,59 @@ const Content = () => {
     })
   }
 
+  const handleOpenCourseForm = () => {
+    // Pre-select course type based on active tab
+    let courseType = 'video'
+    if (activeTab === 'courses') {
+      if (activeCourseTab === 'videos') courseType = 'video'
+      else if (activeCourseTab === 'books') courseType = 'book'
+      else if (activeCourseTab === 'business-plans') courseType = 'business-plan'
+    }
+    
+    setCourseFormData(prev => ({
+      ...prev,
+      type: courseType
+    }))
+    setShowCourseForm(true)
+  }
+
   const handleCourseFormSubmit = async (e) => {
     e.preventDefault()
+    
+    // Validate duration for videos - at least one field must be filled
+    if (courseFormData.type === 'video' && !courseFormData.duration_hours && !courseFormData.duration_minutes) {
+      alert('Please enter either hours or minutes for video duration')
+      return
+    }
+    
     try {
       const payload = {
         title: courseFormData.title,
         description: courseFormData.description,
-        instructor: courseFormData.instructor || courseFormData.author || 'Instructor',
+        instructor: (courseFormData.instructor || courseFormData.author || ''),
         category: courseFormData.category,
         level: (courseFormData.level || 'Beginner').toLowerCase(),
-        duration_hours: courseFormData.duration?.match(/\d+/) ? parseInt(courseFormData.duration.match(/\d+/)[0], 10) : null,
+        duration_hours: courseFormData.duration_hours ? parseInt(courseFormData.duration_hours, 10) : null,
+        duration_minutes: courseFormData.duration_minutes ? parseInt(courseFormData.duration_minutes, 10) : null,
         price: courseFormData.price === 'Free' ? 0 : Number(courseFormData.price) || 0,
         currency: 'USD',
         thumbnail_url: courseFormData.thumbnailUrl || undefined,
         video_url: courseFormData.videoUrl || undefined,
+        download_url: courseFormData.downloadUrl || undefined,
         materials: courseFormData.documents?.map(d => ({ name: d.name, size: d.size, type: d.type })) || [],
         learning_objectives: courseFormData.tags || [],
-        status: 'published'
+        course_type: courseFormData.type,
+        language: courseFormData.language,
+        format: courseFormData.format,
+        author_type: courseFormData.authorType,
+        business_type: courseFormData.businessType,
+        industry_sector: courseFormData.industrySector,
+        stage: courseFormData.stage,
+        page_count: courseFormData.pageCount ? parseInt(courseFormData.pageCount) : null,
+        file_size: courseFormData.fileSize,
+        target_audience: courseFormData.targetAudience,
+        status: 'published',
+        approval_status: 'approved'
       }
       const res = await apiService.post('/courses', payload)
       const created = res?.course || res
@@ -397,10 +538,15 @@ const Content = () => {
         id: String(created.id),
         ...payload,
         type: courseFormData.type,
+        course_type: courseFormData.type,
         title: payload.title,
         description: payload.description,
         instructor: payload.instructor,
-        duration: courseFormData.duration || '',
+        duration: courseFormData.duration_hours && courseFormData.duration_minutes ? 
+          `${courseFormData.duration_hours}h ${courseFormData.duration_minutes}m` : 
+          courseFormData.duration_hours ? `${courseFormData.duration_hours}h` :
+          courseFormData.duration_minutes ? `${courseFormData.duration_minutes}m` :
+          courseFormData.duration || '',
         language: courseFormData.language,
         category: payload.category,
         level: courseFormData.level,
@@ -408,10 +554,21 @@ const Content = () => {
         rating: 5,
         enrolledStudents: 0,
         thumbnailUrl: payload.thumbnail_url,
+        thumbnail_url: payload.thumbnail_url,
         videoUrl: payload.video_url,
         downloadUrl: courseFormData.downloadUrl,
         tags: courseFormData.tags
       }, ...prev])
+      
+      // Switch to the appropriate tab based on course type
+      if (courseFormData.type === 'video') {
+        setActiveCourseTab('videos')
+      } else if (courseFormData.type === 'book') {
+        setActiveCourseTab('books')
+      } else if (courseFormData.type === 'business-plan') {
+        setActiveCourseTab('business-plans')
+      }
+      
       handleCloseCourseForm()
     } catch (err) {
       console.error('Create course failed', err)
@@ -585,11 +742,8 @@ Merit Consultants Team`,
       },
       rejected: {
         email: `Dear {name},
-
 Thank you for your application. After careful consideration, we have decided not to proceed with your application at this time. We encourage you to apply for other opportunities that may be a better fit.
-
 We appreciate your interest in our platform.
-
 Best regards,
 Merit Consultants Team`,
         sms: `Thank you for applying {name}. Unfortunately, we won't proceed this time. Please check other opportunities. - Merit Consultants`
@@ -888,6 +1042,32 @@ Merit Consultants Team`,
       if (type === 'opportunity') setOpportunitiesData(revert)
       if (type === 'course') setCoursesData(revert)
       alert(e.message || 'Price update failed')
+    }
+  }
+
+  // Upload media to backend and set returned path in form state
+  const handleFileUpload = async (kind, file) => {
+    try {
+      const category = kind === 'video' ? 'videos' : (kind === 'document' ? 'documents' : 'images')
+      const API_BASE = (import.meta?.env?.VITE_API_BASE_URL) || 'http://localhost:8000/api'
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch(`${API_BASE}/uploads?category=${category}`, {
+        method: 'POST',
+        body: formData
+      })
+      if (!res.ok) throw new Error('Upload failed')
+      const data = await res.json()
+      if (!data?.path) throw new Error('No path returned')
+      setCourseFormData(prev => ({
+        ...prev,
+        thumbnailUrl: kind === 'thumbnail' ? data.path : prev.thumbnailUrl,
+        videoUrl: kind === 'video' ? data.path : prev.videoUrl,
+        downloadUrl: kind === 'document' ? data.path : prev.downloadUrl
+      }))
+    } catch (e) {
+      console.error('Upload error', e)
+      alert('Failed to upload file')
     }
   }
 
@@ -1249,27 +1429,52 @@ Merit Consultants Team`,
 
   // Transform course data for admin display
   const transformCourseAdminItem = (apiCourse) => {
-    return {
+    
+    const courseType = apiCourse.course_type || 'video'
+    const authorFromApi = apiCourse.author
+    const instructorFromApi = apiCourse.instructor
+    const normalizedInstructor = instructorFromApi || authorFromApi || ''
+
+
+    const transformedData = {
       id: apiCourse.id,
       title: apiCourse.title || '',
-      type: 'course', // Content type identifier
-      instructor: apiCourse.instructor || '',
-      duration: apiCourse.duration || '',
+      type: 'course',
+      course_type: courseType,
+      instructor: normalizedInstructor,
+      author: authorFromApi || '',
+      author_type: apiCourse.author_type || '',
+      business_type: apiCourse.business_type || '',
+      industry_sector: apiCourse.industry_sector || '',
+      stage: apiCourse.stage || '',
+      page_count: apiCourse.page_count || null,
+      file_size: apiCourse.file_size || '',
+      format: apiCourse.format || '',
+      duration: apiCourse.duration_hours && apiCourse.duration_minutes ? 
+        `${apiCourse.duration_hours}h ${apiCourse.duration_minutes}m` :
+        apiCourse.duration_hours ? `${apiCourse.duration_hours}h` :
+        apiCourse.duration_minutes ? `${apiCourse.duration_minutes}m` :
+        apiCourse.duration || '',
       level: apiCourse.level || '',
-      price: apiCourse.price || 'Free',
+      language: apiCourse.language || 'English',
+      price: apiCourse.price || (apiCourse.is_free ? 'Free' : 'Pro') || 'Free',
       description: apiCourse.description || '',
       category: apiCourse.category || '',
-      tags: Array.isArray(apiCourse?.tags) ? apiCourse.tags : [],
-      approval_status: apiCourse.approval_status || 'pending',
-      status: apiCourse.status || 'active',
+      tags: Array.isArray(apiCourse?.learning_objectives) ? apiCourse.learning_objectives : [],
+      approval_status: apiCourse.approval_status || 'approved',
+      status: apiCourse.status || 'published',
       createdAt: apiCourse.createdAt,
       updatedAt: apiCourse.updatedAt,
-      coverImage: apiCourse.cover_image,
-      videoUrl: apiCourse.video_url,
+      thumbnail_url: apiCourse.thumbnail_url,
+      video_url: apiCourse.video_url,
+      download_url: apiCourse.download_url,
       materials: apiCourse.materials || [],
       requirements: apiCourse.requirements || [],
-      learningOutcomes: apiCourse.learning_outcomes || []
+      learningOutcomes: apiCourse.learning_outcomes || [],
+      target_audience: apiCourse.target_audience || ''
     }
+    
+    return transformedData
   }
 
   // Filter data based on status filter
@@ -1286,7 +1491,6 @@ Merit Consultants Team`,
     
     return filtered
   }
-
   // Card component for individual items - renders different designs based on type
   const ContentCard = ({ item, type, columns }) => {
 
@@ -1806,7 +2010,6 @@ Merit Consultants Team`,
         </div>
       )
     }
-
     if (type === 'opportunities') {
       const typeColor = getTypeColor(item.type)
 
@@ -2498,8 +2701,7 @@ Merit Consultants Team`,
       </div>
     )
   }
-
-  const ContentTable = ({ type, data, columns }) => (
+  const ContentTable = ({ type, data, columns, showFilters = true }) => (
     <div style={{
       backgroundColor: 'transparent',
       borderRadius: 0,
@@ -2529,6 +2731,7 @@ Merit Consultants Team`,
           
         </div>
 
+        {showFilters && !showCourseForm && (
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -2614,6 +2817,7 @@ Merit Consultants Team`,
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Card Grid */}
@@ -2833,8 +3037,7 @@ Merit Consultants Team`,
               }
             ]}
           />
-        )
-
+        );
       case 'opportunities':
         return (
           <ContentTable
@@ -2871,45 +3074,894 @@ Merit Consultants Team`,
               }
             ]}
           />
-        )
-
+        );
       case 'courses':
         return (
-          <ContentTable
-            type="courses"
-            data={applyFilters(filterDataByStatus(coursesData, getCurrentFilters().statusFilter))}
-            columns={[
-              { key: 'title', label: 'Course Title' },
-              { key: 'category', label: 'Category' },
-              { key: 'instructor', label: 'Instructor' },
-              { key: 'duration', label: 'Duration' },
-              { 
-                key: 'status', 
-                label: 'Status',
-                render: (item) => {
-                  const statusStyle = getStatusColor(item.status)
-                  return (
+          <div style={{ padding: '20px' }}>
+            {/* Course Type Tabs */}
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              marginBottom: '24px',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <button
+                onClick={() => setActiveCourseTab('videos')}
+                style={{
+                  padding: '12px 24px',
+                  border: 'none',
+                  backgroundColor: activeCourseTab === 'videos' ? '#3b82f6' : 'transparent',
+                  color: activeCourseTab === 'videos' ? 'white' : '#6b7280',
+                  borderRadius: '8px 8px 0 0',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Videos
+              </button>
+              <button
+                onClick={() => setActiveCourseTab('books')}
+                style={{
+                  padding: '12px 24px',
+                  border: 'none',
+                  backgroundColor: activeCourseTab === 'books' ? '#3b82f6' : 'transparent',
+                  color: activeCourseTab === 'books' ? 'white' : '#6b7280',
+                  borderRadius: '8px 8px 0 0',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Books
+              </button>
+              <button
+                onClick={() => setActiveCourseTab('business-plans')}
+                style={{
+                  padding: '12px 24px',
+                  border: 'none',
+                  backgroundColor: activeCourseTab === 'business-plans' ? '#3b82f6' : 'transparent',
+                  color: activeCourseTab === 'business-plans' ? 'white' : '#6b7280',
+                  borderRadius: '8px 8px 0 0',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Business Plans
+              </button>
+            </div>
+
+            {/* Course Filters */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              marginBottom: '20px'
+            }}>
+              <div style={{
+                flex: 1,
+                position: 'relative'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  zIndex: 1
+                }}>
+                  <Search size={16} color="#64748b" />
+                </div>
+                <input
+                  type="text"
+                  placeholder={`Search ${activeCourseTab}...`}
+                  value={getCurrentFilters().searchTerm}
+                  onChange={(e) => setCurrentFilters({...getCurrentFilters(), searchTerm: e.target.value})}
+                  style={{
+                    width: '100%',
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    padding: '10px 14px 10px 40px',
+                    fontSize: '16px',
+                    color: '#1a1a1a',
+                    outline: 'none',
+                    transition: 'all 0.2s ease-in-out',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#16a34a'
+                    e.target.style.boxShadow = '0 0 0 3px rgba(22, 163, 74, 0.1)'
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#e2e8f0'
+                    e.target.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+                  }}
+                />
+              </div>
+              <button
+                onClick={() => setShowCourseFilters(true)}
+                style={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  position: 'relative'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#f8f9fa'
+                  e.target.style.borderColor = '#16a34a'
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = 'white'
+                  e.target.style.borderColor = '#e2e8f0'
+                }}
+              >
+                <SlidersHorizontal size={20} color="#64748b" />
+                {getActiveCourseFilterCount() > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '-6px',
+                    right: '-6px',
+                    backgroundColor: '#16a34a',
+                    color: 'white',
+                    borderRadius: '10px',
+                    width: '20px',
+                    height: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: '600'
+                  }}>
+                    {getActiveCourseFilterCount()}
+                  </div>
+                )}
+              </button>
+            </div>
+
+            {/* Course Content Based on Active Tab */}
+            {activeCourseTab === 'videos' && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+                gap: '20px',
+                padding: '0'
+              }}>
+                {applyFilters(filterDataByStatus(coursesData.filter(c => c.course_type === 'video'), getCurrentFilters().statusFilter)).map((video) => (
+                  <div key={video.id} style={{
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    border: '1px solid #e5e7eb',
+                    transition: 'all 0.2s ease-in-out',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => { setSelectedItem({ ...video, type: 'course' }); setShowDetails(true) }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}>
+                    {/* Thumbnail */}
+                    <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
+                      <img 
+                        src={video.thumbnail_url ? (video.thumbnail_url.startsWith('/uploads') ? `${(import.meta?.env?.VITE_API_BASE_ORIGIN)||'http://localhost:8000'}${video.thumbnail_url}` : video.thumbnail_url) : null} 
+                        alt={video.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        display: 'flex',
+                        gap: '8px'
+                      }}>
+                        {video.price === 'Pro' && (
+                          <span style={{
+                            backgroundColor: '#3b82f6',
+                            color: 'white',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            PRO
+                          </span>
+                        )}
+                        <span style={{
+                          backgroundColor: 'rgba(0,0,0,0.7)',
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>
+                          {video.duration || 
+                            (video.duration_hours && video.duration_minutes ? 
+                              `${video.duration_hours}h ${video.duration_minutes}m` :
+                              video.duration_hours ? `${video.duration_hours}h` :
+                              video.duration_minutes ? `${video.duration_minutes}m` : 'N/A')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ padding: '20px' }}>
+                      {/* Header */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '12px'
+                      }}>
+                        <h3 style={{
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: '#1a1a1a',
+                          margin: 0,
+                          lineHeight: '1.4',
+                          flex: 1
+                        }}>
+                          {video.title}
+                        </h3>
+                    {video.status && video.status.toLowerCase() !== 'published' && (
                     <span style={{
                       padding: '4px 8px',
                       borderRadius: '12px',
                       fontSize: '12px',
                       fontWeight: '500',
-                      border: `1px solid ${statusStyle.borderColor}`,
-                      backgroundColor: statusStyle.backgroundColor,
-                      color: statusStyle.color
-                    }}>
-                      {item.status}
+                        backgroundColor: getStatusColor(video.status).backgroundColor,
+                        color: getStatusColor(video.status).color,
+                        border: `1px solid ${getStatusColor(video.status).borderColor}`,
+                        marginLeft: '12px',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {video.status}
                     </span>
-                  )
-                }
-              },
-              { 
-                key: 'enrollments', 
-                label: 'Enrollments',
-                render: (item) => item.enrollments || 0
-              }
-            ]}
-          />
+                    )}
+                    {/* Pro badge near title removed to avoid duplication; top overlay badge remains */}
+                      </div>
+
+                      {/* Instructor */}
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#64748b',
+                        margin: '0 0 12px 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        <Users size={14} />
+                        by {video.instructor || video.author || 'Unknown Instructor'}
+                      </p>
+
+                      {/* Industry (from category) */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: '#64748b',
+                        fontSize: '14px',
+                        marginBottom: '12px'
+                      }}>
+                        <Building size={14} />
+                        <span>{video.category || '—'}</span>
+                      </div>
+
+                      {/* Description removed per requirement */}
+
+                      {/* Stats */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '16px',
+                        fontSize: '13px',
+                        color: '#64748b'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Download size={14} />
+                            {(video.download_count ?? video.enrollment_count ?? 0)} downloads
+                          </div>
+                          <span style={{
+                            backgroundColor: '#f3f4f6',
+                            color: '#374151',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '500'
+                          }}>
+                            {video.format || '—'}
+                          </span>
+                        </div>
+                        <span style={{
+                          backgroundColor: '#dbeafe',
+                          color: '#1d4ed8',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>
+                          {video.level}
+                        </span>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {/* Free/Pro switch only (no price text) */}
+                        <div
+                          onClick={(e) => { e.stopPropagation(); handlePriceToggle(video, 'course') }}
+                          style={{
+                            position: 'relative',
+                            width: '44px',
+                            height: '24px',
+                            backgroundColor: video.price === 'Pro' ? '#3b82f6' : '#d1d5db',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '2px'
+                          }}
+                        >
+                          <div style={{
+                            width: '20px',
+                            height: '20px',
+                            backgroundColor: 'white',
+                            borderRadius: '50%',
+                            transition: 'transform 0.3s ease',
+                            transform: video.price === 'Pro' ? 'translateX(20px)' : 'translateX(0)',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                          }} />
+                        </div>
+                        {/* Watch button aligned to right */}
+                        <button style={{
+                          marginLeft: 'auto',
+                          backgroundColor: '#f97316',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (video.video_url) {
+                            // Construct the full URL for the video
+                            const fullUrl = video.video_url.startsWith('http') 
+                              ? video.video_url 
+                              : `http://localhost:8000${video.video_url}`;
+                            setVideoUrl(fullUrl);
+                            setVideoTitle(video.title);
+                            setShowVideoPlayer(true);
+                          } else {
+                            alert('Video file not available');
+                          }
+                        }}>
+                          <Play size={16} />
+                          Watch
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeCourseTab === 'books' && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+                gap: '20px',
+                padding: '0'
+              }}>
+                {applyFilters(filterDataByStatus(coursesData.filter(c => c.course_type === 'book'), getCurrentFilters().statusFilter)).map((book) => (
+                  <div key={book.id} style={{
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    border: '1px solid #e5e7eb',
+                    transition: 'all 0.2s ease-in-out',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => { setSelectedItem({ ...book, type: 'course' }); setShowDetails(true) }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}>
+                    {/* Cover */}
+                    <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
+                      <img 
+                        src={book.thumbnail_url ? (book.thumbnail_url.startsWith('/uploads') ? `${(import.meta?.env?.VITE_API_BASE_ORIGIN)||'http://localhost:8000'}${book.thumbnail_url}` : book.thumbnail_url) : null} 
+                        alt={book.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        display: 'flex',
+                        gap: '8px'
+                      }}>
+                        {book.price === 'Pro' && (
+                          <span style={{
+                            backgroundColor: '#3b82f6',
+                            color: 'white',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            PRO
+                          </span>
+                        )}
+                        <span style={{
+                          backgroundColor: 'rgba(0,0,0,0.7)',
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>
+                          {book.format || 'PDF'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ padding: '20px' }}>
+                      {/* Header */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '12px'
+                      }}>
+                        <h3 style={{
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: '#1a1a1a',
+                          margin: 0,
+                          lineHeight: '1.4',
+                          flex: 1
+                        }}>
+                          {book.title}
+                        </h3>
+                        {book.status && book.status.toLowerCase() !== 'published' && (
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            backgroundColor: getStatusColor(book.status).backgroundColor,
+                            color: getStatusColor(book.status).color,
+                            border: `1px solid ${getStatusColor(book.status).borderColor}`,
+                            marginLeft: '12px',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {book.status}
+                          </span>
+                        )}
+                        {/* Pro badge near title removed to avoid duplication; top overlay badge remains */}
+                      </div>
+
+                      {/* Instructor */}
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#64748b',
+                        margin: '0 0 12px 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        <Users size={14} />
+                        by {book.instructor || book.author || 'Unknown Instructor'}
+                      </p>
+
+                      {/* Industry (from category) */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: '#64748b',
+                        fontSize: '14px',
+                        marginBottom: '12px'
+                      }}>
+                        <Building size={14} />
+                        <span>{book.category || '—'}</span>
+                        {book.author_type && (
+                          <>
+                            <span style={{ color: '#cbd5e1' }}>|</span>
+                            <span>{book.author_type}</span>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Description removed per requirement */}
+
+                      {/* Stats */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '16px',
+                        fontSize: '13px',
+                        color: '#64748b'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <FileText size={14} />
+                            {book.page_count || 0} pages
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Download size={14} />
+                            {(book.download_count ?? 0)} downloads
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <span style={{
+                            backgroundColor: '#dbeafe',
+                            color: '#1d4ed8',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            {book.level || 'Beginner'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px'
+                      }}>
+                        <div
+                          onClick={(e) => { e.stopPropagation(); handlePriceToggle(book, 'course') }}
+                          style={{
+                            position: 'relative',
+                            width: '44px',
+                            height: '24px',
+                            backgroundColor: book.price === 'Pro' ? '#3b82f6' : '#d1d5db',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '2px'
+                          }}
+                        >
+                          <div style={{
+                            width: '20px',
+                            height: '20px',
+                            backgroundColor: 'white',
+                            borderRadius: '50%',
+                            transition: 'transform 0.3s ease',
+                            transform: book.price === 'Pro' ? 'translateX(20px)' : 'translateX(0)',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                          }} />
+                        </div>
+                        <button style={{
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          border: 'none',
+                          padding: '6px 10px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginLeft: 'auto',
+                          gap: '6px'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (book.download_url) {
+                            // Construct the full URL for the file
+                            const fullUrl = book.download_url.startsWith('http') 
+                              ? book.download_url 
+                              : `http://localhost:8000${book.download_url}`;
+                            window.open(fullUrl, '_blank');
+                          } else {
+                            alert('Download file not available');
+                          }
+                        }}>
+                          <Download size={16} />
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {activeCourseTab === 'business-plans' && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+                gap: '20px',
+                padding: '0'
+              }}>
+                {applyFilters(filterDataByStatus(coursesData.filter(c => c.course_type === 'business-plan'), getCurrentFilters().statusFilter)).map((plan) => (
+                  <div key={plan.id} style={{
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    border: '1px solid #e5e7eb',
+                    transition: 'all 0.2s ease-in-out',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => { setSelectedItem({ ...plan, type: 'course' }); setShowDetails(true) }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}>
+                    {/* Preview */}
+                    <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
+                      <img 
+                        src={plan.thumbnail_url ? (plan.thumbnail_url.startsWith('/uploads') ? `${(import.meta?.env?.VITE_API_BASE_ORIGIN)||'http://localhost:8000'}${plan.thumbnail_url}` : plan.thumbnail_url) : null} 
+                        alt={plan.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        display: 'flex',
+                        gap: '8px'
+                      }}>
+                        {plan.price === 'Pro' && (
+                          <span style={{
+                            backgroundColor: '#3b82f6',
+                            color: 'white',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            PRO
+                          </span>
+                        )}
+                        <span style={{
+                          backgroundColor: 'rgba(0,0,0,0.7)',
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>
+                          {(() => {
+                            const fmt = (plan.format || '').toString().trim();
+                            if (fmt) return fmt.toUpperCase();
+                            const url = plan.download_url || '';
+                            const m = url.match(/\.([a-zA-Z0-9]+)(?:\?|#|$)/);
+                            const ext = m ? m[1].toLowerCase() : '';
+                            if (!ext) return 'N/A';
+                            if (ext === 'pdf') return 'PDF';
+                            if (ext === 'doc' || ext === 'docx') return 'DOCX';
+                            if (ext === 'ppt' || ext === 'pptx') return 'PPTX';
+                            if (ext === 'xls' || ext === 'xlsx') return 'XLSX';
+                            return ext.toUpperCase();
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ padding: '20px' }}>
+                      {/* Header */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '12px'
+                      }}>
+                        <h3 style={{
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: '#1a1a1a',
+                          margin: 0,
+                          lineHeight: '1.4',
+                          flex: 1
+                        }}>
+                          {plan.title}
+                        </h3>
+                        {plan.status && plan.status.toLowerCase() !== 'published' && (
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            backgroundColor: getStatusColor(plan.status).backgroundColor,
+                            color: getStatusColor(plan.status).color,
+                            border: `1px solid ${getStatusColor(plan.status).borderColor}`,
+                            marginLeft: '12px',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {plan.status}
+                          </span>
+                        )}
+                        {/* Pro badge near title removed to avoid duplication; top overlay badge remains */}
+                      </div>
+
+                      {/* Instructor line */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        marginBottom: '12px',
+                        fontSize: '14px',
+                        color: '#64748b'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Users size={14} />
+                          <span>{plan.instructor || plan.author || 'Instructor'}</span>
+                        </div>
+                      </div>
+
+                      {/* Industry sector and Business type line */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        marginBottom: '12px',
+                        fontSize: '14px',
+                        color: '#64748b'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Building size={14} />
+ill fau                          <span>{plan.category || '—'}</span>
+                          <Briefcase size={14} />
+                          <span style={{ fontWeight: 600 }}>{plan.business_type || '—'}</span>
+                        </div>
+                      </div>
+
+                      {/* Description removed per requirement */}
+
+                      {/* Stats */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '16px',
+                        fontSize: '13px',
+                        color: '#64748b'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <FileText size={14} />
+                            {plan.page_count || 0} pages
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Download size={14} />
+                            {(plan.download_count ?? plan.enrollment_count ?? 0)} downloads
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <span style={{
+                            backgroundColor: '#dbeafe',
+                            color: '#1d4ed8',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            {plan.stage || 'Startup'}
+                          </span>
+                          {/* business_type moved next to instructor above to avoid duplication */}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px'
+                      }}>
+                        <div
+                          onClick={(e) => { e.stopPropagation(); handlePriceToggle(plan, 'course') }}
+                          style={{
+                            position: 'relative',
+                            width: '44px',
+                            height: '24px',
+                            backgroundColor: plan.price === 'Pro' ? '#3b82f6' : '#d1d5db',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '2px'
+                          }}
+                        >
+                          <div style={{
+                            width: '20px',
+                            height: '20px',
+                            backgroundColor: 'white',
+                            borderRadius: '50%',
+                            transition: 'transform 0.3s ease',
+                            transform: plan.price === 'Pro' ? 'translateX(20px)' : 'translateX(0)',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                          }} />
+                        </div>
+                        <button style={{
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          border: 'none',
+                          padding: '6px 10px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginLeft: 'auto',
+                          gap: '6px'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (plan.download_url) {
+                            // Construct the full URL for the file
+                            const fullUrl = plan.download_url.startsWith('http') 
+                              ? plan.download_url 
+                              : `http://localhost:8000${plan.download_url}`;
+                            window.open(fullUrl, '_blank');
+                          } else {
+                            alert('Download file not available');
+                          }
+                        }}>
+                          <Download size={16} />
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )
 
       case 'content':
@@ -3213,7 +4265,6 @@ Merit Consultants Team`,
         return null
     }
   }
-
   return (
     <div style={{
       padding: 0
@@ -3226,7 +4277,7 @@ Merit Consultants Team`,
         marginBottom: '20px' 
       }}>
         <button
-          onClick={() => setShowCourseForm(true)}
+          onClick={handleOpenCourseForm}
           style={{
             padding: '12px 24px',
             backgroundColor: '#3b82f6',
@@ -3254,7 +4305,11 @@ Merit Consultants Team`,
           }}
         >
           <BookOpen size={20} />
-          Add Course
+          {activeTab === 'courses' ? 
+            (activeCourseTab === 'videos' ? 'Add Video' : 
+             activeCourseTab === 'books' ? 'Add Book' : 
+             activeCourseTab === 'business-plans' ? 'Add Business Plan' : 'Add Course') : 
+            'Add Course'}
         </button>
         <button
           onClick={() => {
@@ -3547,14 +4602,14 @@ Merit Consultants Team`,
                       marginBottom: '6px',
                       display: 'block'
                     }}>
-                      Company Name *
+                      Instructor Name *
                     </label>
                     <input
                       type="text"
                       required
-                      value={courseFormData.companyName}
-                      onChange={(e) => handleCourseInputChange('companyName', e.target.value)}
-                      placeholder="Enter company name..."
+                      value={courseFormData.instructor}
+                      onChange={(e) => handleCourseInputChange('instructor', e.target.value)}
+                      placeholder="Enter instructor name..."
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -3568,13 +4623,15 @@ Merit Consultants Team`,
                   </div>
                 )}
 
-                {/* Duration & Category */}
+                {/* Duration (for videos only) & Industry */}
                 <div style={{ 
                   display: 'grid', 
-                  gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                  gridTemplateColumns: screenSize.isMobile ? '1fr' : courseFormData.type === 'video' ? '1fr 1fr' : '1fr', 
                   gap: '12px', 
                   marginBottom: '16px' 
                 }}>
+                  {courseFormData.type === 'video' && (
+                    <>
                   <div>
                     <label style={{
                       fontSize: '14px',
@@ -3583,14 +4640,15 @@ Merit Consultants Team`,
                       marginBottom: '6px',
                       display: 'block'
                     }}>
-                      Duration *
+                          Duration (Hours)
                     </label>
                     <input
-                      type="text"
-                      required
-                      value={courseFormData.duration}
-                      onChange={(e) => handleCourseInputChange('duration', e.target.value)}
-                      placeholder={courseFormData.type === 'video' ? "e.g., 5h 30m" : courseFormData.type === 'book' ? "e.g., 200 pages" : "e.g., 25 pages"}
+                          type="number"
+                          min="0"
+                          max="999"
+                          value={courseFormData.duration_hours || ''}
+                          onChange={(e) => handleCourseInputChange('duration_hours', e.target.value)}
+                          placeholder="e.g., 2"
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -3602,6 +4660,36 @@ Merit Consultants Team`,
                       }}
                     />
                   </div>
+                      <div>
+                        <label style={{
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          color: '#374151',
+                          marginBottom: '6px',
+                          display: 'block'
+                        }}>
+                          Duration (Minutes)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="59"
+                          value={courseFormData.duration_minutes || ''}
+                          onChange={(e) => handleCourseInputChange('duration_minutes', e.target.value)}
+                          placeholder="e.g., 30"
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                    </>
+                  )}
                   <div>
                     <label style={{
                       fontSize: '14px',
@@ -3610,7 +4698,7 @@ Merit Consultants Team`,
                       marginBottom: '6px',
                       display: 'block'
                     }}>
-                      Category *
+                      Industry *
                     </label>
                     <select
                       required
@@ -3627,58 +4715,74 @@ Merit Consultants Team`,
                         boxSizing: 'border-box'
                       }}
                     >
-                      <option value="">Select category</option>
-                      {courseFormData.type === 'video' ? (
-                        <>
-                          <option value="Business">Business</option>
+                      <option value="">Select industry</option>
                           <option value="Technology">Technology</option>
-                          <option value="Marketing">Marketing</option>
                           <option value="Finance">Finance</option>
-                          <option value="Design">Design</option>
-                          <option value="Health">Health</option>
-                          <option value="Education">Education</option>
-                          <option value="Personal Development">Personal Development</option>
-                          <option value="Leadership">Leadership</option>
-                          <option value="Entrepreneurship">Entrepreneurship</option>
-                          <option value="Data Science">Data Science</option>
-                          <option value="Programming">Programming</option>
-                          <option value="Photography">Photography</option>
-                          <option value="Music">Music</option>
-                          <option value="Art">Art</option>
-                        </>
-                      ) : courseFormData.type === 'book' ? (
-                        <>
-                          <option value="Business">Business</option>
-                          <option value="Technology">Technology</option>
-                          <option value="Self-Help">Self-Help</option>
-                          <option value="Biography">Biography</option>
-                          <option value="Finance">Finance</option>
-                          <option value="Marketing">Marketing</option>
-                          <option value="Leadership">Leadership</option>
-                          <option value="Health">Health</option>
-                          <option value="Education">Education</option>
-                          <option value="Fiction">Fiction</option>
-                          <option value="Non-Fiction">Non-Fiction</option>
-                          <option value="History">History</option>
-                          <option value="Science">Science</option>
-                          <option value="Philosophy">Philosophy</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="Technology">Technology</option>
                           <option value="Healthcare">Healthcare</option>
-                          <option value="Retail">Retail</option>
-                          <option value="Food & Beverage">Food & Beverage</option>
-                          <option value="Manufacturing">Manufacturing</option>
-                          <option value="Consulting">Consulting</option>
-                          <option value="Real Estate">Real Estate</option>
                           <option value="Education">Education</option>
-                          <option value="Entertainment">Entertainment</option>
+                      <option value="Energy">Energy</option>
+                      <option value="Utilities">Utilities</option>
+                      <option value="Manufacturing">Manufacturing</option>
+                      <option value="Industrial">Industrial</option>
+                      <option value="Consumer">Consumer</option>
+                      <option value="Retail">Retail</option>
+                      <option value="Food">Food</option>
                           <option value="Agriculture">Agriculture</option>
+                      <option value="Media">Media</option>
+                      <option value="Entertainment">Entertainment</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="Design">Design</option>
+                      <option value="Real Estate">Real Estate</option>
+                      <option value="Construction">Construction</option>
                           <option value="Transportation">Transportation</option>
-                          <option value="Energy">Energy</option>
-                        </>
-                      )}
+                      <option value="Logistics">Logistics</option>
+                      <option value="Government">Government</option>
+                      <option value="Nonprofit">Nonprofit</option>
+                      <option value="Legal">Legal</option>
+                      <option value="HR">HR</option>
+                      <option value="Business">Business</option>
+                      <option value="Consulting">Consulting</option>
+                      <option value="Arts">Arts</option>
+                      <option value="Lifestyle">Lifestyle</option>
+                      <option value="Leadership">Leadership</option>
+                      <option value="Personal Development">Personal Development</option>
+                      <option value="Communication">Communication</option>
+                      <option value="Psychology">Psychology</option>
+                      <option value="Coaching">Coaching</option>
+                      <option value="Mentoring">Mentoring</option>
+                      <option value="Motivation">Motivation</option>
+                      <option value="Productivity">Productivity</option>
+                      <option value="Time Management">Time Management</option>
+                      <option value="Goal Setting">Goal Setting</option>
+                      <option value="Career Development">Career Development</option>
+                      <option value="Networking">Networking</option>
+                      <option value="Public Speaking">Public Speaking</option>
+                      <option value="Team Building">Team Building</option>
+                      <option value="Conflict Resolution">Conflict Resolution</option>
+                      <option value="Emotional Intelligence">Emotional Intelligence</option>
+                      <option value="Mindfulness">Mindfulness</option>
+                      <option value="Wellness">Wellness</option>
+                      <option value="Fitness">Fitness</option>
+                      <option value="Nutrition">Nutrition</option>
+                      <option value="Mental Health">Mental Health</option>
+                      <option value="Relationships">Relationships</option>
+                      <option value="Parenting">Parenting</option>
+                      <option value="Finance & Money">Finance & Money</option>
+                      <option value="Entrepreneurship">Entrepreneurship</option>
+                      <option value="Innovation">Innovation</option>
+                      <option value="Creativity">Creativity</option>
+                      <option value="Problem Solving">Problem Solving</option>
+                      <option value="Critical Thinking">Critical Thinking</option>
+                      <option value="Research">Research</option>
+                      <option value="Writing">Writing</option>
+                      <option value="Language Learning">Language Learning</option>
+                      <option value="Travel">Travel</option>
+                      <option value="Culture">Culture</option>
+                      <option value="History">History</option>
+                      <option value="Philosophy">Philosophy</option>
+                      <option value="Religion">Religion</option>
+                      <option value="Spirituality">Spirituality</option>
+                      <option value="Other">Other</option>
                     </select>
                   </div>
                 </div>
@@ -3760,9 +4864,15 @@ Merit Consultants Team`,
                   </div>
                 )}
 
-                {/* Author Type for books */}
+                {/* Author Type and Page Count for books */}
                 {courseFormData.type === 'book' && (
-                  <div style={{ marginBottom: '16px' }}>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                    gap: '12px', 
+                    marginBottom: '16px' 
+                  }}>
+                    <div>
                     <label style={{
                       fontSize: '14px',
                       fontWeight: '500',
@@ -3793,6 +4903,35 @@ Merit Consultants Team`,
                       <option value="Academic">Academic</option>
                       <option value="Entrepreneur">Entrepreneur</option>
                     </select>
+                    </div>
+                    <div>
+                      <label style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '6px',
+                        display: 'block'
+                      }}>
+                        Number of Pages *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        value={courseFormData.pageCount}
+                        onChange={(e) => handleCourseInputChange('pageCount', e.target.value)}
+                        placeholder="e.g., 200"
+                        min="1"
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          outline: 'none',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -3800,10 +4939,105 @@ Merit Consultants Team`,
                 {courseFormData.type === 'business-plan' && (
                   <div style={{ 
                     display: 'grid', 
-                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', 
+                    gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr 1fr', 
                     gap: '12px', 
                     marginBottom: '16px' 
                   }}>
+                    <div>
+                      <label style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#374151',
+                        marginBottom: '6px',
+                        display: 'block'
+                      }}>
+                        Industry Sector *
+                      </label>
+                      <select
+                        required
+                        value={courseFormData.industrySector}
+                        onChange={(e) => handleCourseInputChange('industrySector', e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          outline: 'none',
+                          backgroundColor: 'white',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <option value="">Select industry</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Education">Education</option>
+                        <option value="Energy">Energy</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Manufacturing">Manufacturing</option>
+                        <option value="Industrial">Industrial</option>
+                        <option value="Consumer">Consumer</option>
+                        <option value="Retail">Retail</option>
+                        <option value="Food">Food</option>
+                        <option value="Agriculture">Agriculture</option>
+                        <option value="Media">Media</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Design">Design</option>
+                        <option value="Real Estate">Real Estate</option>
+                        <option value="Construction">Construction</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Logistics">Logistics</option>
+                        <option value="Government">Government</option>
+                        <option value="Nonprofit">Nonprofit</option>
+                        <option value="Legal">Legal</option>
+                        <option value="HR">HR</option>
+                        <option value="Business">Business</option>
+                        <option value="Consulting">Consulting</option>
+                        <option value="Arts">Arts</option>
+                        <option value="Lifestyle">Lifestyle</option>
+                        <option value="Leadership">Leadership</option>
+                        <option value="Personal Development">Personal Development</option>
+                        <option value="Communication">Communication</option>
+                        <option value="Psychology">Psychology</option>
+                        <option value="Coaching">Coaching</option>
+                        <option value="Mentoring">Mentoring</option>
+                        <option value="Motivation">Motivation</option>
+                        <option value="Productivity">Productivity</option>
+                        <option value="Time Management">Time Management</option>
+                        <option value="Goal Setting">Goal Setting</option>
+                        <option value="Career Development">Career Development</option>
+                        <option value="Networking">Networking</option>
+                        <option value="Public Speaking">Public Speaking</option>
+                        <option value="Team Building">Team Building</option>
+                        <option value="Conflict Resolution">Conflict Resolution</option>
+                        <option value="Emotional Intelligence">Emotional Intelligence</option>
+                        <option value="Mindfulness">Mindfulness</option>
+                        <option value="Wellness">Wellness</option>
+                        <option value="Fitness">Fitness</option>
+                        <option value="Nutrition">Nutrition</option>
+                        <option value="Mental Health">Mental Health</option>
+                        <option value="Relationships">Relationships</option>
+                        <option value="Parenting">Parenting</option>
+                        <option value="Finance & Money">Finance & Money</option>
+                        <option value="Entrepreneurship">Entrepreneurship</option>
+                        <option value="Innovation">Innovation</option>
+                        <option value="Creativity">Creativity</option>
+                        <option value="Problem Solving">Problem Solving</option>
+                        <option value="Critical Thinking">Critical Thinking</option>
+                        <option value="Research">Research</option>
+                        <option value="Writing">Writing</option>
+                        <option value="Language Learning">Language Learning</option>
+                        <option value="Travel">Travel</option>
+                        <option value="Culture">Culture</option>
+                        <option value="History">History</option>
+                        <option value="Philosophy">Philosophy</option>
+                        <option value="Religion">Religion</option>
+                        <option value="Spirituality">Spirituality</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
                     <div>
                       <label style={{
                         fontSize: '14px',
@@ -3874,6 +5108,38 @@ Merit Consultants Team`,
                   </div>
                 )}
 
+                {/* Number of Pages for Business Plans */}
+                {courseFormData.type === 'business-plan' && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#374151',
+                      marginBottom: '6px',
+                      display: 'block'
+                    }}>
+                      Number of Pages *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      value={courseFormData.pageCount}
+                      onChange={(e) => handleCourseInputChange('pageCount', e.target.value)}
+                      placeholder="e.g., 25"
+                      min="1"
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                )}
+
                 {/* Format & Price */}
                 <div style={{ 
                   display: 'grid', 
@@ -3934,35 +5200,7 @@ Merit Consultants Team`,
                       )}
                     </select>
                   </div>
-                  <div>
-                    <label style={{
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#374151',
-                      marginBottom: '6px',
-                      display: 'block'
-                    }}>
-                      Price *
-                    </label>
-                    <select
-                      required
-                      value={courseFormData.price}
-                      onChange={(e) => handleCourseInputChange('price', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        backgroundColor: 'white',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                                               <option value="Free">Free</option>
-                         <option value="Pro">Pro</option>
-                    </select>
-                  </div>
+                  
                 </div>
 
                 
@@ -4114,9 +5352,11 @@ Merit Consultants Team`,
                            onDrop={(e) => {
                              e.preventDefault()
                              const files = Array.from(e.dataTransfer.files)
-                             if (files.length > 0) {
-                               handleFileUpload('video', files[0])
+                             files.forEach(file => {
+                               if (file.type.startsWith('video/')) {
+                                 handleFileUpload('video', file)
                              }
+                             })
                            }}
                            onClick={() => document.getElementById('video-upload').click()}
                            >
@@ -4129,7 +5369,7 @@ Merit Consultants Team`,
                                <div>
                                  <Upload size={24} color="#9ca3af" style={{ marginBottom: '8px' }} />
                                  <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
-                                   Click to upload or drag & drop
+                                   Click to upload or drag & drop video
                                  </div>
                                  <div style={{ fontSize: '12px', color: '#9ca3af' }}>
                                    MP4, MOV, AVI up to 500MB
@@ -4143,8 +5383,9 @@ Merit Consultants Team`,
                              accept="video/*"
                              style={{ display: 'none' }}
                              onChange={(e) => {
-                               if (e.target.files.length > 0) {
-                                 handleFileUpload('video', e.target.files[0])
+                               const file = e.target.files[0]
+                               if (file && file.type.startsWith('video/')) {
+                                 handleFileUpload('video', file)
                                }
                              }}
                            />
@@ -4221,100 +5462,6 @@ Merit Consultants Team`,
                          </div>
                        )}
 
-                       {/* Additional Documents */}
-                       <div style={{ marginBottom: '12px' }}>
-                         <label style={{
-                           fontSize: '12px',
-                           fontWeight: '500',
-                           color: '#6b7280',
-                           marginBottom: '4px',
-                           display: 'block'
-                         }}>
-                           Additional Documents
-                         </label>
-                         <div style={{
-                           border: '2px dashed #d1d5db',
-                           borderRadius: '8px',
-                           padding: '20px',
-                           textAlign: 'center',
-                           backgroundColor: '#f9fafb',
-                           cursor: 'pointer',
-                           transition: 'all 0.2s ease'
-                         }}
-                         onDragOver={(e) => {
-                           e.preventDefault()
-                           e.currentTarget.style.borderColor = '#16a34a'
-                           e.currentTarget.style.backgroundColor = '#f0fdf4'
-                         }}
-                         onDragLeave={(e) => {
-                           e.currentTarget.style.borderColor = '#d1d5db'
-                           e.currentTarget.style.backgroundColor = '#f9fafb'
-                         }}
-                         onDrop={(e) => {
-                           e.preventDefault()
-                           const files = Array.from(e.dataTransfer.files)
-                           files.forEach(file => handleAddDocument(file))
-                         }}
-                         onClick={() => document.getElementById('additional-docs-upload').click()}
-                         >
-                           <Upload size={24} color="#9ca3af" style={{ marginBottom: '8px' }} />
-                           <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '4px' }}>
-                             Click to upload or drag & drop additional files
-                           </div>
-                           <div style={{ fontSize: '12px', color: '#9ca3af' }}>
-                             Any file type up to 20MB each
-                           </div>
-                         </div>
-                         <input
-                           id="additional-docs-upload"
-                           type="file"
-                           multiple
-                           style={{ display: 'none' }}
-                           onChange={(e) => {
-                             Array.from(e.target.files).forEach(file => handleAddDocument(file))
-                           }}
-                         />
-                         
-                         {/* Display uploaded additional documents */}
-                         {courseFormData.documents.length > 0 && (
-                           <div style={{ marginTop: '12px' }}>
-                             <div style={{ fontSize: '12px', fontWeight: '500', color: '#6b7280', marginBottom: '8px' }}>
-                               Uploaded Documents:
-                             </div>
-                             {courseFormData.documents.map((doc, index) => (
-                               <div key={index} style={{
-                                 display: 'flex',
-                                 alignItems: 'center',
-                                 justifyContent: 'space-between',
-                                 padding: '8px 12px',
-                                 backgroundColor: '#f3f4f6',
-                                 borderRadius: '6px',
-                                 marginBottom: '6px'
-                               }}>
-                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                   <FileText size={16} color="#6b7280" />
-                                   <span style={{ fontSize: '14px', color: '#374151' }}>{doc.name}</span>
-                                   <span style={{ fontSize: '12px', color: '#9ca3af' }}>({doc.size})</span>
-                                 </div>
-                                 <button
-                                   type="button"
-                                   onClick={() => handleRemoveDocument(index)}
-                                   style={{
-                                     background: 'none',
-                                     border: 'none',
-                                     cursor: 'pointer',
-                                     padding: '4px',
-                                     borderRadius: '4px',
-                                     color: '#ef4444'
-                                   }}
-                                 >
-                                   <Trash2 size={16} />
-                                 </button>
-                               </div>
-                             ))}
-                           </div>
-                         )}
-                       </div>
                      </div>
 
                      {/* Tags */}
@@ -4454,49 +5601,8 @@ Merit Consultants Team`,
               </form>
             </div>
           </div>
-          {/* Country Filter */}
-          <div>
-            <select
-              value={getCurrentFilters().countryFilter}
-              onChange={(e) => setCurrentFilters({...getCurrentFilters(), countryFilter: e.target.value})}
-              style={{
-                padding: '8px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                minWidth: '180px',
-                backgroundColor: 'white'
-              }}
-            >
-              <option value="">All Countries</option>
-              {countries.map((c) => (
-                <option key={c.code} value={c.code}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-          {/* Status Filter */}
-          <div>
-            <select
-              value={getCurrentFilters().statusFilter}
-              onChange={(e) => setCurrentFilters({...getCurrentFilters(), statusFilter: e.target.value})}
-              style={{
-                padding: '8px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '14px',
-                backgroundColor: 'white'
-              }}
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="pending">Pending</option>
-              <option value="expired">Expired</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
         </div>
       )}
-
       {/* Overview Modal */}
       {showDetails && selectedItem && (
         <div style={{
@@ -5205,6 +6311,289 @@ Merit Consultants Team`,
                 </div>
               )}
 
+              {selectedItem.type === 'course' && (
+                <div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '16px',
+                    marginBottom: '24px',
+                    paddingBottom: '20px',
+                    borderBottom: '1px solid #e5e7eb'
+                  }}>
+                    <img
+                      src={selectedItem.thumbnail_url ? (selectedItem.thumbnail_url.startsWith('/uploads') ? `${(import.meta?.env?.VITE_API_BASE_ORIGIN)||'http://localhost:8000'}${selectedItem.thumbnail_url}` : selectedItem.thumbnail_url) : ''}
+                      alt={selectedItem.title}
+                      style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover', border: '2px solid #f8f9fa' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 6px 0' }}>{selectedItem.title}</h2>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '14px', color: '#64748b' }}>
+                        <span>{selectedItem.category || 'Uncategorized'}</span>
+                        <span>•</span>
+                        <span>{selectedItem.level || 'Beginner'}</span>
+                        {(selectedItem.type === 'video' || selectedItem.course_type === 'video') && (selectedItem.duration || selectedItem.duration_hours || selectedItem.duration_minutes) ? (<>
+                          <span>•</span>
+                          <span>{selectedItem.duration || 
+                            (selectedItem.duration_hours && selectedItem.duration_minutes ? 
+                              `${selectedItem.duration_hours}h ${selectedItem.duration_minutes}m` :
+                              selectedItem.duration_hours ? `${selectedItem.duration_hours}h` :
+                              `${selectedItem.duration_minutes}m`)}
+                          </span>
+                        </>) : null}
+                        {(selectedItem.type === 'book' || selectedItem.course_type === 'book' || selectedItem.type === 'business-plan' || selectedItem.course_type === 'business-plan') && selectedItem.page_count ? (<>
+                          <span>•</span>
+                          <span>{selectedItem.page_count} pages</span>
+                        </>) : null}
+                      </div>
+                    </div>
+                  </div>
+
+
+
+
+                  {/* Course Details */}
+                  <div style={{ marginTop: '24px' }}>
+                    <h3 style={{
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 16px 0'
+                    }}>
+                      Course Details
+                    </h3>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '12px'
+                    }}>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Type</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.course_type || selectedItem.type || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Instructor</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.instructor || selectedItem.author || '—'}</p>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Downloads</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.download_count ?? selectedItem.enrollment_count ?? 0}</p>
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Category</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.category || 'N/A'}</p>
+                    </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Level</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.level || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.industry_sector || selectedItem.category || 'N/A'}</p>
+                      </div>
+                      {(selectedItem.type === 'video' || selectedItem.type === 'book' || selectedItem.course_type === 'video' || selectedItem.course_type === 'book') && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Language</label>
+                          <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.language || 'English'}</p>
+                        </div>
+                      )}
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Format</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.format || 'N/A'}</p>
+                      </div>
+                      {(selectedItem.type === 'video' || selectedItem.course_type === 'video') && (selectedItem.duration || selectedItem.duration_hours || selectedItem.duration_minutes) && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Duration</label>
+                          <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>
+                            {selectedItem.duration || 
+                              (selectedItem.duration_hours && selectedItem.duration_minutes ? 
+                                `${selectedItem.duration_hours}h ${selectedItem.duration_minutes}m` :
+                                selectedItem.duration_hours ? `${selectedItem.duration_hours}h` :
+                                `${selectedItem.duration_minutes}m`)}
+                          </p>
+                        </div>
+                      )}
+                      {(selectedItem.type === 'book' || selectedItem.course_type === 'book') && selectedItem.page_count && (
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Pages</label>
+                          <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.page_count} pages</p>
+                      </div>
+                    )}
+                      {(selectedItem.type === 'business-plan' || selectedItem.course_type === 'business-plan') && selectedItem.page_count && (
+                      <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Pages</label>
+                          <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.page_count} pages</p>
+                        </div>
+                      )}
+                      {selectedItem.author_type && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Author Type</label>
+                          <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.author_type}</p>
+                      </div>
+                    )}
+                    {selectedItem.business_type && (
+                      <div>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Business Type</label>
+                          <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.business_type}</p>
+                      </div>
+                    )}
+                      {selectedItem.stage && (
+                        <div>
+                          <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Stage</label>
+                          <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.stage}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Course Description */}
+                  {selectedItem.description && selectedItem.description.trim() !== '' && (
+                    <div style={{ marginTop: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Course Description
+                      </h3>
+                      <p style={{
+                        fontSize: '14px',
+                        lineHeight: '1.6',
+                        color: '#374151',
+                        margin: 0,
+                        whiteSpace: 'pre-line'
+                      }}>
+                        {selectedItem.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  {selectedItem.tags && selectedItem.tags.length > 0 && (
+                    <div style={{ marginTop: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Tags
+                      </h3>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        {Array.isArray(selectedItem.tags) ? selectedItem.tags.map((tag, index) => (
+                          <span key={index} style={{
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '500'
+                          }}>
+                            {tag}
+                          </span>
+                        )) : (
+                          <span style={{
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '500'
+                          }}>
+                            {selectedItem.tags}
+                          </span>
+                    )}
+                  </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '16px',
+                    marginTop: '24px',
+                    paddingTop: '20px',
+                    borderTop: '1px solid #e2e8f0'
+                  }}>
+                    {(selectedItem.course_type === 'video' || selectedItem.type === 'video') && selectedItem.video_url && (
+                      <button
+                        onClick={() => {
+                          const fullUrl = selectedItem.video_url.startsWith('http') 
+                            ? selectedItem.video_url 
+                            : `http://localhost:8000${selectedItem.video_url}`;
+                          setVideoUrl(fullUrl);
+                          setVideoTitle(selectedItem.title);
+                          setShowVideoPlayer(true);
+                        }}
+                        style={{
+                          backgroundColor: '#f97316',
+                          color: 'white',
+                          border: 'none',
+                          padding: '12px 24px',
+                          borderRadius: '12px',
+                          fontSize: '16px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#ea580c';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#f97316';
+                        }}
+                      >
+                        <Play size={18} />
+                        Watch Video
+                      </button>
+                    )}
+                    
+                    {(selectedItem.course_type === 'book' || selectedItem.course_type === 'business-plan' || selectedItem.type === 'book' || selectedItem.type === 'business-plan') && selectedItem.download_url && (
+                      <button
+                        onClick={() => {
+                          const fullUrl = selectedItem.download_url.startsWith('http') 
+                            ? selectedItem.download_url 
+                            : `http://localhost:8000${selectedItem.download_url}`;
+                          window.open(fullUrl, '_blank');
+                        }}
+                        style={{
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          border: 'none',
+                          padding: '12px 24px',
+                          borderRadius: '12px',
+                          fontSize: '16px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#2563eb';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#3b82f6';
+                        }}
+                      >
+                        <Download size={18} />
+                        Download {selectedItem.course_type === 'book' ? 'Book' : selectedItem.course_type === 'business-plan' ? 'Business Plan' : 'File'}
+                      </button>
+                    )}
+                  </div>
+
+                </div>
+              )}
               {selectedItem.type === 'tenders' && (
                 <div>
                   {/* Organization Profile Header */}
@@ -5841,7 +7230,6 @@ Merit Consultants Team`,
                   )}
                 </div>
               )}
-
               {selectedItem.type === 'courses' && (
                 <div>
                   {/* Course Profile Header */}
@@ -5896,10 +7284,6 @@ Merit Consultants Team`,
                         <span>{typeof selectedItem.category === 'string' ? selectedItem.category : selectedItem.category?.name || selectedItem.category?.title || 'Unknown'}</span>
                         <span>•</span>
                         <span>{typeof selectedItem.level === 'string' ? selectedItem.level : selectedItem.level?.name || selectedItem.level?.title || 'Unknown'}</span>
-                        <span>•</span>
-                        <span style={{ color: selectedItem.price === 'Free' ? '#16a34a' : '#f59e0b', fontWeight: '600' }}>
-                          {selectedItem.price}
-                        </span>
                       </div>
                       <div style={{
                         display: 'flex',
@@ -6294,31 +7678,9 @@ Merit Consultants Team`,
                   )}
 
 
-                  {/* Additional Info */}
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '16px',
-                    backgroundColor: '#f8fafc',
-                    borderRadius: '12px',
-                    marginTop: '24px'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      gap: '16px',
-                      fontSize: '14px',
-                      color: '#64748b'
-                    }}>
-                      <span><strong>Posted:</strong> {selectedItem.postedTime}</span>
-                      <span><strong>Status:</strong> {selectedItem.status}</span>
-                      {selectedItem.language && <span><strong>Language:</strong> {selectedItem.language}</span>}
-                      {selectedItem.format && <span><strong>Format:</strong> {selectedItem.format}</span>}
-                    </div>
-                  </div>
+
                 </div>
               )}
-
               {selectedItem.type === 'applications' && (
                 <div>
                   {/* Profile Header */}
@@ -6944,7 +8306,6 @@ Merit Consultants Team`,
           </div>
         </div>
       )}
-
       {/* Bulk SMS Modal */}
       {showBulkSMS && (
         <div style={{
@@ -7122,6 +8483,275 @@ Merit Consultants Team`,
           </div>
         </div>
       )}
+
+      {/* Course Filter Modal */}
+      {showCourseFilters && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.3s ease-in-out'
+        }}
+        onClick={() => setShowCourseFilters(false)}>
+          <div style={{
+            backgroundColor: 'white',
+            width: 'min(800px, 90vw)',
+            maxHeight: '85vh',
+            borderRadius: '16px',
+            padding: '32px',
+            overflowY: 'auto',
+            transform: showCourseFilters ? 'translateY(0)' : 'scale(0.9)',
+            opacity: showCourseFilters ? 1 : 0,
+            transition: 'all 0.3s ease-in-out',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}
+          onClick={(e) => e.stopPropagation()}>
+            
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '20px',
+              paddingBottom: '16px',
+              borderBottom: '1px solid #f0f0f0'
+            }}>
+              <h2 style={{
+                fontSize: '20px',
+                fontWeight: '600',
+                color: '#1a1a1a',
+                margin: 0
+              }}>
+                {activeCourseTab === 'videos' ? 'Video' : activeCourseTab === 'books' ? 'Book' : 'Business Plan'} Filters
+              </h2>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={clearAllCourseFilters}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: '#64748b',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    padding: '4px 8px'
+                  }}
+                >
+                  Clear All
+                </button>
+                <button
+                  onClick={() => setShowCourseFilters(false)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    padding: '4px',
+                    cursor: 'pointer',
+                    borderRadius: '4px'
+                  }}
+                >
+                  <X size={24} color="#64748b" />
+                </button>
+              </div>
+            </div>
+
+            {/* Dynamic Filter Categories based on active tab */}
+            <div style={{ 
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '32px'
+            }}>
+              {Object.entries(courseFilterOptions[activeCourseTab === 'business-plans' ? 'businessPlans' : activeCourseTab]).map(([categoryKey, options]) => {
+                const tabKey = activeCourseTab === 'business-plans' ? 'businessPlans' : activeCourseTab
+                return (
+                <div key={categoryKey}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    {categoryKey === 'industrySector' ? 'Industry Sector' :
+                     categoryKey === 'businessType' ? 'Business Type' :
+                     categoryKey === 'authorType' ? 'Author Type' :
+                     categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1)}
+                  </h3>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(2, 1fr)', 
+                    gap: '8px' 
+                  }}>
+                    {options.map((option) => (
+                      <label key={option} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        padding: '8px 0'
+                      }}>
+                        <div style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '4px',
+                          border: '2px solid #e2e8f0',
+                          backgroundColor: courseFilters[tabKey][categoryKey].includes(option) ? '#16a34a' : 'transparent',
+                          borderColor: courseFilters[tabKey][categoryKey].includes(option) ? '#16a34a' : '#e2e8f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s ease-in-out',
+                          flexShrink: 0
+                        }}
+                        onClick={() => toggleCourseFilter(categoryKey, option)}>
+                          {courseFilters[tabKey][categoryKey].includes(option) && (
+                            <Check size={12} color="white" />
+                          )}
+                        </div>
+                        <span style={{
+                          fontSize: '14px',
+                          color: '#1a1a1a',
+                          fontWeight: '500'
+                        }}>
+                          {option}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )})}
+            </div>
+
+            {/* Apply Button */}
+            <div style={{
+              marginTop: '32px',
+              paddingTop: '20px',
+              borderTop: '1px solid #f0f0f0'
+            }}>
+              <button
+                onClick={() => setShowCourseFilters(false)}
+                style={{
+                  minWidth: '200px',
+                  backgroundColor: '#16a34a',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease-in-out'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = '#15803d'
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = '#16a34a'
+                }}
+              >
+                Apply Filters ({getActiveCourseFilterCount()})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Player Modal */}
+      {showVideoPlayer && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }}
+        onClick={() => setShowVideoPlayer(false)}>
+          <div style={{
+            position: 'relative',
+            backgroundColor: 'black',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            width: 'auto',
+            height: 'auto'
+          }}
+          onClick={(e) => e.stopPropagation()}>
+            {/* Close button */}
+            <button
+              onClick={() => setShowVideoPlayer(false)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                zIndex: 10
+              }}
+            >
+              ×
+            </button>
+            
+            {/* Video title */}
+            {videoTitle && (
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                left: '10px',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                color: 'white',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: '500',
+                zIndex: 10,
+                maxWidth: 'calc(100% - 120px)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {videoTitle}
+              </div>
+            )}
+            
+            {/* Video player */}
+            <video
+              src={videoUrl}
+              controls
+              autoPlay
+              style={{
+                width: '100%',
+                height: '100%',
+                minWidth: '400px',
+                minHeight: '300px',
+                maxWidth: '90vw',
+                maxHeight: '90vh'
+              }}
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      )}
     </div>
   )
 
@@ -7129,4 +8759,3 @@ Merit Consultants Team`,
 }
 
 export default Content
-

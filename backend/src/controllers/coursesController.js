@@ -3,15 +3,22 @@ const { Course, CourseEnrollment, User } = require('../models');
 const list = async (req, res) => {
   try {
     const { page = 1, limit = 10, status, search } = req.query;
-    const where = {
-      approval_status: 'approved'
-    };
+    const where = {};
     if (status) where.status = status;
     if (search) where.title = { $like: `%${search}%` };
 
     const offset = (page - 1) * limit;
     const { rows, count } = await Course.findAndCountAll({ where, limit: parseInt(limit, 10), offset, order: [['createdAt', 'DESC']] });
-    res.json({ courses: rows, total: count, totalPages: Math.ceil(count / limit), currentPage: parseInt(page, 10) });
+    const normalized = rows.map((c) => {
+      const obj = c.toJSON();
+      obj.price = obj.is_free ? 'Free' : 'Pro';
+      delete obj.approval_status;
+      delete obj.approved_by;
+      delete obj.approved_at;
+      delete obj.rejection_reason;
+      return obj;
+    });
+    res.json({ courses: normalized, total: count, totalPages: Math.ceil(count / limit), currentPage: parseInt(page, 10) });
   } catch (e) {
     console.error('Courses list error:', e);
     res.status(500).json({ message: 'Failed to list courses' });
@@ -20,13 +27,51 @@ const list = async (req, res) => {
 
 const create = async (req, res) => {
   try {
+    // Normalize incoming payload to match DB columns and desired behavior
+    const allowedLevels = ['beginner', 'intermediate', 'advanced']
+    const rawLevel = (req.body.level || req.body.course_level || 'beginner').toString().toLowerCase()
+    const normalizedLevel = allowedLevels.includes(rawLevel) ? rawLevel : 'beginner'
+
+    const inferredIsFree = (typeof req.body.is_free === 'boolean')
+      ? req.body.is_free
+      : (typeof req.body.price === 'string' ? req.body.price.toLowerCase() === 'free' : !!req.body.is_free);
+
+    const normalizedThumbnail = req.body.thumbnail_url || req.body.thumbnailUrl || null;
+    const normalizedDurationHours = req.body.duration_hours ?? req.body.duration ?? null;
+    const rawCourseType = (req.body.course_type || req.body.type || 'video').toString().toLowerCase()
+    const normalizedCourseType = ['video', 'book', 'business-plan'].includes(rawCourseType) ? rawCourseType : 'video'
+
     const courseData = {
       ...req.body,
+      // enforce schema-aligned fields
+      thumbnail_url: normalizedThumbnail,
+      duration_hours: normalizedDurationHours,
+      level: normalizedLevel,
+      course_type: normalizedCourseType,
+      // store boolean for free/pro and avoid numeric price usage
+      is_free: inferredIsFree,
+      price: null,
+      currency: 'USD',
       created_by: req.user?.id,
-      approval_status: 'pending'
+      // publish immediately; no approvals in this flow
+      status: req.body?.status || 'published',
+      // auto-approve all courses
+      approval_status: 'approved',
+      approved_by: undefined,
+      approved_at: undefined,
+      rejection_reason: undefined
     };
+    // Force auto-approval for all courses to show on Merit app
+    courseData.approval_status = 'approved';
     const course = await Course.create(courseData);
-    res.json({ course });
+
+    const obj = course.toJSON();
+    obj.price = obj.is_free ? 'Free' : 'Pro';
+    delete obj.approval_status;
+    delete obj.approved_by;
+    delete obj.approved_at;
+    delete obj.rejection_reason;
+    res.json({ course: obj });
   } catch (e) {
     console.error('Course create error:', e);
     res.status(500).json({ message: 'Failed to create course' });
