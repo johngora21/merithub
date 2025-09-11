@@ -27,6 +27,9 @@ const Courses = () => {
   const [showFilters, setShowFilters] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false)
+  const [videoUrl, setVideoUrl] = useState('')
+  const [videoTitle, setVideoTitle] = useState('')
   const [filters, setFilters] = useState({
     videos: {
       category: [],
@@ -62,51 +65,65 @@ const Courses = () => {
   }, [])
 
   const transformCourseData = (apiCourse) => {
+    // Match the exact structure from admin Content.jsx transformCourseAdminItem
     const baseCourse = {
       id: apiCourse.id.toString(),
       title: apiCourse.title,
       description: apiCourse.description,
-      tags: apiCourse.tags || [],
-      isPro: apiCourse.is_pro || false,
+      tags: Array.isArray(apiCourse.learning_objectives) ? apiCourse.learning_objectives : [],
+      isPro: apiCourse.is_free === false,
       rating: apiCourse.rating || 4.5,
-      students: apiCourse.students_count || 0,
-      postedTime: apiCourse.created_at ? new Date(apiCourse.created_at).toLocaleDateString() : 'Recently'
+      students: apiCourse.enrollment_count || apiCourse.students_count || 0,
+      postedTime: apiCourse.created_at ? new Date(apiCourse.created_at).toLocaleDateString() : 'Recently',
+      // Additional fields from admin structure
+      type: apiCourse.type || apiCourse.course_type || 'video',
+      language: apiCourse.language || 'English',
+      format: apiCourse.format || null,
+      author_type: apiCourse.author_type || null,
+      page_count: apiCourse.page_count || null,
+      duration_hours: apiCourse.duration_hours || null,
+      duration_minutes: apiCourse.duration_minutes || null,
+      duration: apiCourse.duration || (apiCourse.duration_hours && apiCourse.duration_minutes ? 
+        `${apiCourse.duration_hours}h ${apiCourse.duration_minutes}m` :
+        apiCourse.duration_hours ? `${apiCourse.duration_hours}h` :
+        apiCourse.duration_minutes ? `${apiCourse.duration_minutes}m` : 'Not specified'),
+      business_type: apiCourse.business_type || null,
+      industry_sector: apiCourse.industry_sector || null,
+      stage: apiCourse.stage || null,
+      file_size: apiCourse.file_size || null,
+      target_audience: apiCourse.target_audience || null,
+      download_url: apiCourse.download_url || null,
+      video_url: apiCourse.video_url || null
     }
 
     // Transform based on course type
-    if (apiCourse.type === 'video') {
+    if (apiCourse.type === 'video' || apiCourse.course_type === 'video') {
       return {
         ...baseCourse,
         instructor: apiCourse.instructor || 'Unknown Instructor',
-        thumbnail: apiCourse.thumbnail || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=240&fit=crop',
-        duration: apiCourse.duration || 'Not specified',
+        thumbnail: apiCourse.thumbnail_url || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=240&fit=crop',
         lessons: apiCourse.lessons_count || 0,
         level: apiCourse.level || 'Beginner',
         curriculum: apiCourse.curriculum || [],
         prerequisites: apiCourse.prerequisites || [],
-        whatYouWillLearn: apiCourse.learning_outcomes || []
+        whatYouWillLearn: Array.isArray(apiCourse.learning_objectives) ? apiCourse.learning_objectives : []
       }
-    } else if (apiCourse.type === 'book') {
+    } else if (apiCourse.type === 'book' || apiCourse.course_type === 'book') {
       return {
         ...baseCourse,
-        author: apiCourse.author || 'Unknown Author',
-        cover: apiCourse.cover_image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=240&fit=crop',
-        pages: apiCourse.pages || 0,
-        format: apiCourse.format || 'PDF',
-        language: apiCourse.language || 'English',
+        author: apiCourse.instructor || apiCourse.author || 'Unknown Author',
+        cover: apiCourse.thumbnail_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=240&fit=crop',
+        pages: apiCourse.page_count || 0,
         chapters: apiCourse.chapters || [],
-        keyTopics: apiCourse.key_topics || [],
-        targetAudience: apiCourse.target_audience || []
+        keyTopics: apiCourse.key_topics || []
       }
-    } else if (apiCourse.type === 'business-plan') {
+    } else if (apiCourse.type === 'business-plan' || apiCourse.course_type === 'business-plan') {
       return {
         ...baseCourse,
-        category: apiCourse.category || 'Business',
-        preview: apiCourse.preview_image || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=240&fit=crop',
-        pages: apiCourse.pages || 0,
+        preview: apiCourse.thumbnail_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=240&fit=crop',
+        pages: apiCourse.page_count || 0,
         sections: apiCourse.sections_count || 0,
         downloads: apiCourse.downloads_count || 0,
-        format: apiCourse.format || 'DOCX',
         planSections: apiCourse.plan_sections || [],
         includes: apiCourse.includes || []
       }
@@ -146,22 +163,22 @@ const Courses = () => {
 
   const filterOptions = {
     videos: {
-      category: ['Business', 'Technology', 'Marketing', 'Finance', 'Design', 'Health', 'Education', 'Personal Development', 'Leadership', 'Entrepreneurship', 'Data Science', 'Programming', 'Photography', 'Music', 'Art'],
+      category: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
       level: ['Beginner', 'Intermediate', 'Advanced', 'Expert'],
       language: ['English', 'Swahili', 'Arabic', 'French', 'Spanish', 'Portuguese', 'Italian', 'Dutch'],
       price: ['Free', 'Paid'],
       format: ['Course', 'Tutorial', 'Webinar', 'Documentary', 'Interview', 'Workshop']
     },
     books: {
-      category: ['Business', 'Technology', 'Self-Help', 'Biography', 'Finance', 'Marketing', 'Leadership', 'Health', 'Education', 'Fiction', 'Non-Fiction', 'History', 'Science', 'Philosophy'],
+      category: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
       format: ['PDF', 'EPUB', 'MOBI', 'Audiobook', 'Physical'],
       language: ['English', 'Swahili', 'Arabic', 'French', 'Spanish', 'Portuguese', 'Italian', 'Dutch'],
       authorType: ['Bestselling Author', 'Industry Expert', 'Academic', 'Entrepreneur']
     },
     businessPlans: {
-      industrySector: ['Technology', 'Healthcare', 'Retail', 'Food & Beverage', 'Manufacturing', 'Consulting', 'Real Estate', 'Education', 'Entertainment', 'Agriculture', 'Transportation', 'Energy'],
-      businessType: ['Startup', 'Small Business', 'Enterprise', 'Non-Profit', 'Franchise', 'E-commerce', 'Service-Based', 'Product-Based'],
-      stage: ['Idea Stage', 'Startup', 'Growth', 'Expansion', 'Established']
+      industrySector: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
+      businessType: ['Startup', 'Small Business', 'Enterprise', 'Non-profit', 'Franchise', 'Online Business'],
+      stage: ['Idea', 'Planning', 'Launch', 'Growth', 'Established']
     }
   }
 
@@ -396,7 +413,19 @@ const Courses = () => {
           marginTop: '12px' 
         }}>
           <button 
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (video.video_url) {
+                const fullUrl = video.video_url.startsWith('http')
+                  ? video.video_url
+                  : `http://localhost:8000${video.video_url}`;
+                setVideoUrl(fullUrl);
+                setVideoTitle(video.title);
+                setShowVideoPlayer(true);
+              } else {
+                alert('Video file not available');
+              }
+            }}
             style={{
             flex: 1,
             backgroundColor: 'white',
@@ -604,7 +633,17 @@ const Courses = () => {
             Preview
           </button>
           <button 
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (book.download_url) {
+                const fullUrl = book.download_url.startsWith('http')
+                  ? book.download_url
+                  : `http://localhost:8000${book.download_url}`;
+                window.open(fullUrl, '_blank');
+              } else {
+                alert('Download file not available');
+              }
+            }}
             style={{
             flex: 1,
             backgroundColor: '#16a34a',
@@ -777,7 +816,17 @@ const Courses = () => {
             Preview
           </button>
           <button 
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (plan.download_url) {
+                const fullUrl = plan.download_url.startsWith('http')
+                  ? plan.download_url
+                  : `http://localhost:8000${plan.download_url}`;
+                window.open(fullUrl, '_blank');
+              } else {
+                alert('Download file not available');
+              }
+            }}
             style={{
             flex: 1,
             backgroundColor: '#16a34a',
@@ -1250,12 +1299,13 @@ const Courses = () => {
 
               {/* Content */}
               <div style={{ padding: screenSize.isMobile ? '16px 12px' : '24px' }}>
-                {/* Type and Status */}
+                {/* Header with Type, Category, Level, Duration/Pages */}
                 <div style={{
                   display: 'flex',
-                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  marginBottom: '16px'
+                  gap: '8px',
+                  marginBottom: '16px',
+                  flexWrap: 'wrap'
                 }}>
                   <span style={{
                     fontSize: '12px',
@@ -1268,16 +1318,34 @@ const Courses = () => {
                   }}>
                     {selectedItem.type === 'business-plan' ? 'Business Plan' : selectedItem.type}
                   </span>
-                  <span style={{
-                    fontSize: '12px',
-                    color: 'white',
-                    backgroundColor: selectedItem.isPro ? '#3b82f6' : '#16a34a',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontWeight: '600'
-                  }}>
-                    {selectedItem.isPro ? 'PRO' : 'FREE'}
+                  <span style={{ color: '#64748b' }}>•</span>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>
+                    {selectedItem.category}
                   </span>
+                  <span style={{ color: '#64748b' }}>•</span>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>
+                    {selectedItem.level || 'beginner'}
+                  </span>
+                  {(selectedItem.type === 'video' || selectedItem.type === 'video') && (selectedItem.duration || selectedItem.duration_hours || selectedItem.duration_minutes) && (
+                    <>
+                      <span style={{ color: '#64748b' }}>•</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.duration ||
+                          (selectedItem.duration_hours && selectedItem.duration_minutes ?
+                            `${selectedItem.duration_hours}h ${selectedItem.duration_minutes}m` :
+                            selectedItem.duration_hours ? `${selectedItem.duration_hours}h` :
+                            `${selectedItem.duration_minutes}m`)}
+                      </span>
+                    </>
+                  )}
+                  {(selectedItem.type === 'book' || selectedItem.type === 'business-plan') && selectedItem.page_count && (
+                    <>
+                      <span style={{ color: '#64748b' }}>•</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.page_count} pages
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 {/* Title */}
@@ -1360,6 +1428,113 @@ const Courses = () => {
                   </div>
                 )}
 
+                {/* Course Details */}
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    margin: '0 0 12px 0'
+                  }}>
+                    Course Details
+                  </h3>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '12px',
+                    backgroundColor: '#f8fafc',
+                    padding: '16px',
+                    borderRadius: '8px'
+                  }}>
+                    {selectedItem.type === 'video' && (
+                      <>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Type</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>Video Course</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Instructor</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.instructor}</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Duration</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.duration || 'Not specified'}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Level</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.level}</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Language</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.language}</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Downloads</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.students || 0}</div>
+                        </div>
+                      </>
+                    )}
+                    {selectedItem.type === 'book' && (
+                      <>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Type</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>Book</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Author</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.author}</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Pages</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.page_count || selectedItem.pages || 0}</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Format</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.format}</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Language</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.language}</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Author Type</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.author_type || selectedItem.authorType}</div>
+                        </div>
+                      </>
+                    )}
+                    {selectedItem.type === 'business-plan' && (
+                      <>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Type</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>Business Plan</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Pages</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.page_count || selectedItem.pages || 0}</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.industry_sector || selectedItem.category}</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Business Type</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.business_type}</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Stage</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.stage}</div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Format</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.format}</div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
                 {/* Description */}
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{
@@ -1368,7 +1543,7 @@ const Courses = () => {
                     color: '#1a1a1a',
                     margin: '0 0 8px 0'
                   }}>
-                    Overview
+                    Course Description
                   </h3>
                   <p style={{
                     fontSize: '14px',
@@ -1582,7 +1757,7 @@ const Courses = () => {
                 )}
 
                 {/* Tags */}
-                {selectedItem.tags && (
+                {selectedItem.tags && selectedItem.tags.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{
                       fontSize: '16px',
@@ -1590,7 +1765,7 @@ const Courses = () => {
                       color: '#1a1a1a',
                       margin: '0 0 8px 0'
                     }}>
-                      Topics
+                      Tags
                     </h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {selectedItem.tags.map((tag, index) => (
@@ -1609,8 +1784,180 @@ const Courses = () => {
                   </div>
                 )}
 
+                {/* Action Buttons */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: '16px',
+                  marginTop: '24px',
+                  paddingTop: '20px',
+                  borderTop: '1px solid #e2e8f0'
+                }}>
+                  {selectedItem.type === 'video' && selectedItem.video_url && (
+                    <button
+                      onClick={() => {
+                        const fullUrl = selectedItem.video_url.startsWith('http')
+                          ? selectedItem.video_url
+                          : `http://localhost:8000${selectedItem.video_url}`;
+                        setVideoUrl(fullUrl);
+                        setVideoTitle(selectedItem.title);
+                        setShowVideoPlayer(true);
+                      }}
+                      style={{
+                        backgroundColor: '#f97316',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 24px',
+                        borderRadius: '12px',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = '#ea580c';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = '#f97316';
+                      }}
+                    >
+                      <Play size={18} />
+                      Watch Video
+                    </button>
+                  )}
+
+                  {(selectedItem.type === 'book' || selectedItem.type === 'business-plan') && selectedItem.download_url && (
+                    <button
+                      onClick={() => {
+                        const fullUrl = selectedItem.download_url.startsWith('http')
+                          ? selectedItem.download_url
+                          : `http://localhost:8000${selectedItem.download_url}`;
+                        window.open(fullUrl, '_blank');
+                      }}
+                      style={{
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 24px',
+                        borderRadius: '12px',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = '#2563eb';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = '#3b82f6';
+                      }}
+                    >
+                      <Download size={18} />
+                      Download {selectedItem.type === 'book' ? 'Book' : selectedItem.type === 'business-plan' ? 'Business Plan' : 'File'}
+                    </button>
+                  )}
+                </div>
+
 
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Video Player Modal */}
+        {showVideoPlayer && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000
+          }}
+          onClick={() => setShowVideoPlayer(false)}>
+            <div style={{
+              position: 'relative',
+              backgroundColor: 'black',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              width: 'auto',
+              height: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}>
+              {/* Close button */}
+              <button
+                onClick={() => setShowVideoPlayer(false)}
+                style={{
+                  position: 'absolute',
+                  top: '10px',
+                  right: '10px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '20px',
+                  zIndex: 10
+                }}
+              >
+                ×
+              </button>
+
+              {/* Video title */}
+              {videoTitle && (
+                <div style={{
+                  position: 'absolute',
+                  top: '10px',
+                  left: '10px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  color: 'white',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  zIndex: 10,
+                  maxWidth: 'calc(100% - 120px)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {videoTitle}
+                </div>
+              )}
+
+              {/* Video player */}
+              <video
+                src={videoUrl}
+                controls
+                autoPlay
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  minWidth: '400px',
+                  minHeight: '300px',
+                  maxWidth: '90vw',
+                  maxHeight: '90vh'
+                }}
+              >
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
         )}
