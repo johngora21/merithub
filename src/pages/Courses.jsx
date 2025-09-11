@@ -16,7 +16,9 @@ import {
   Eye,
   DollarSign,
   X,
-  Check
+  Check,
+  Building,
+  Briefcase
 } from 'lucide-react'
 
 const Courses = () => {
