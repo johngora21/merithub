@@ -136,7 +136,7 @@ const Courses = () => {
     try {
       setLoading(true)
       const response = await apiService.get('/courses')
-      const apiCourses = response.data.courses || []
+      const apiCourses = response.courses || []
       
       // Transform and categorize courses
       const transformedCourses = {
