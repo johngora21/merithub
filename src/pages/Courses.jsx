@@ -74,14 +74,14 @@ const Courses = () => {
   }, [])
   const [filters, setFilters] = useState({
     videos: {
-      category: [],
+      industry: [],
       level: [],
       language: [],
       price: [],
       format: []
     },
     books: {
-      category: [],
+      industry: [],
       format: [],
       language: [],
       authorType: []
@@ -137,8 +137,8 @@ const Courses = () => {
       target_audience: apiCourse.target_audience || null,
       download_url: apiCourse.download_url || null,
       video_url: apiCourse.video_url || null,
-      // Map category from category field for display
-      category: apiCourse.category || 'General',
+      // Map industry from industry_sector field for display
+      industry: apiCourse.industry_sector || 'General',
       downloads: apiCourse.downloads ?? apiCourse.downloads_count ?? 0
     }
 
@@ -232,14 +232,14 @@ const Courses = () => {
 
   const filterOptions = {
     videos: {
-      category: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
+      industry: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
       level: ['Beginner', 'Intermediate', 'Advanced', 'Expert'],
       language: ['English', 'Swahili', 'Arabic', 'French', 'Spanish', 'Portuguese', 'Italian', 'Dutch'],
       price: ['Free', 'Paid'],
       format: ['Course', 'Tutorial', 'Webinar', 'Documentary', 'Interview', 'Workshop']
     },
     books: {
-      category: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
+      industry: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
       format: ['PDF', 'EPUB', 'MOBI', 'Audiobook', 'Physical'],
       language: ['English', 'Swahili', 'Arabic', 'French', 'Spanish', 'Portuguese', 'Italian', 'Dutch'],
       authorType: ['Bestselling Author', 'Industry Expert', 'Academic', 'Entrepreneur']
@@ -360,14 +360,14 @@ const Courses = () => {
     const tabKey = activeTab === 'business-plans' ? 'businessPlans' : activeTab
     const defaultFilters = {
       videos: {
-        category: [],
+        industry: [],
         level: [],
         language: [],
         price: [],
         format: []
       },
       books: {
-        category: [],
+        industry: [],
         format: [],
         language: [],
         authorType: []
@@ -528,7 +528,7 @@ const Courses = () => {
           marginBottom: '12px'
         }}>
           <Building size={14} />
-          <span>{video.category || '—'}</span>
+          <span>{video.industry || '—'}</span>
         </div>
 
         {/* Stats */}
@@ -775,7 +775,7 @@ const Courses = () => {
           marginBottom: '12px'
         }}>
           <Building size={14} />
-          <span>{book.category || '—'}</span>
+          <span>{book.industry || '—'}</span>
           {book.author_type && (
             <>
               <span style={{ color: '#cbd5e1' }}>|</span>
@@ -1014,7 +1014,7 @@ const Courses = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Building size={14} />
-            <span>{plan.category || '—'}</span>
+            <span>{plan.industry || '—'}</span>
             <Briefcase size={14} />
             <span style={{ fontWeight: 600 }}>{plan.business_type || '—'}</span>
                   </div>
@@ -1426,7 +1426,7 @@ const Courses = () => {
                       color: '#1a1a1a',
                       margin: '0 0 12px 0'
                     }}>
-                      {categoryKey === 'industrySector' ? 'Industry Sector' :
+                      {categoryKey === 'industrySector' || categoryKey === 'industry' ? 'Industry Sector' :
                        categoryKey === 'businessType' ? 'Business Type' :
                        categoryKey === 'authorType' ? 'Author Type' :
                        categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1)}
@@ -1587,7 +1587,7 @@ const Courses = () => {
                   {selectedItem.title}
                 </h2>
 
-                    {/* Category • Level • Duration/Pages */}
+                    {/* Industry Sector • Level • Duration/Pages */}
                 <div style={{
                   display: 'flex',
                       alignItems: 'center',
@@ -1596,7 +1596,7 @@ const Courses = () => {
                       flexWrap: 'wrap'
                     }}>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
-                        {selectedItem.category}
+                        {selectedItem.industry_sector}
                       </span>
                       <span style={{ color: '#64748b' }}>•</span>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
@@ -1645,9 +1645,9 @@ const Courses = () => {
                       </div>
                       </div>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Category</span>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry Sector</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.category}
+                            {selectedItem.industry}
                       </div>
                 </div>
                         <div>
@@ -1659,7 +1659,7 @@ const Courses = () => {
                         <div>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.category}
+                            {selectedItem.industry}
                         </div>
                         </div>
                         {selectedItem.language && (

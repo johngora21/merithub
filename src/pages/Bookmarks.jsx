@@ -213,8 +213,8 @@ const Bookmarks = () => {
         title: o.title,
         organization: o.organization,
         company: o.organization,
-        category: o.category || 'Not specified',
-        industry: o.category || 'Not specified',
+        industry_sector: o.industry_sector || 'Not specified',
+        industry: o.industry_sector || 'Not specified',
         location: o.location || 'Not specified',
         country: getCountryName(o.country),
         duration: o.duration || 'Not specified',
@@ -378,7 +378,7 @@ const Bookmarks = () => {
         target_audience: c.target_audience || null,
         download_url: c.download_url || null,
         video_url: c.video_url || null,
-        category: c.category || 'General',
+        industry: c.industry_sector || 'General',
         thumbnail_url: c.thumbnail_url || null
       }
 
@@ -540,7 +540,7 @@ const Bookmarks = () => {
         id: 'opportunity-1',
         title: 'Scholarship Program',
         organization: 'Education Foundation',
-        category: 'Education',
+        industry_sector: 'Education',
         location: 'Remote',
         country: 'US',
         duration: '1 year',
@@ -1369,7 +1369,7 @@ const Bookmarks = () => {
                         marginBottom: '12px',
                         fontWeight: '500'
                       }}>
-                        {bookmark.organization || bookmark.company || bookmark.category}
+                        {bookmark.organization || bookmark.company || bookmark.industry}
                       </div>
 
                       {/* Key Info Row */}
@@ -1584,7 +1584,7 @@ const Bookmarks = () => {
                         marginBottom: '12px'
                       }}>
                         <Building size={14} />
-                        <span>{bookmark.category || '—'}</span>
+                        <span>{bookmark.industry || '—'}</span>
                       </div>
 
                       {/* Stats */}
@@ -1832,7 +1832,7 @@ const Bookmarks = () => {
                         marginBottom: '12px'
                       }}>
                         <Building size={14} />
-                        <span>{bookmark.category || '—'}</span>
+                        <span>{bookmark.industry || '—'}</span>
                         {bookmark.author_type && (
                           <>
                             <span style={{ color: '#cbd5e1' }}>|</span>
@@ -2072,7 +2072,7 @@ const Bookmarks = () => {
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Building size={14} />
-                          <span>{bookmark.category || '—'}</span>
+                          <span>{bookmark.industry || '—'}</span>
                           <Briefcase size={14} />
                           <span style={{ fontWeight: 600 }}>{bookmark.business_type || '—'}</span>
                         </div>
@@ -2486,41 +2486,41 @@ const Bookmarks = () => {
             
             {/* Header (hidden for media types so image appears at the very top) */}
             {!(selectedItem.type === 'video' || selectedItem.type === 'book' || selectedItem.type === 'business-plan') && (
-              <div style={{ 
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: screenSize.isMobile ? '16px 12px 0 12px' : '24px 24px 0 24px',
-                borderBottom: '1px solid #e5e7eb',
-                paddingBottom: '16px',
-                marginBottom: '16px'
+            <div style={{ 
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: screenSize.isMobile ? '16px 12px 0 12px' : '24px 24px 0 24px',
+              borderBottom: '1px solid #e5e7eb',
+              paddingBottom: '16px',
+              marginBottom: '16px'
+            }}>
+              <h2 style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#1a1a1a',
+                margin: 0
               }}>
-                <h2 style={{
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: '#1a1a1a',
-                  margin: 0
-                }}>
-                  {selectedItem.title}
-                </h2>
-                <button
-                  onClick={() => setShowDetails(false)}
-                  style={{
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    padding: '8px',
-                    borderRadius: '20px',
-                    width: '32px',
-                    height: '32px',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <X size={18} color="#64748b" />
-                </button>
-              </div>
+                {selectedItem.title}
+              </h2>
+              <button
+                onClick={() => setShowDetails(false)}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  padding: '8px',
+                  borderRadius: '20px',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={18} color="#64748b" />
+              </button>
+            </div>
             )}
 
             {/* Content - This will be populated based on selectedItem.type */}
@@ -3064,7 +3064,7 @@ const Bookmarks = () => {
                     >
                       <X size={18} color="#ffffff" />
                     </button>
-                  </div>
+            </div>
 
                   {/* Content - EXACT admin structure */}
                   <div style={{ padding: '0 24px 24px 24px', marginTop: '16px' }}>
@@ -3079,7 +3079,7 @@ const Bookmarks = () => {
                       {selectedItem.title}
                     </h2>
 
-                    {/* Category • Level • Duration/Pages */}
+                    {/* Industry Sector • Level • Duration/Pages */}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -3088,7 +3088,7 @@ const Bookmarks = () => {
                       flexWrap: 'wrap'
                     }}>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
-                        {selectedItem.category}
+                        {selectedItem.industry}
                       </span>
                       <span style={{ color: '#64748b' }}>•</span>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
@@ -3137,9 +3137,9 @@ const Bookmarks = () => {
                           </div>
                         </div>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Category</span>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry Sector</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.category}
+                            {selectedItem.industry}
                           </div>
                         </div>
                         <div>
@@ -3151,7 +3151,7 @@ const Bookmarks = () => {
                         <div>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.category}
+                            {selectedItem.industry}
                           </div>
                         </div>
                         {selectedItem.language && (
@@ -3275,7 +3275,7 @@ const Bookmarks = () => {
                       {selectedItem.title}
                     </h2>
 
-                    {/* Category • Level • Duration/Pages */}
+                    {/* Industry Sector • Level • Duration/Pages */}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -3284,7 +3284,7 @@ const Bookmarks = () => {
                       flexWrap: 'wrap'
                     }}>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
-                        {selectedItem.category}
+                        {selectedItem.industry}
                       </span>
                       <span style={{ color: '#64748b' }}>•</span>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
@@ -3332,9 +3332,9 @@ const Bookmarks = () => {
                           </div>
                         </div>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Category</span>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry Sector</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.category}
+                            {selectedItem.industry}
                           </div>
                         </div>
                         <div>
@@ -3346,7 +3346,7 @@ const Bookmarks = () => {
                         <div>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.category}
+                            {selectedItem.industry}
                           </div>
                         </div>
                         {selectedItem.language && (
@@ -3478,7 +3478,7 @@ const Bookmarks = () => {
                       {selectedItem.title}
                     </h2>
 
-                    {/* Category • Level • Duration/Pages */}
+                    {/* Industry Sector • Level • Duration/Pages */}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -3487,7 +3487,7 @@ const Bookmarks = () => {
                       flexWrap: 'wrap'
                     }}>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
-                        {selectedItem.category}
+                        {selectedItem.industry}
                       </span>
                       <span style={{ color: '#64748b' }}>•</span>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
@@ -3535,9 +3535,9 @@ const Bookmarks = () => {
                           </div>
                         </div>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Category</span>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry Sector</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.category}
+                            {selectedItem.industry}
                           </div>
                         </div>
                         <div>
@@ -3549,7 +3549,7 @@ const Bookmarks = () => {
                         <div>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.category}
+                            {selectedItem.industry}
                           </div>
                         </div>
                         {selectedItem.language && (

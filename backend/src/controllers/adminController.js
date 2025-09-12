@@ -332,15 +332,15 @@ const getDashboardStats = async (req, res) => {
     // Get industry distribution for opportunities
     const opportunitiesByIndustry = await Opportunity.findAll({
       attributes: [
-        'category',
+        'industry_sector',
         [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
       ],
-      group: ['category'],
+      group: ['industry_sector'],
       raw: true
     });
 
     const opportunitiesIndustryDistribution = opportunitiesByIndustry.map(item => ({
-      name: item.category || 'Other',
+      name: item.industry_sector || 'Other',
       value: parseInt(item.count),
       color: `hsl(${Math.random() * 360}, 70%, 50%)`
     }));
@@ -942,7 +942,7 @@ const getAllContent = async (req, res) => {
           location: item.location || 'Unknown Location',
           country: getCountryName(item.country) || 'Unknown',
           sector: item.sector || 'Unknown',
-          category: item.category || 'Unknown',
+          industry_sector: item.industry_sector || 'Unknown',
           contract_value_min: item.contract_value_min || null,
           contract_value_max: item.contract_value_max || null,
           currency: item.currency || 'USD',
@@ -997,7 +997,7 @@ const getAllContent = async (req, res) => {
           type: item.type || 'Opportunity',
           opportunityType: item.type || 'Opportunity', // Store display value directly
           content_type: 'opportunities', // Add content type for frontend
-          category: item.category || 'Unknown',
+          industry_sector: item.industry_sector || 'Unknown',
           amount: item.amount_min && item.amount_max ? 
                   `${item.currency} ${item.amount_min} - ${item.currency} ${item.amount_max}` : 
                   'Amount not specified',
@@ -1100,7 +1100,7 @@ const getAllContent = async (req, res) => {
       } else if (type === 'courses') {
         return {
           ...baseItem,
-          category: item.category || item.subcategory || null,
+          industry_sector: item.industry_sector || item.subcategory || null,
           instructor: item.instructor || 'Unknown Instructor',
           course_type: item.course_type || item.type || 'video',
           duration: item.duration || item.duration_hours || 'Not specified',
@@ -1709,7 +1709,7 @@ const getApplicationsOverview = async (req, res) => {
       id: o.id,
       title: o.title,
       company: o.organization,
-      industry: o.category,
+      industry: o.industry_sector,
       type: o.type,
       location: o.location || o.country || 'Remote',
       country: o.country,
@@ -2002,7 +2002,7 @@ const generateCoverLetter = (user, application) => {
       const jobData = application.job || null;
       const tenderData = application.tender || null;
       const opportunityData = application.opportunity || null;
-      const jobIndustry = jobData?.industry || tenderData?.sector || opportunityData?.category || 'General';
+      const jobIndustry = jobData?.industry || tenderData?.sector || opportunityData?.industry_sector || 'General';
       
       // Check if user has experience in the SAME industry as the job
       const hasJobIndustryExperience = industryExperience[jobIndustry] && industryExperience[jobIndustry] > 0;
@@ -2464,7 +2464,7 @@ const getFinanceData = async (req, res) => {
       expenses: [
         {
           id: '1',
-          category: 'Infrastructure',
+          industry_sector: 'Infrastructure',
           amount: 2500,
           description: 'AWS Hosting',
           date: '2024-01-10',
@@ -2472,7 +2472,7 @@ const getFinanceData = async (req, res) => {
         },
         {
           id: '2',
-          category: 'Marketing',
+          industry_sector: 'Marketing',
           amount: 1200,
           description: 'Google Ads',
           date: '2024-01-08',

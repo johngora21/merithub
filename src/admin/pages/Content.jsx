@@ -128,14 +128,14 @@ const Content = () => {
   const [showCourseFilters, setShowCourseFilters] = useState(false)
   const [courseFilters, setCourseFilters] = useState({
     videos: {
-      category: [],
+      industry: [],
       level: [],
       language: [],
       price: [],
       format: []
     },
     books: {
-      category: [],
+      industry: [],
       format: [],
       language: [],
       authorType: []
@@ -155,14 +155,14 @@ const Content = () => {
   // Course filter options (copied from Merit app)
   const courseFilterOptions = {
     videos: {
-      category: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
+      industry: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
       level: ['Beginner', 'Intermediate', 'Advanced', 'Expert'],
       language: ['English', 'Swahili', 'Arabic', 'French', 'Spanish', 'Portuguese', 'Italian', 'Dutch'],
       price: ['Free', 'Paid'],
       format: ['Course', 'Tutorial', 'Webinar', 'Documentary', 'Interview', 'Workshop']
     },
     books: {
-      category: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
+      industry: ['Technology', 'Finance', 'Healthcare', 'Education', 'Energy', 'Utilities', 'Manufacturing', 'Industrial', 'Consumer', 'Retail', 'Food', 'Agriculture', 'Media', 'Entertainment', 'Marketing', 'Design', 'Real Estate', 'Construction', 'Transportation', 'Logistics', 'Government', 'Nonprofit', 'Legal', 'HR', 'Business', 'Consulting', 'Arts', 'Lifestyle', 'Leadership', 'Personal Development', 'Communication', 'Psychology', 'Coaching', 'Mentoring', 'Motivation', 'Productivity', 'Time Management', 'Goal Setting', 'Career Development', 'Networking', 'Public Speaking', 'Team Building', 'Conflict Resolution', 'Emotional Intelligence', 'Mindfulness', 'Wellness', 'Fitness', 'Nutrition', 'Mental Health', 'Relationships', 'Parenting', 'Finance & Money', 'Entrepreneurship', 'Innovation', 'Creativity', 'Problem Solving', 'Critical Thinking', 'Research', 'Writing', 'Language Learning', 'Travel', 'Culture', 'History', 'Philosophy', 'Religion', 'Spirituality', 'Other'],
       format: ['PDF', 'EPUB', 'MOBI', 'Audiobook', 'Physical'],
       language: ['English', 'Swahili', 'Arabic', 'French', 'Spanish', 'Portuguese', 'Italian', 'Dutch'],
       authorType: ['Bestselling Author', 'Industry Expert', 'Academic', 'Entrepreneur']
@@ -191,14 +191,14 @@ const Content = () => {
     const tabKey = activeCourseTab === 'business-plans' ? 'businessPlans' : activeCourseTab
     const defaultFilters = {
       videos: {
-        category: [],
+        industry: [],
         level: [],
         language: [],
         price: [],
         format: []
       },
       books: {
-        category: [],
+        industry: [],
         format: [],
         language: [],
         authorType: []
@@ -245,7 +245,7 @@ const Content = () => {
     duration_hours: '',
     duration_minutes: '',
     language: 'English',
-    category: '',
+    industry: '',
     level: 'Beginner',
     format: '',
     price: 'Free',
@@ -457,7 +457,7 @@ const Content = () => {
     duration_hours: '',
     duration_minutes: '',
       language: 'English',
-      category: '',
+      industry: '',
       level: 'Beginner',
       format: '',
       price: 'Free',
@@ -508,7 +508,7 @@ const Content = () => {
         title: courseFormData.title,
         description: courseFormData.description,
         instructor: (courseFormData.instructor || courseFormData.author || ''),
-        category: courseFormData.category,
+        industry_sector: courseFormData.industry,
         level: (courseFormData.level || 'Beginner').toLowerCase(),
         duration_hours: courseFormData.duration_hours ? parseInt(courseFormData.duration_hours, 10) : null,
         duration_minutes: courseFormData.duration_minutes ? parseInt(courseFormData.duration_minutes, 10) : null,
@@ -1444,7 +1444,7 @@ Merit Consultants Team`,
       author: authorFromApi || '',
       author_type: apiCourse.author_type || '',
       business_type: apiCourse.business_type || '',
-      industry_sector: apiCourse.industry_sector || '',
+      industry: apiCourse.industry_sector || '',
       stage: apiCourse.stage || '',
       page_count: apiCourse.page_count || null,
       file_size: apiCourse.file_size || '',
@@ -1458,7 +1458,7 @@ Merit Consultants Team`,
       language: apiCourse.language || 'English',
       price: apiCourse.price || (apiCourse.is_free ? 'Free' : 'Pro') || 'Free',
       description: apiCourse.description || '',
-      category: apiCourse.category || '',
+      industry: apiCourse.industry_sector || '',
       tags: Array.isArray(apiCourse?.learning_objectives) ? apiCourse.learning_objectives : [],
       approval_status: apiCourse.approval_status || 'approved',
       status: apiCourse.status || 'published',
@@ -2136,7 +2136,7 @@ Merit Consultants Team`,
               marginBottom: '12px',
               fontWeight: '500'
             }}>
-              {item.organization || item.category}
+              {item.organization || item.industry}
             </div>
 
             {/* Amount, Duration, Location */}
@@ -3011,7 +3011,7 @@ Merit Consultants Team`,
             columns={[
               { key: 'title', label: 'Tender Title' },
               { key: 'organization', label: 'Organization' },
-              { key: 'category', label: 'Category' },
+              { key: 'industry_sector', label: 'Industry Sector' },
               { 
                 key: 'status', 
                 label: 'Status',
@@ -3362,7 +3362,7 @@ Merit Consultants Team`,
                         marginBottom: '12px'
                       }}>
                         <Building size={14} />
-                        <span>{video.category || '—'}</span>
+                        <span>{video.industry || '—'}</span>
                       </div>
 
                       {/* Description removed per requirement */}
@@ -3568,7 +3568,7 @@ Merit Consultants Team`,
                         marginBottom: '12px'
                       }}>
                         <Building size={14} />
-                        <span>{book.category || '—'}</span>
+                        <span>{book.industry || '—'}</span>
                         {book.author_type && (
                           <>
                             <span style={{ color: '#cbd5e1' }}>|</span>
@@ -3792,7 +3792,7 @@ Merit Consultants Team`,
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Building size={14} />
-ill fau                          <span>{plan.category || '—'}</span>
+ill fau                          <span>{plan.industry || '—'}</span>
                           <Briefcase size={14} />
                           <span style={{ fontWeight: 600 }}>{plan.business_type || '—'}</span>
                         </div>
@@ -4611,8 +4611,8 @@ ill fau                          <span>{plan.category || '—'}</span>
                     </label>
                     <select
                       required
-                      value={courseFormData.category}
-                      onChange={(e) => handleCourseInputChange('category', e.target.value)}
+                      value={courseFormData.industry}
+                      onChange={(e) => handleCourseInputChange('industry', e.target.value)}
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -6238,7 +6238,7 @@ ill fau                          <span>{plan.category || '—'}</span>
                     <div style={{ flex: 1 }}>
                       <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#1a1a1a', margin: '0 0 6px 0' }}>{selectedItem.title}</h2>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', fontSize: '14px', color: '#64748b' }}>
-                        <span>{selectedItem.category || 'Uncategorized'}</span>
+                        <span>{selectedItem.industry || 'Uncategorized'}</span>
                         <span>•</span>
                         <span>{selectedItem.level || 'Beginner'}</span>
                         {(selectedItem.type === 'video' || selectedItem.course_type === 'video') && (selectedItem.duration || selectedItem.duration_hours || selectedItem.duration_minutes) ? (<>
@@ -6289,8 +6289,8 @@ ill fau                          <span>{plan.category || '—'}</span>
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.downloads ?? selectedItem.download_count ?? selectedItem.enrollment_count ?? 0}</p>
                     </div>
                     <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Category</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.category || 'N/A'}</p>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry Sector</label>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.industry || 'N/A'}</p>
                     </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Level</label>
@@ -6298,7 +6298,7 @@ ill fau                          <span>{plan.category || '—'}</span>
                       </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.industry_sector || selectedItem.category || 'N/A'}</p>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.industry || 'N/A'}</p>
                       </div>
                       {(selectedItem.type === 'video' || selectedItem.type === 'book' || selectedItem.course_type === 'video' || selectedItem.course_type === 'book') && (
                         <div>
@@ -7111,7 +7111,7 @@ ill fau                          <span>{plan.category || '—'}</span>
                       }}>
                         <span>{selectedItem.instructor || selectedItem.author}</span>
                         <span>•</span>
-                        <span>{typeof selectedItem.category === 'string' ? selectedItem.category : selectedItem.category?.name || selectedItem.category?.title || 'Unknown'}</span>
+                        <span>{typeof selectedItem.industry === 'string' ? selectedItem.industry : selectedItem.industry?.name || selectedItem.industry?.title || 'Unknown'}</span>
                         <span>•</span>
                         <span>{typeof selectedItem.level === 'string' ? selectedItem.level : selectedItem.level?.name || selectedItem.level?.title || 'Unknown'}</span>
                       </div>
@@ -8407,7 +8407,7 @@ ill fau                          <span>{plan.category || '—'}</span>
                     color: '#1a1a1a',
                     margin: '0 0 12px 0'
                   }}>
-                    {categoryKey === 'industrySector' ? 'Industry Sector' :
+                    {categoryKey === 'industrySector' || categoryKey === 'industry' ? 'Industry Sector' :
                      categoryKey === 'businessType' ? 'Business Type' :
                      categoryKey === 'authorType' ? 'Author Type' :
                      categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1)}

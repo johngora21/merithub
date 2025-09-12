@@ -336,7 +336,7 @@ export interface Tender {
   organization: string;
   organization_logo?: string;
   sector: 'government' | 'healthcare' | 'transportation' | 'private' | 'manufacturing' | 'education' | 'other';
-  category: string;
+  industry: string;
   contract_value_min?: number;
   contract_value_max?: number;
   currency: string;
@@ -372,7 +372,7 @@ export interface Opportunity {
   organization: string;
   organization_logo?: string;
   type: 'scholarship' | 'fellowship' | 'grant' | 'program' | 'internship' | 'competition' | 'volunteer';
-  category: string;
+  industry: string;
   amount_min?: number;
   amount_max?: number;
   currency: string;

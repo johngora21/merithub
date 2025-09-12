@@ -27,10 +27,6 @@ const Course = sequelize.define('Course', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  category: {
-    type: DataTypes.STRING(100),
-    allowNull: false
-  },
   subcategory: {
     type: DataTypes.STRING(100),
     allowNull: true
@@ -188,7 +184,6 @@ const Course = sequelize.define('Course', {
   tableName: 'courses',
   timestamps: true,
   indexes: [
-    { fields: ['category'] },
     { fields: ['level'] },
     { fields: ['status'] },
     { fields: ['is_free'] },
