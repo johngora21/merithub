@@ -138,7 +138,8 @@ const Courses = () => {
       download_url: apiCourse.download_url || null,
       video_url: apiCourse.video_url || null,
       // Map category from category field for display
-      category: apiCourse.category || 'General'
+      category: apiCourse.category || 'General',
+      downloads: apiCourse.downloads ?? apiCourse.downloads_count ?? 0
     }
 
     // Transform based on course type
@@ -542,7 +543,7 @@ const Courses = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Download size={14} />
-              {(video.download_count ?? video.enrollment_count ?? video.students ?? 0)} downloads
+              {(video.downloads ?? video.download_count ?? video.enrollment_count ?? video.students ?? 0)} downloads
             </div>
             <span style={{
               backgroundColor: '#f3f4f6',
@@ -799,7 +800,7 @@ const Courses = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Download size={14} />
-              {(book.download_count ?? 0)} downloads
+              {(book.downloads ?? book.download_count ?? 0)} downloads
             </div>
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
@@ -1035,7 +1036,7 @@ const Courses = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Download size={14} />
-              {(plan.download_count ?? plan.enrollment_count ?? plan.downloads ?? 0)} downloads
+              {(plan.downloads ?? plan.download_count ?? plan.enrollment_count ?? 0)} downloads
             </div>
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>

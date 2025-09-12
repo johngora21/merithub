@@ -1598,7 +1598,7 @@ const Bookmarks = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <Download size={14} />
-                            {(bookmark.download_count ?? bookmark.enrollment_count ?? bookmark.students ?? 0)} downloads
+                            {(bookmark.downloads ?? bookmark.download_count ?? bookmark.enrollment_count ?? bookmark.students ?? 0)} downloads
                           </div>
                           <span style={{
                             backgroundColor: '#f3f4f6',
@@ -1853,7 +1853,7 @@ const Bookmarks = () => {
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <Download size={14} />
-                            {(bookmark.download_count ?? 0)} downloads
+                            {(bookmark.downloads ?? bookmark.download_count ?? 0)} downloads
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '6px' }}>
@@ -2088,7 +2088,7 @@ const Bookmarks = () => {
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <Download size={14} />
-                            {(bookmark.download_count ?? bookmark.enrollment_count ?? bookmark.downloads ?? 0)} downloads
+                            {(bookmark.downloads ?? bookmark.download_count ?? bookmark.enrollment_count ?? 0)} downloads
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '6px' }}>

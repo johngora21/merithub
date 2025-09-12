@@ -107,6 +107,10 @@ const Course = sequelize.define('Course', {
     type: DataTypes.INTEGER,
     defaultValue: 0
   },
+  downloads: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
   created_by: {
     type: DataTypes.INTEGER,
     allowNull: true,
