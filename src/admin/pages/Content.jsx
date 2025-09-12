@@ -3853,7 +3853,7 @@ Merit Consultants Team`,
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Building size={14} />
-                          <span>{plan.category || '—'}</span>
+ill fau                          <span>{plan.category || '—'}</span>
                           <Briefcase size={14} />
                           <span style={{ fontWeight: 600 }}>{plan.business_type || '—'}</span>
                         </div>
@@ -6512,6 +6512,85 @@ Merit Consultants Team`,
                     </div>
                   )}
 
+                  {/* Action Buttons */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '16px',
+                    marginTop: '24px',
+                    paddingTop: '20px',
+                    borderTop: '1px solid #e2e8f0'
+                  }}>
+                    {(selectedItem.course_type === 'video' || selectedItem.type === 'video') && selectedItem.video_url && (
+                      <button
+                        onClick={() => {
+                          const fullUrl = selectedItem.video_url.startsWith('http') 
+                            ? selectedItem.video_url 
+                            : `http://localhost:8000${selectedItem.video_url}`;
+                          setVideoUrl(fullUrl);
+                          setVideoTitle(selectedItem.title);
+                          setShowVideoPlayer(true);
+                        }}
+                        style={{
+                          backgroundColor: '#f97316',
+                          color: 'white',
+                          border: 'none',
+                          padding: '12px 24px',
+                          borderRadius: '12px',
+                          fontSize: '16px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#ea580c';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#f97316';
+                        }}
+                      >
+                        <Play size={18} />
+                        Watch Video
+                      </button>
+                    )}
+                    
+                    {(selectedItem.course_type === 'book' || selectedItem.course_type === 'business-plan' || selectedItem.type === 'book' || selectedItem.type === 'business-plan') && selectedItem.download_url && (
+                      <button
+                        onClick={() => {
+                          const fullUrl = selectedItem.download_url.startsWith('http') 
+                            ? selectedItem.download_url 
+                            : `http://localhost:8000${selectedItem.download_url}`;
+                          window.open(fullUrl, '_blank');
+                        }}
+                        style={{
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          border: 'none',
+                          padding: '12px 24px',
+                          borderRadius: '12px',
+                          fontSize: '16px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = '#2563eb';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = '#3b82f6';
+                        }}
+                      >
+                        <Download size={18} />
+                        Download {selectedItem.course_type === 'book' ? 'Book' : selectedItem.course_type === 'business-plan' ? 'Business Plan' : 'File'}
+                      </button>
+                    )}
+                  </div>
 
                 </div>
               )}
@@ -7250,7 +7329,8 @@ Merit Consultants Team`,
                     </p>
                   </div>
 
-                  {/* Course Details */}
+                  {/* Chapters/Content Structure */}
+                  {selectedItem.chapters && (
                     <div style={{ marginBottom: '24px' }}>
                       <h3 style={{
                         fontSize: '18px',
@@ -7258,156 +7338,342 @@ Merit Consultants Team`,
                         color: '#1a1a1a',
                         margin: '0 0 12px 0'
                       }}>
-                      Course Details
+                        Course Content
                       </h3>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                      gap: '12px',
-                      backgroundColor: '#f8fafc',
-                      padding: '16px',
-                      borderRadius: '8px'
-                    }}>
-                      <div>
-                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Type</span>
-                        <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                          {selectedItem.type === 'video' ? 'Video Course' : selectedItem.type === 'book' ? 'Book' : 'Business Plan'}
-                        </div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Instructor</span>
-                        <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                          {selectedItem.instructor || selectedItem.author}
-                        </div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Downloads</span>
-                        <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                          {selectedItem.enrollment_count || 0}
-                        </div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Category</span>
-                        <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                          {selectedItem.category}
-                        </div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Level</span>
-                        <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                          {selectedItem.level}
-                        </div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
-                        <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                          {selectedItem.category}
-                        </div>
-                      </div>
-                      {selectedItem.language && (
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Language</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.language}
-                          </div>
-                    </div>
-                  )}
-                      {selectedItem.format && (
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Format</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.format}
-                          </div>
-                    </div>
-                  )}
-                      {selectedItem.duration_hours && (
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Duration</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.duration_hours}h {selectedItem.duration_minutes ? `${selectedItem.duration_minutes}m` : ''}
-                          </div>
-                    </div>
-                  )}
-                      {selectedItem.page_count && (
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Pages</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.page_count} pages
-                          </div>
-                    </div>
-                  )}
-                      {selectedItem.author_type && (
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Author Type</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.author_type}
-                      </div>
-                    </div>
-                  )}
-                      {selectedItem.business_type && (
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Business Type</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.business_type}
-                          </div>
-                        </div>
-                      )}
-                      {selectedItem.stage && (
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Stage</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.stage}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Course Description */}
-                    <div style={{ marginBottom: '24px' }}>
-                      <h3 style={{
-                        fontSize: '18px',
-                        fontWeight: '600',
-                        color: '#1a1a1a',
-                      margin: '0 0 8px 0'
-                      }}>
-                      Course Description
-                      </h3>
-                    <p style={{
-                      fontSize: '14px',
-                      color: '#64748b',
-                      lineHeight: '1.6',
+                      <ul style={{
+                        listStyle: 'none',
+                        padding: 0,
                         margin: 0
                       }}>
-                      {selectedItem.description}
-                    </p>
+                        {selectedItem.chapters.map((chapter, index) => (
+                          <li key={index} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px',
+                            marginBottom: '8px',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                            color: '#374151'
+                          }}>
+                            <span style={{
+                              backgroundColor: '#16a34a',
+                              color: 'white',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginTop: '2px'
+                            }}>
+                              {index + 1}
+                            </span>
+                            {chapter}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
+                  )}
 
-                  {/* Tags */}
-                  {selectedItem.tags && selectedItem.tags.length > 0 && (
+                  {/* Learning Outcomes */}
+                  {selectedItem.learningOutcomes && (
                     <div style={{ marginBottom: '24px' }}>
                       <h3 style={{
                         fontSize: '18px',
                         fontWeight: '600',
                         color: '#1a1a1a',
-                        margin: '0 0 8px 0'
+                        margin: '0 0 12px 0'
                       }}>
-                        Tags
+                        What You'll Learn
                       </h3>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {selectedItem.tags.map((tag, index) => (
+                      <ul style={{
+                        listStyle: 'none',
+                        padding: 0,
+                        margin: 0
+                      }}>
+                        {selectedItem.learningOutcomes.map((outcome, index) => (
+                          <li key={index} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px',
+                            marginBottom: '8px',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                            color: '#374151'
+                          }}>
+                            <span style={{
+                              color: '#16a34a',
+                              fontSize: '16px',
+                              lineHeight: '1',
+                              marginTop: '2px'
+                            }}>✓</span>
+                            {outcome}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Prerequisites */}
+                  {selectedItem.prerequisites && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Prerequisites
+                      </h3>
+                      <ul style={{
+                        listStyle: 'none',
+                        padding: 0,
+                        margin: 0
+                      }}>
+                        {selectedItem.prerequisites.map((prerequisite, index) => (
+                          <li key={index} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px',
+                            marginBottom: '8px',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                            color: '#374151'
+                          }}>
+                            <span style={{
+                              color: '#f59e0b',
+                              fontSize: '16px',
+                              lineHeight: '1',
+                              marginTop: '2px'
+                            }}>•</span>
+                            {prerequisite}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Key Insights (for books) */}
+                  {selectedItem.keyInsights && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Key Insights
+                      </h3>
+                      <ul style={{
+                        listStyle: 'none',
+                        padding: 0,
+                        margin: 0
+                      }}>
+                        {selectedItem.keyInsights.map((insight, index) => (
+                          <li key={index} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px',
+                            marginBottom: '8px',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                            color: '#374151'
+                          }}>
+                            <span style={{
+                              color: '#16a34a',
+                              fontSize: '16px',
+                              lineHeight: '1',
+                              marginTop: '2px'
+                            }}>•</span>
+                            {insight}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Target Audience (for books) */}
+                  {selectedItem.targetAudience && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Target Audience
+                      </h3>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        {selectedItem.targetAudience.map((audience, index) => (
                           <span key={index} style={{
-                            fontSize: '12px',
-                            color: '#16a34a',
-                            backgroundColor: '#f0fdf4',
-                            padding: '4px 8px',
-                            borderRadius: '4px',
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
                             fontWeight: '500'
                           }}>
-                            {tag}
+                            {audience}
                           </span>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Sections (for business plans) */}
+                  {selectedItem.sections && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Business Plan Sections
+                      </h3>
+                      <ul style={{
+                        listStyle: 'none',
+                        padding: 0,
+                        margin: 0
+                      }}>
+                        {selectedItem.sections.map((section, index) => (
+                          <li key={index} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px',
+                            marginBottom: '8px',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                            color: '#374151'
+                          }}>
+                            <span style={{
+                              backgroundColor: '#16a34a',
+                              color: 'white',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginTop: '2px'
+                            }}>
+                              {index + 1}
+                            </span>
+                            {section}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Financial Projections (for business plans) */}
+                  {selectedItem.financialProjections && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Financial Projections
+                      </h3>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        {selectedItem.financialProjections.map((projection, index) => (
+                          <span key={index} style={{
+                            backgroundColor: '#f0fdf4',
+                            color: '#166534',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '500'
+                          }}>
+                            {projection}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Market Research (for business plans) */}
+                  {selectedItem.marketResearch && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Market Research Included
+                      </h3>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        {selectedItem.marketResearch.map((research, index) => (
+                          <span key={index} style={{
+                            backgroundColor: '#f1f5f9',
+                            color: '#475569',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '500'
+                          }}>
+                            {research}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Resources */}
+                  {selectedItem.resources && (
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Included Resources
+                      </h3>
+                      <ul style={{
+                        listStyle: 'none',
+                        padding: 0,
+                        margin: 0
+                      }}>
+                        {selectedItem.resources.map((resource, index) => (
+                          <li key={index} style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '8px',
+                            marginBottom: '8px',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                            color: '#374151'
+                          }}>
+                            <span style={{
+                              color: '#16a34a',
+                              fontSize: '16px',
+                              lineHeight: '1',
+                              marginTop: '2px'
+                            }}>•</span>
+                            {resource}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
 

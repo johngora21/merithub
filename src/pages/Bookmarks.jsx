@@ -23,17 +23,23 @@ import {
   Factory,
   Calendar,
   Users,
-  X
+  X,
+  Play,
+  Building,
+  Download
 } from 'lucide-react'
 
 const Bookmarks = () => {
   const screenSize = useResponsive()
   const { user } = useAuth()
-  const [selectedFilter, setSelectedFilter] = useState('job')
+  const [selectedFilter, setSelectedFilter] = useState('video')
   const [bookmarks, setBookmarks] = useState([])
   const [loading, setLoading] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false)
+  const [videoUrl, setVideoUrl] = useState('')
+  const [videoTitle, setVideoTitle] = useState('')
 
   useEffect(() => {
     // Test if user is logged in
@@ -308,34 +314,75 @@ const Bookmarks = () => {
       }
     } else if (apiBookmark.course) {
       const c = apiBookmark.course
-      return {
+      const courseType = c.type || c.course_type || 'video'
+      
+      // Base course data
+      const baseCourse = {
         ...baseData,
-        type: 'course',
+        type: courseType,
         title: c.title,
-        company: c.instructor || c.author || 'Unknown',
-        industry: c.category || 'Not specified',
-        location: 'Online',
-        country: 'Not specified',
-        salary: c.is_pro ? 'Pro Content' : 'Free',
-        courseType: c.type || 'Not specified',
-        experience: c.experience_level || 'Not specified',
-        skills: c.skills || [],
-        tags: c.tags || [],
         description: c.description,
-        benefits: c.benefits || [],
-        posted: c.created_at ? new Date(c.created_at).toLocaleDateString() : 'Recently',
-        urgentHiring: c.is_urgent || false,
-        price: c.price || null,
-        postedBy: c.posted_by || 'platform',
-        externalUrl: c.external_url,
-        contactEmail: c.contact_email,
-        applicationDeadline: c.deadline,
-        deadline: formatDeadline(c.deadline),
-        isFeatured: c.is_featured || false,
-        status: c.status || 'active',
-        applicants: c.applicants || 0,
-        logo: c.instructor_logo ? resolveAssetUrl(c.instructor_logo) : null
+        tags: Array.isArray(c.learning_objectives) ? c.learning_objectives : [],
+        isPro: c.is_free === false,
+        rating: c.rating || 4.5,
+        students: c.enrollment_count || c.students_count || 0,
+        postedTime: c.created_at ? new Date(c.created_at).toLocaleDateString() : 'Recently',
+        language: c.language || 'English',
+        format: c.format || null,
+        author_type: c.author_type || null,
+        level: c.level ? c.level.charAt(0).toUpperCase() + c.level.slice(1) : 'Beginner',
+        page_count: c.page_count || null,
+        duration_hours: c.duration_hours || null,
+        duration_minutes: c.duration_minutes || null,
+        duration: c.duration || (c.duration_hours && c.duration_minutes ? 
+          `${c.duration_hours}h ${c.duration_minutes}m` :
+          c.duration_hours ? `${c.duration_hours}h` :
+          c.duration_minutes ? `${c.duration_minutes}m` : 'Not specified'),
+        business_type: c.business_type || null,
+        industry_sector: c.industry_sector || null,
+        stage: c.stage || null,
+        file_size: c.file_size || null,
+        target_audience: c.target_audience || null,
+        download_url: c.download_url || null,
+        video_url: c.video_url || null,
+        category: c.category || 'General',
+        thumbnail_url: c.thumbnail_url || null
       }
+
+      // Course type specific data
+      if (courseType === 'video') {
+        return {
+          ...baseCourse,
+          instructor: c.instructor || 'Unknown Instructor',
+          thumbnail: c.thumbnail_url || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=240&fit=crop',
+          lessons: c.lessons_count || 0,
+          curriculum: c.curriculum || [],
+          prerequisites: c.prerequisites || [],
+          whatYouWillLearn: Array.isArray(c.learning_objectives) ? c.learning_objectives : []
+        }
+      } else if (courseType === 'book') {
+        return {
+          ...baseCourse,
+          author: c.instructor || c.author || 'Unknown Author',
+          cover: c.thumbnail_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=240&fit=crop',
+          pages: c.page_count || 0,
+          chapters: c.chapters || [],
+          keyTopics: c.key_topics || []
+        }
+      } else if (courseType === 'business-plan') {
+        return {
+          ...baseCourse,
+          instructor: c.instructor || c.author || 'Unknown Instructor',
+          preview: c.thumbnail_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=240&fit=crop',
+          pages: c.page_count || 0,
+          sections: c.sections_count || 0,
+          downloads: c.downloads_count || 0,
+          planSections: c.plan_sections || [],
+          includes: c.includes || []
+        }
+      }
+
+      return baseCourse
     }
 
     return baseData
@@ -494,7 +541,9 @@ const Bookmarks = () => {
     { id: 'job', name: 'Jobs', count: bookmarks.filter(b => b.type === 'job').length, icon: Briefcase },
     { id: 'opportunity', name: 'Opportunities', count: bookmarks.filter(b => b.type === 'opportunity').length, icon: GraduationCap },
     { id: 'tender', name: 'Tenders', count: bookmarks.filter(b => b.type === 'tender').length, icon: FileText },
-    { id: 'course', name: 'Courses', count: bookmarks.filter(b => b.type === 'course').length, icon: BookOpen }
+    { id: 'video', name: 'Videos', count: bookmarks.filter(b => b.type === 'video').length, icon: Play },
+    { id: 'book', name: 'Books', count: bookmarks.filter(b => b.type === 'book').length, icon: BookOpen },
+    { id: 'business-plan', name: 'Business Plans', count: bookmarks.filter(b => b.type === 'business-plan').length, icon: FileText }
   ]
 
   const filteredBookmarks = bookmarks.filter(bookmark => {
@@ -507,8 +556,18 @@ const Bookmarks = () => {
       const bookmark = bookmarks.find(b => b.id === id)
       if (!bookmark) return
 
+      // Check if user is authenticated
+      const token = localStorage.getItem('auth-token')
+      if (!token) {
+        alert('Please log in to manage bookmarks.')
+        return
+      }
+
+      // Create the key for API call
+      const key = `${bookmark.type}_${bookmark.originalId || bookmark.id}`
+
       // Delete from API
-      await apiService.delete(`/saved-items/${id}`)
+      await apiService.delete(`/saved-items/${key}`)
       
       // Remove from local state
       setBookmarks(prev => prev.filter(bookmark => bookmark.id !== id))
@@ -531,6 +590,11 @@ const Bookmarks = () => {
         const updatedOpportunities = savedOpportunities.filter(oppId => oppId !== bookmark.originalId)
         localStorage.setItem('savedOpportunities', JSON.stringify(updatedOpportunities))
         delete savedItems[`opportunity_${bookmark.originalId}`]
+      } else if (bookmark.type === 'video' || bookmark.type === 'book' || bookmark.type === 'business-plan') {
+        // Handle course bookmarks
+        const savedCourseItems = JSON.parse(localStorage.getItem('savedCourseItems') || '{}')
+        delete savedCourseItems[key]
+        localStorage.setItem('savedCourseItems', JSON.stringify(savedCourseItems))
       }
       
       localStorage.setItem('savedItems', JSON.stringify(savedItems))
@@ -545,7 +609,11 @@ const Bookmarks = () => {
       
     } catch (error) {
       console.error('Error removing bookmark:', error)
+      if (error.message.includes('Unauthorized') || error.message.includes('401')) {
+        alert('Please log in to manage bookmarks.')
+      } else {
       alert('Failed to remove bookmark')
+      }
     }
   }
 
@@ -1413,6 +1481,711 @@ ${user?.first_name} ${user?.last_name}`
                 )
               }
 
+              // Course card rendering - exact copy from Courses.jsx
+              if (bookmark.type === 'video') {
+                return (
+                  <div key={bookmark.id} style={{
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    border: '1px solid #e5e7eb',
+                    transition: 'all 0.2s ease-in-out',
+                    cursor: 'pointer',
+                    position: 'relative'
+                  }}
+                  onClick={() => handleItemClick(bookmark)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}>
+                    {/* Thumbnail */}
+                    <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
+                      <img 
+                        src={bookmark.thumbnail_url ? (bookmark.thumbnail_url.startsWith('/uploads') ? `http://localhost:8000${bookmark.thumbnail_url}` : bookmark.thumbnail_url) : bookmark.thumbnail} 
+                        alt={bookmark.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        display: 'flex',
+                        gap: '8px'
+                      }}>
+                        {bookmark.isPro && (
+                          <span style={{
+                            backgroundColor: '#3b82f6',
+                            color: 'white',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            PRO
+                          </span>
+                        )}
+                        <span style={{
+                          backgroundColor: 'rgba(0,0,0,0.7)',
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>
+                          {bookmark.duration || 
+                            (bookmark.duration_hours && bookmark.duration_minutes ? 
+                              `${bookmark.duration_hours}h ${bookmark.duration_minutes}m` :
+                              bookmark.duration_hours ? `${bookmark.duration_hours}h` :
+                              bookmark.duration_minutes ? `${bookmark.duration_minutes}m` : 'N/A')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ padding: '20px' }}>
+                      {/* Header */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '12px'
+                      }}>
+                        <h3 style={{
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: '#1a1a1a',
+                          margin: 0,
+                          lineHeight: '1.4',
+                          flex: 1
+                        }}>
+                          {bookmark.title}
+                        </h3>
+                      </div>
+
+                      {/* Instructor */}
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#64748b',
+                        margin: '0 0 12px 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        <Users size={14} />
+                        by {bookmark.instructor || bookmark.author || 'Unknown Instructor'}
+                      </p>
+
+                      {/* Industry (from category) */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: '#64748b',
+                        fontSize: '14px',
+                        marginBottom: '12px'
+                      }}>
+                        <Building size={14} />
+                        <span>{bookmark.category || '—'}</span>
+                      </div>
+
+                      {/* Stats */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '16px',
+                        fontSize: '13px',
+                        color: '#64748b'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Download size={14} />
+                            {(bookmark.download_count ?? bookmark.enrollment_count ?? bookmark.students ?? 0)} downloads
+                          </div>
+                          <span style={{
+                            backgroundColor: '#f3f4f6',
+                            color: '#374151',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '500'
+                          }}>
+                            {bookmark.format || '—'}
+                          </span>
+                        </div>
+                        <span style={{
+                          backgroundColor: '#dbeafe',
+                          color: '#1d4ed8',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>
+                          {bookmark.level}
+                        </span>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (bookmark.video_url) {
+                              const fullUrl = bookmark.video_url.startsWith('http')
+                                ? bookmark.video_url
+                                : `http://localhost:8000${bookmark.video_url}`;
+                              setVideoUrl(fullUrl);
+                              setVideoTitle(bookmark.title);
+                              setShowVideoPlayer(true);
+                            } else {
+                              alert('Video file not available');
+                            }
+                          }}
+                          style={{
+                            backgroundColor: 'white',
+                            color: '#16a34a',
+                            border: '2px solid #16a34a',
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}>
+                          Watch
+                        </button>
+                        <button style={{
+                          backgroundColor: '#16a34a',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (bookmark.download_url || bookmark.video_url) {
+                            const downloadUrl = bookmark.download_url || bookmark.video_url;
+                            const fullUrl = downloadUrl.startsWith('http')
+                              ? downloadUrl
+                              : `http://localhost:8000${downloadUrl}`;
+                            window.open(fullUrl, '_blank');
+                          } else {
+                            alert('Download file not available');
+                          }
+                        }}>
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                    {/* Bookmark button - bottom left of card */}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '20px',
+                      left: '20px'
+                    }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeBookmark(bookmark.id);
+                        }}
+                        style={{
+                          background: 'rgba(255,255,255,0.9)',
+                          border: 'none',
+                          padding: '8px',
+                          cursor: 'pointer',
+                          borderRadius: '8px',
+                          transition: 'all 0.2s ease-in-out',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = 'white'
+                          e.target.style.transform = 'scale(1.05)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = 'rgba(255,255,255,0.9)'
+                          e.target.style.transform = 'scale(1)'
+                        }}
+                      >
+                        <Bookmark 
+                          size={16} 
+                          color="#dc2626"
+                          fill="#dc2626"
+                        />
+                      </button>
+                    </div>
+                  </div>
+                )
+              }
+
+              if (bookmark.type === 'book') {
+                return (
+                  <div key={bookmark.id} style={{
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    border: '1px solid #e5e7eb',
+                    transition: 'all 0.2s ease-in-out',
+                    cursor: 'pointer',
+                    position: 'relative'
+                  }}
+                  onClick={() => handleItemClick(bookmark)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}>
+                    {/* Cover */}
+                    <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
+                      <img 
+                        src={bookmark.thumbnail_url ? (bookmark.thumbnail_url.startsWith('/uploads') ? `http://localhost:8000${bookmark.thumbnail_url}` : bookmark.thumbnail_url) : bookmark.cover} 
+                        alt={bookmark.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        display: 'flex',
+                        gap: '8px'
+                      }}>
+                        {bookmark.isPro && (
+                          <span style={{
+                            backgroundColor: '#3b82f6',
+                            color: 'white',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            PRO
+                          </span>
+                        )}
+                        <span style={{
+                          backgroundColor: 'rgba(0,0,0,0.7)',
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>
+                          {bookmark.format || 'PDF'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ padding: '20px' }}>
+                      {/* Header */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '12px'
+                      }}>
+                        <h3 style={{
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: '#1a1a1a',
+                          margin: 0,
+                          lineHeight: '1.4',
+                          flex: 1
+                        }}>
+                          {bookmark.title}
+                        </h3>
+                      </div>
+
+                      {/* Author */}
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#64748b',
+                        margin: '0 0 12px 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        <Users size={14} />
+                        by {bookmark.instructor || bookmark.author || 'Unknown Author'}
+                      </p>
+
+                      {/* Industry (from category) */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: '#64748b',
+                        fontSize: '14px',
+                        marginBottom: '12px'
+                      }}>
+                        <Building size={14} />
+                        <span>{bookmark.category || '—'}</span>
+                        {bookmark.author_type && (
+                          <>
+                            <span style={{ color: '#cbd5e1' }}>|</span>
+                            <span>{bookmark.author_type}</span>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Stats */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '16px',
+                        fontSize: '13px',
+                        color: '#64748b'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <FileText size={14} />
+                            {bookmark.page_count || bookmark.pages || 0} pages
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Download size={14} />
+                            {(bookmark.download_count ?? 0)} downloads
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <span style={{
+                            backgroundColor: '#dbeafe',
+                            color: '#1d4ed8',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            {bookmark.level || 'Beginner'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px',
+                        justifyContent: 'flex-end'
+                      }}>
+                        <button style={{
+                          backgroundColor: '#16a34a',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (bookmark.download_url) {
+                            const fullUrl = bookmark.download_url.startsWith('http')
+                              ? bookmark.download_url
+                              : `http://localhost:8000${bookmark.download_url}`;
+                            window.open(fullUrl, '_blank');
+                          } else {
+                            alert('Download file not available');
+                          }
+                        }}>
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                    {/* Bookmark button - bottom left of card */}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '20px',
+                      left: '20px'
+                    }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeBookmark(bookmark.id);
+                        }}
+                        style={{
+                          background: 'rgba(255,255,255,0.9)',
+                          border: 'none',
+                          padding: '8px',
+                          cursor: 'pointer',
+                          borderRadius: '8px',
+                          transition: 'all 0.2s ease-in-out',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = 'white'
+                          e.target.style.transform = 'scale(1.05)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = 'rgba(255,255,255,0.9)'
+                          e.target.style.transform = 'scale(1)'
+                        }}
+                      >
+                        <Bookmark 
+                          size={16} 
+                          color="#dc2626"
+                          fill="#dc2626"
+                        />
+                      </button>
+                    </div>
+                  </div>
+                )
+              }
+
+              if (bookmark.type === 'business-plan') {
+                return (
+                  <div key={bookmark.id} style={{
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                    border: '1px solid #e5e7eb',
+                    transition: 'all 0.2s ease-in-out',
+                    cursor: 'pointer',
+                    position: 'relative'
+                  }}
+                  onClick={() => handleItemClick(bookmark)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}>
+                    {/* Preview */}
+                    <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
+                      <img 
+                        src={bookmark.thumbnail_url ? (bookmark.thumbnail_url.startsWith('/uploads') ? `http://localhost:8000${bookmark.thumbnail_url}` : bookmark.thumbnail_url) : bookmark.preview} 
+                        alt={bookmark.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        display: 'flex',
+                        gap: '8px'
+                      }}>
+                        {bookmark.isPro && (
+                          <span style={{
+                            backgroundColor: '#3b82f6',
+                            color: 'white',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            PRO
+                          </span>
+                        )}
+                        <span style={{
+                          backgroundColor: 'rgba(0,0,0,0.7)',
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>
+                          {(() => {
+                            const fmt = (bookmark.format || '').toString().trim();
+                            if (fmt) return fmt.toUpperCase();
+                            const url = bookmark.download_url || '';
+                            const m = url.match(/\.([a-zA-Z0-9]+)(?:\?|#|$)/);
+                            const ext = m ? m[1].toLowerCase() : '';
+                            if (!ext) return 'N/A';
+                            if (ext === 'pdf') return 'PDF';
+                            if (ext === 'doc' || ext === 'docx') return 'DOCX';
+                            if (ext === 'ppt' || ext === 'pptx') return 'PPTX';
+                            if (ext === 'xls' || ext === 'xlsx') return 'XLSX';
+                            return ext.toUpperCase();
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ padding: '20px' }}>
+                      {/* Header */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '12px'
+                      }}>
+                        <h3 style={{
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: '#1a1a1a',
+                          margin: 0,
+                          lineHeight: '1.4',
+                          flex: 1
+                        }}>
+                          {bookmark.title}
+                        </h3>
+                      </div>
+
+                      {/* Instructor line */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        marginBottom: '12px',
+                        fontSize: '14px',
+                        color: '#64748b'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Users size={14} />
+                          <span>{bookmark.instructor || bookmark.author || 'Instructor'}</span>
+                        </div>
+                      </div>
+
+                      {/* Industry sector and Business type line */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        marginBottom: '12px',
+                        fontSize: '14px',
+                        color: '#64748b'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Building size={14} />
+                          <span>{bookmark.category || '—'}</span>
+                          <Briefcase size={14} />
+                          <span style={{ fontWeight: 600 }}>{bookmark.business_type || '—'}</span>
+                        </div>
+                      </div>
+
+                      {/* Stats */}
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '16px',
+                        fontSize: '13px',
+                        color: '#64748b'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <FileText size={14} />
+                            {bookmark.page_count || bookmark.pages || 0} pages
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Download size={14} />
+                            {(bookmark.download_count ?? bookmark.enrollment_count ?? bookmark.downloads ?? 0)} downloads
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <span style={{
+                            backgroundColor: '#dbeafe',
+                            color: '#1d4ed8',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '600'
+                          }}>
+                            {bookmark.stage || 'Startup'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px',
+                        justifyContent: 'flex-end'
+                      }}>
+                        <button style={{
+                          backgroundColor: '#16a34a',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (bookmark.download_url) {
+                            const fullUrl = bookmark.download_url.startsWith('http')
+                              ? bookmark.download_url
+                              : `http://localhost:8000${bookmark.download_url}`;
+                            window.open(fullUrl, '_blank');
+                          } else {
+                            alert('Download file not available');
+                          }
+                        }}>
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                    {/* Bookmark button - bottom left of card */}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '20px',
+                      left: '20px'
+                    }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeBookmark(bookmark.id);
+                        }}
+                        style={{
+                          background: 'rgba(255,255,255,0.9)',
+                          border: 'none',
+                          padding: '8px',
+                          cursor: 'pointer',
+                          borderRadius: '8px',
+                          transition: 'all 0.2s ease-in-out',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = 'white'
+                          e.target.style.transform = 'scale(1.05)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = 'rgba(255,255,255,0.9)'
+                          e.target.style.transform = 'scale(1)'
+                        }}
+                      >
+                        <Bookmark 
+                          size={16} 
+                          color="#dc2626"
+                          fill="#dc2626"
+                        />
+                      </button>
+                    </div>
+                  </div>
+                )
+              }
+
               // Default job card structure (unchanged)
               return (
                 <div key={bookmark.id} style={{
@@ -1707,6 +2480,27 @@ ${user?.first_name} ${user?.last_name}`
             flexDirection: 'column'
           }}
           onClick={(e) => e.stopPropagation()}>
+            
+            {/* Close button - positioned at top right of modal */}
+            <div style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              zIndex: 10
+            }}>
+              <button
+                onClick={() => setShowDetails(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  border: 'none',
+                  padding: '8px',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={20} color="#64748b" />
+              </button>
+            </div>
             
             {/* Header */}
             <div style={{ 
@@ -2252,7 +3046,661 @@ ${user?.first_name} ${user?.last_name}`
                   )}
                 </div>
               )}
+              {selectedItem.type === 'video' && (
+                <div>
+                  {/* Header Image */}
+                  <div style={{ position: 'relative', height: '250px', overflow: 'hidden' }}>
+                    <img 
+                      src={selectedItem.thumbnail_url ? (selectedItem.thumbnail_url.startsWith('/uploads') ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${selectedItem.thumbnail_url}` : selectedItem.thumbnail_url) : (selectedItem.thumbnail || selectedItem.cover || selectedItem.preview)} 
+                      alt={selectedItem.title}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
             </div>
+
+                  {/* Content - EXACT admin structure */}
+                  <div style={{ padding: '0 24px 24px 24px' }}>
+                    {/* Title */}
+                    <h2 style={{
+                      fontSize: '24px',
+                      fontWeight: '700',
+                      color: '#1a1a1a',
+                      margin: '0 0 8px 0',
+                      lineHeight: '1.3'
+                    }}>
+                      {selectedItem.title}
+                    </h2>
+
+                    {/* Category • Level • Duration/Pages */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '16px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.category}
+                      </span>
+                      <span style={{ color: '#64748b' }}>•</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.level}
+                      </span>
+                      <span style={{ color: '#64748b' }}>•</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.duration_hours ? `${selectedItem.duration_hours}h ${selectedItem.duration_minutes ? `${selectedItem.duration_minutes}m` : ''}` : 
+                         selectedItem.page_count ? `${selectedItem.page_count} pages` : 'Not specified'}
+                      </span>
+                    </div>
+
+                    {/* Course Details */}
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Course Details
+                      </h3>
+                      <div style={{ 
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '12px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '8px'
+                      }}>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Type</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            video
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Instructor</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.instructor || selectedItem.author}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Downloads</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.enrollment_count || 0}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Category</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.category}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Level</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.level}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.category}
+                          </div>
+                        </div>
+                        {selectedItem.language && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Language</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.language}
+                            </div>
+                          </div>
+                        )}
+                        {selectedItem.format && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Format</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.format}
+                            </div>
+                          </div>
+                        )}
+                        {selectedItem.duration_hours && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Duration</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.duration_hours}h {selectedItem.duration_minutes ? `${selectedItem.duration_minutes}m` : ''}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Course Description */}
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 8px 0'
+                      }}>
+                        Course Description
+                      </h3>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#64748b',
+                        lineHeight: '1.6',
+                        margin: 0
+                      }}>
+                        {selectedItem.description}
+                      </p>
+                    </div>
+
+                    {/* Tags */}
+                    {selectedItem.tags && selectedItem.tags.length > 0 && (
+                      <div style={{ marginBottom: '24px' }}>
+                        <h3 style={{
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: '#1a1a1a',
+                          margin: '0 0 8px 0'
+                        }}>
+                          Tags
+                        </h3>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {selectedItem.tags.map((tag, index) => (
+                            <span key={index} style={{
+                              fontSize: '12px',
+                              color: '#16a34a',
+                              backgroundColor: '#f0fdf4',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontWeight: '500'
+                            }}>
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {selectedItem.type === 'book' && (
+                <div>
+                  {/* Header Image */}
+                  <div style={{ position: 'relative', height: '250px', overflow: 'hidden' }}>
+                    <img 
+                      src={selectedItem.thumbnail_url ? (selectedItem.thumbnail_url.startsWith('/uploads') ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${selectedItem.thumbnail_url}` : selectedItem.thumbnail_url) : (selectedItem.thumbnail || selectedItem.cover || selectedItem.preview)} 
+                      alt={selectedItem.title}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  </div>
+
+                  {/* Content - EXACT admin structure */}
+                  <div style={{ padding: '0 24px 24px 24px' }}>
+                    {/* Title */}
+                    <h2 style={{
+                      fontSize: '24px',
+                      fontWeight: '700',
+                      color: '#1a1a1a',
+                      margin: '0 0 8px 0',
+                      lineHeight: '1.3'
+                    }}>
+                      {selectedItem.title}
+                    </h2>
+
+                    {/* Category • Level • Duration/Pages */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '16px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.category}
+                      </span>
+                      <span style={{ color: '#64748b' }}>•</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.level}
+                      </span>
+                      <span style={{ color: '#64748b' }}>•</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.page_count ? `${selectedItem.page_count} pages` : 'Not specified'}
+                      </span>
+                    </div>
+
+                    {/* Course Details */}
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Course Details
+                      </h3>
+                      <div style={{ 
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '12px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '8px'
+                      }}>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Type</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            book
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Instructor</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.instructor || selectedItem.author}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Downloads</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.enrollment_count || 0}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Category</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.category}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Level</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.level}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.category}
+                          </div>
+                        </div>
+                        {selectedItem.language && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Language</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.language}
+                            </div>
+                          </div>
+                        )}
+                        {selectedItem.format && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Format</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.format}
+                            </div>
+                          </div>
+                        )}
+                        {selectedItem.page_count && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Pages</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.page_count} pages
+                            </div>
+                          </div>
+                        )}
+                        {selectedItem.author_type && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Author Type</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.author_type}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Course Description */}
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 8px 0'
+                      }}>
+                        Course Description
+                      </h3>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#64748b',
+                        lineHeight: '1.6',
+                        margin: 0
+                      }}>
+                        {selectedItem.description}
+                      </p>
+                    </div>
+
+                    {/* Tags */}
+                    {selectedItem.tags && selectedItem.tags.length > 0 && (
+                      <div style={{ marginBottom: '24px' }}>
+                        <h3 style={{
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: '#1a1a1a',
+                          margin: '0 0 8px 0'
+                        }}>
+                          Tags
+                        </h3>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {selectedItem.tags.map((tag, index) => (
+                            <span key={index} style={{
+                              fontSize: '12px',
+                              color: '#16a34a',
+                              backgroundColor: '#f0fdf4',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontWeight: '500'
+                            }}>
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {selectedItem.type === 'business-plan' && (
+                <div>
+                  {/* Header Image */}
+                  <div style={{ position: 'relative', height: '250px', overflow: 'hidden' }}>
+                    <img 
+                      src={selectedItem.thumbnail_url ? (selectedItem.thumbnail_url.startsWith('/uploads') ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${selectedItem.thumbnail_url}` : selectedItem.thumbnail_url) : (selectedItem.thumbnail || selectedItem.cover || selectedItem.preview)} 
+                      alt={selectedItem.title}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  </div>
+
+                  {/* Content - EXACT admin structure */}
+                  <div style={{ padding: '0 24px 24px 24px' }}>
+                    {/* Title */}
+                    <h2 style={{
+                      fontSize: '24px',
+                      fontWeight: '700',
+                      color: '#1a1a1a',
+                      margin: '0 0 8px 0',
+                      lineHeight: '1.3'
+                    }}>
+                      {selectedItem.title}
+                    </h2>
+
+                    {/* Category • Level • Duration/Pages */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '16px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.category}
+                      </span>
+                      <span style={{ color: '#64748b' }}>•</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.level}
+                      </span>
+                      <span style={{ color: '#64748b' }}>•</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.page_count ? `${selectedItem.page_count} pages` : 'Not specified'}
+                      </span>
+                    </div>
+
+                    {/* Course Details */}
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 12px 0'
+                      }}>
+                        Course Details
+                      </h3>
+                      <div style={{ 
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: '12px',
+                        backgroundColor: '#ffffff',
+                        borderRadius: '8px'
+                      }}>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Type</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            business-plan
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Instructor</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.instructor || selectedItem.author}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Downloads</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.enrollment_count || 0}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Category</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.category}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Level</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.level}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.category}
+                          </div>
+                        </div>
+                        {selectedItem.language && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Language</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.language}
+                            </div>
+                          </div>
+                        )}
+                        {selectedItem.format && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Format</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.format}
+                            </div>
+                          </div>
+                        )}
+                        {selectedItem.page_count && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Pages</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.page_count} pages
+                            </div>
+                          </div>
+                        )}
+                        {selectedItem.business_type && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Business Type</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.business_type}
+                            </div>
+                          </div>
+                        )}
+                        {selectedItem.stage && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Stage</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.stage}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Course Description */}
+                    <div style={{ marginBottom: '24px' }}>
+                      <h3 style={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#1a1a1a',
+                        margin: '0 0 8px 0'
+                      }}>
+                        Course Description
+                      </h3>
+                      <p style={{
+                        fontSize: '14px',
+                        color: '#64748b',
+                        lineHeight: '1.6',
+                        margin: 0
+                      }}>
+                        {selectedItem.description}
+                      </p>
+                    </div>
+
+                    {/* Tags */}
+                    {selectedItem.tags && selectedItem.tags.length > 0 && (
+                      <div style={{ marginBottom: '24px' }}>
+                        <h3 style={{
+                          fontSize: '18px',
+                          fontWeight: '600',
+                          color: '#1a1a1a',
+                          margin: '0 0 8px 0'
+                        }}>
+                          Tags
+                        </h3>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {selectedItem.tags.map((tag, index) => (
+                            <span key={index} style={{
+                              fontSize: '12px',
+                              color: '#16a34a',
+                              backgroundColor: '#f0fdf4',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontWeight: '500'
+                            }}>
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Player Modal */}
+      {showVideoPlayer && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000
+        }}
+        onClick={() => setShowVideoPlayer(false)}>
+          <div style={{ 
+            position: 'relative',
+            backgroundColor: 'black',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            width: 'auto',
+            height: 'auto'
+          }}
+          onClick={(e) => e.stopPropagation()}>
+            {/* Close button */}
+            <button
+              onClick={() => setShowVideoPlayer(false)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                zIndex: 10
+              }}
+            >
+              ×
+            </button>
+
+            {/* Video title */}
+            {videoTitle && (
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                left: '10px',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                color: 'white',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: '500',
+                zIndex: 10,
+                maxWidth: 'calc(100% - 120px)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {videoTitle}
+              </div>
+            )}
+
+            {/* Video player */}
+            <video
+              src={videoUrl}
+              controls
+              autoPlay
+              style={{
+                width: '100%',
+                height: '100%',
+                minWidth: '400px',
+                minHeight: '300px',
+                maxWidth: '90vw',
+                maxHeight: '90vh'
+              }}
+            >
+              Your browser does not support the video tag.
+            </video>
           </div>
         </div>
       )}

@@ -32,6 +32,14 @@ const Courses = () => {
   const [showVideoPlayer, setShowVideoPlayer] = useState(false)
   const [videoUrl, setVideoUrl] = useState('')
   const [videoTitle, setVideoTitle] = useState('')
+  const [bookmarkedItems, setBookmarkedItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('savedCourseItems')
+      return saved ? JSON.parse(saved) : {}
+    } catch {
+      return {}
+    }
+  })
   const [filters, setFilters] = useState({
     videos: {
       category: [],
@@ -220,6 +228,48 @@ const Courses = () => {
     setSavedItems(newSaved)
   }
 
+  // Bookmark functions for courses
+  const isBookmarked = (type, id) => {
+    const key = `${type}_${id}`
+    return bookmarkedItems[key] || false
+  }
+
+  const toggleBookmark = async (type, id) => {
+    const key = `${type}_${id}`
+    const isCurrentlyBookmarked = isBookmarked(type, id)
+    
+    try {
+      if (isCurrentlyBookmarked) {
+        // Remove bookmark
+        await apiService.delete(`/saved-items/${key}`)
+      } else {
+        // Add bookmark
+        await apiService.post('/saved-items', {
+          item_type: type,
+          item_id: id,
+          item_category: 'course'
+        })
+      }
+      
+      // Update local state
+      setBookmarkedItems(prev => ({
+        ...prev,
+        [key]: !isCurrentlyBookmarked
+      }))
+      
+      // Update localStorage
+      const updatedSaved = {
+        ...bookmarkedItems,
+        [key]: !isCurrentlyBookmarked
+      }
+      localStorage.setItem('savedCourseItems', JSON.stringify(updatedSaved))
+      
+    } catch (error) {
+      console.error('Error toggling bookmark:', error)
+      alert('Failed to update bookmark. Please try again.')
+    }
+  }
+
   const handleCardClick = (item, type) => {
     setSelectedItem({ ...item, type })
     setShowDetails(true)
@@ -304,7 +354,8 @@ const Courses = () => {
       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       border: '1px solid #e5e7eb',
       transition: 'all 0.2s ease-in-out',
-      cursor: 'pointer'
+      cursor: 'pointer',
+      position: 'relative'
     }}
     onClick={() => {
       setSelectedItem({ ...video, type: 'course' });
@@ -351,9 +402,9 @@ const Courses = () => {
           <span style={{
             backgroundColor: 'rgba(0,0,0,0.7)',
             color: 'white',
-            padding: '4px 8px',
+          padding: '4px 8px',
             borderRadius: '6px',
-            fontSize: '12px',
+          fontSize: '12px',
             fontWeight: '600'
           }}>
             {video.duration || 
@@ -368,7 +419,7 @@ const Courses = () => {
       {/* Content */}
       <div style={{ padding: '20px' }}>
         {/* Header */}
-        <div style={{
+                        <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
@@ -451,6 +502,33 @@ const Courses = () => {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            if (video.video_url) {
+              const fullUrl = video.video_url.startsWith('http')
+                ? video.video_url
+                : `http://localhost:8000${video.video_url}`;
+              setVideoUrl(fullUrl);
+              setVideoTitle(video.title);
+              setShowVideoPlayer(true);
+            } else {
+              alert('Video file not available');
+            }
+          }}
+            style={{
+            backgroundColor: 'white',
+            color: '#16a34a',
+            border: '2px solid #16a34a',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}>
+            Watch
+          </button>
           <button style={{
             backgroundColor: '#16a34a',
             color: 'white',
@@ -464,20 +542,55 @@ const Courses = () => {
           }}
           onClick={(e) => {
             e.stopPropagation();
-            if (video.video_url) {
-              const fullUrl = video.video_url.startsWith('http')
-                ? video.video_url
-                : `http://localhost:8000${video.video_url}`;
-              setVideoUrl(fullUrl);
-              setVideoTitle(video.title);
-              setShowVideoPlayer(true);
+            if (video.download_url || video.video_url) {
+              const downloadUrl = video.download_url || video.video_url;
+              const fullUrl = downloadUrl.startsWith('http')
+                ? downloadUrl
+                : `http://localhost:8000${downloadUrl}`;
+              window.open(fullUrl, '_blank');
             } else {
-              alert('Video file not available');
+              alert('Download file not available');
             }
           }}>
-            Watch
+            Download
           </button>
         </div>
+      </div>
+        {/* Bookmark button - bottom left of card */}
+        <div style={{
+          position: 'absolute',
+          bottom: '12px',
+          left: '12px'
+        }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleBookmark('video', video.id);
+            }}
+            style={{
+              background: 'rgba(255,255,255,0.9)',
+              border: 'none',
+              padding: '8px',
+              cursor: 'pointer',
+              borderRadius: '8px',
+            transition: 'all 0.2s ease-in-out',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+          onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'white'
+              e.target.style.transform = 'scale(1.05)'
+          }}
+          onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(255,255,255,0.9)'
+              e.target.style.transform = 'scale(1)'
+            }}
+          >
+            <Bookmark 
+              size={16} 
+              color={isBookmarked('video', video.id) ? '#16a34a' : '#64748b'}
+              fill={isBookmarked('video', video.id) ? '#16a34a' : 'none'}
+            />
+          </button>
       </div>
     </div>
   )
@@ -490,7 +603,8 @@ const Courses = () => {
       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       border: '1px solid #e5e7eb',
       transition: 'all 0.2s ease-in-out',
-      cursor: 'pointer'
+      cursor: 'pointer',
+      position: 'relative'
     }}
     onClick={() => {
       setSelectedItem({ ...book, type: 'course' });
@@ -550,7 +664,7 @@ const Courses = () => {
       {/* Content */}
       <div style={{ padding: '20px' }}>
         {/* Header */}
-        <div style={{
+                        <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
@@ -665,6 +779,42 @@ const Courses = () => {
           </button>
             </div>
       </div>
+        {/* Bookmark button - bottom left of card */}
+        <div style={{
+          position: 'absolute',
+          bottom: '12px',
+          left: '12px'
+        }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleBookmark('book', book.id);
+            }}
+            style={{
+              background: 'rgba(255,255,255,0.9)',
+              border: 'none',
+              padding: '8px',
+              cursor: 'pointer',
+              borderRadius: '8px',
+              transition: 'all 0.2s ease-in-out',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'white'
+              e.target.style.transform = 'scale(1.05)'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(255,255,255,0.9)'
+              e.target.style.transform = 'scale(1)'
+            }}
+          >
+            <Bookmark 
+              size={16} 
+              color={isBookmarked('book', book.id) ? '#16a34a' : '#64748b'}
+              fill={isBookmarked('book', book.id) ? '#16a34a' : 'none'}
+            />
+          </button>
+      </div>
         </div>
   )
 
@@ -676,7 +826,8 @@ const Courses = () => {
       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       border: '1px solid #e5e7eb',
       transition: 'all 0.2s ease-in-out',
-      cursor: 'pointer'
+      cursor: 'pointer',
+      position: 'relative'
     }}
     onClick={() => {
       setSelectedItem({ ...plan, type: 'course' });
@@ -742,13 +893,13 @@ const Courses = () => {
               return ext.toUpperCase();
             })()}
                   </span>
-        </div>
+                </div>
                 </div>
 
       {/* Content */}
       <div style={{ padding: '20px' }}>
         {/* Header */}
-        <div style={{
+                        <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
@@ -862,6 +1013,42 @@ const Courses = () => {
             Download
           </button>
         </div>
+                </div>
+        {/* Bookmark button - bottom left of card */}
+        <div style={{
+          position: 'absolute',
+          bottom: '12px',
+          left: '12px'
+        }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleBookmark('business-plan', plan.id);
+            }}
+            style={{
+              background: 'rgba(255,255,255,0.9)',
+              border: 'none',
+              padding: '8px',
+              cursor: 'pointer',
+              borderRadius: '8px',
+              transition: 'all 0.2s ease-in-out',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'white'
+              e.target.style.transform = 'scale(1.05)'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(255,255,255,0.9)'
+              e.target.style.transform = 'scale(1)'
+            }}
+          >
+            <Bookmark 
+              size={16} 
+              color={isBookmarked('business-plan', plan.id) ? '#16a34a' : '#64748b'}
+              fill={isBookmarked('business-plan', plan.id) ? '#16a34a' : 'none'}
+            />
+          </button>
                 </div>
               </div>
   )

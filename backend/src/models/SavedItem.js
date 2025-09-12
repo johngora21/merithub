@@ -16,7 +16,7 @@ const SavedItem = sequelize.define('SavedItem', {
     }
   },
   item_type: {
-    type: DataTypes.ENUM('job', 'tender', 'opportunity', 'course'),
+    type: DataTypes.ENUM('job', 'tender', 'opportunity', 'course', 'video', 'book', 'business-plan'),
     allowNull: false
   },
   job_id: {
