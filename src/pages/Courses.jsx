@@ -82,6 +82,7 @@ const Courses = () => {
       language: apiCourse.language || 'English',
       format: apiCourse.format || null,
       author_type: apiCourse.author_type || null,
+      level: apiCourse.level ? apiCourse.level.charAt(0).toUpperCase() + apiCourse.level.slice(1) : 'Beginner',
       page_count: apiCourse.page_count || null,
       duration_hours: apiCourse.duration_hours || null,
       duration_minutes: apiCourse.duration_minutes || null,
@@ -96,8 +97,8 @@ const Courses = () => {
       target_audience: apiCourse.target_audience || null,
       download_url: apiCourse.download_url || null,
       video_url: apiCourse.video_url || null,
-      // Map category from industry_sector for display
-      category: apiCourse.industry_sector || apiCourse.category || 'General'
+      // Map category from category field for display
+      category: apiCourse.category || 'General'
     }
 
     // Transform based on course type
@@ -108,7 +109,7 @@ const Courses = () => {
         thumbnail: apiCourse.thumbnail_url || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=240&fit=crop',
         thumbnail_url: apiCourse.thumbnail_url || null,
         lessons: apiCourse.lessons_count || 0,
-        level: apiCourse.level || 'Beginner',
+        level: apiCourse.level ? apiCourse.level.charAt(0).toUpperCase() + apiCourse.level.slice(1) : 'Beginner',
         curriculum: apiCourse.curriculum || [],
         prerequisites: apiCourse.prerequisites || [],
         whatYouWillLearn: Array.isArray(apiCourse.learning_objectives) ? apiCourse.learning_objectives : []
@@ -119,6 +120,7 @@ const Courses = () => {
         author: apiCourse.instructor || apiCourse.author || 'Unknown Author',
         cover: apiCourse.thumbnail_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=240&fit=crop',
         thumbnail_url: apiCourse.thumbnail_url || null,
+        level: apiCourse.level ? apiCourse.level.charAt(0).toUpperCase() + apiCourse.level.slice(1) : 'Beginner',
         pages: apiCourse.page_count || 0,
         chapters: apiCourse.chapters || [],
         keyTopics: apiCourse.key_topics || []
@@ -126,8 +128,10 @@ const Courses = () => {
     } else if (apiCourse.type === 'business-plan' || apiCourse.course_type === 'business-plan') {
       return {
         ...baseCourse,
+        instructor: apiCourse.instructor || apiCourse.author || 'Unknown Instructor',
         preview: apiCourse.thumbnail_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=240&fit=crop',
         thumbnail_url: apiCourse.thumbnail_url || null,
+        level: apiCourse.level ? apiCourse.level.charAt(0).toUpperCase() + apiCourse.level.slice(1) : 'Beginner',
         pages: apiCourse.page_count || 0,
         sections: apiCourse.sections_count || 0,
         downloads: apiCourse.downloads_count || 0,
@@ -302,7 +306,10 @@ const Courses = () => {
       transition: 'all 0.2s ease-in-out',
       cursor: 'pointer'
     }}
-    onClick={() => setSelectedItem({ ...video, type: 'course' })}
+    onClick={() => {
+      setSelectedItem({ ...video, type: 'course' });
+      setShowDetails(true);
+    }}
     onMouseEnter={(e) => {
       e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'
       e.currentTarget.style.transform = 'translateY(-2px)'
@@ -485,7 +492,10 @@ const Courses = () => {
       transition: 'all 0.2s ease-in-out',
       cursor: 'pointer'
     }}
-    onClick={() => setSelectedItem({ ...book, type: 'course' })}
+    onClick={() => {
+      setSelectedItem({ ...book, type: 'course' });
+      setShowDetails(true);
+    }}
     onMouseEnter={(e) => {
       e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'
       e.currentTarget.style.transform = 'translateY(-2px)'
@@ -668,7 +678,10 @@ const Courses = () => {
       transition: 'all 0.2s ease-in-out',
       cursor: 'pointer'
     }}
-    onClick={() => setSelectedItem({ ...plan, type: 'course' })}
+    onClick={() => {
+      setSelectedItem({ ...plan, type: 'course' });
+      setShowDetails(true);
+    }}
     onMouseEnter={(e) => {
       e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)'
       e.currentTarget.style.transform = 'translateY(-2px)'
@@ -1272,7 +1285,7 @@ const Courses = () => {
               {/* Header Image */}
               <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
                 <img 
-                  src={selectedItem.thumbnail || selectedItem.cover || selectedItem.preview} 
+                  src={selectedItem.thumbnail_url ? (selectedItem.thumbnail_url.startsWith('/uploads') ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${selectedItem.thumbnail_url}` : selectedItem.thumbnail_url) : (selectedItem.thumbnail || selectedItem.cover || selectedItem.preview)} 
                   alt={selectedItem.title}
                   style={{
                     width: '100%',
@@ -1300,57 +1313,10 @@ const Courses = () => {
                 </div>
               </div>
 
-              {/* Content */}
-              <div style={{ padding: screenSize.isMobile ? '16px 12px' : '24px' }}>
-                {/* Header with Type, Category, Level, Duration/Pages */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginBottom: '16px',
-                  flexWrap: 'wrap'
-                }}>
-                  <span style={{
-                    fontSize: '12px',
-                    color: selectedItem.type === 'video' ? '#16a34a' : selectedItem.type === 'book' ? '#7c3aed' : '#dc2626',
-                    backgroundColor: selectedItem.type === 'video' ? '#f0fdf4' : selectedItem.type === 'book' ? '#f3e8ff' : '#fee2e2',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    fontWeight: '600',
-                    textTransform: 'uppercase'
-                  }}>
-                    {selectedItem.type === 'business-plan' ? 'Business Plan' : selectedItem.type}
-                  </span>
-                  <span style={{ color: '#64748b' }}>•</span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    {selectedItem.category}
-                  </span>
-                  <span style={{ color: '#64748b' }}>•</span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    {selectedItem.level || 'beginner'}
-                  </span>
-                  {(selectedItem.type === 'video' || selectedItem.type === 'video') && (selectedItem.duration || selectedItem.duration_hours || selectedItem.duration_minutes) && (
-                    <>
-                      <span style={{ color: '#64748b' }}>•</span>
-                      <span style={{ fontSize: '12px', color: '#64748b' }}>
-                        {selectedItem.duration ||
-                          (selectedItem.duration_hours && selectedItem.duration_minutes ?
-                            `${selectedItem.duration_hours}h ${selectedItem.duration_minutes}m` :
-                            selectedItem.duration_hours ? `${selectedItem.duration_hours}h` :
-                            `${selectedItem.duration_minutes}m`)}
-                      </span>
-                    </>
-                  )}
-                  {(selectedItem.type === 'book' || selectedItem.type === 'business-plan') && selectedItem.page_count && (
-                    <>
-                      <span style={{ color: '#64748b' }}>•</span>
-                      <span style={{ fontSize: '12px', color: '#64748b' }}>
-                        {selectedItem.page_count} pages
-                      </span>
-                    </>
-                  )}
-                </div>
-
+              {/* Content - EXACT admin structure */}
+              <div style={{ padding: '0 24px 24px 24px' }}>
+                {selectedItem.type === 'course' && (
+                  <div>
                 {/* Title */}
                 <h2 style={{
                   fontSize: '24px',
@@ -1362,413 +1328,170 @@ const Courses = () => {
                   {selectedItem.title}
                 </h2>
 
-                {/* Author/Instructor */}
-                <p style={{
-                  fontSize: '16px',
-                  color: '#64748b',
-                  margin: '0 0 16px 0'
-                }}>
-                  {selectedItem.type === 'video' ? `by ${selectedItem.instructor}` : 
-                   selectedItem.type === 'book' ? `by ${selectedItem.author}` : 
-                   selectedItem.category}
-                </p>
-
-                {/* Stats */}
+                    {/* Category • Level • Duration/Pages */}
                 <div style={{
                   display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '16px',
-                  marginBottom: '20px',
-                  fontSize: '14px',
-                  color: '#64748b'
-                }}>
-                  {selectedItem.type === 'video' && (
-                    <>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Clock size={14} />
-                        {selectedItem.duration}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Play size={14} />
-                        {selectedItem.lessons} lessons
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Users size={14} />
-                        {selectedItem.students?.toLocaleString()} students
-                      </div>
-                    </>
-                  )}
-                  {selectedItem.type === 'book' && (
-                    <>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <BookOpen size={14} />
-                        {selectedItem.pages} pages
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <FileText size={14} />
-                        {selectedItem.format}
-                      </div>
-                    </>
-                  )}
-                  {selectedItem.type === 'business-plan' && (
-                    <>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <FileText size={14} />
-                        {selectedItem.pages} pages
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Users size={14} />
-                        {selectedItem.downloads} downloads
-                      </div>
-                    </>
-                  )}
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '16px',
+                      flexWrap: 'wrap'
+                    }}>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.category}
+                      </span>
+                      <span style={{ color: '#64748b' }}>•</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.level}
+                      </span>
+                      <span style={{ color: '#64748b' }}>•</span>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        {selectedItem.duration_hours ? `${selectedItem.duration_hours}h ${selectedItem.duration_minutes ? `${selectedItem.duration_minutes}m` : ''}` : 
+                         selectedItem.page_count ? `${selectedItem.page_count} pages` : 'Not specified'}
+                      </span>
                 </div>
 
-                {/* Rating */}
-                {selectedItem.rating && (
-                  <div style={{ marginBottom: '20px' }}>
-                    {renderStars(selectedItem.rating)}
-                  </div>
-                )}
-
-                {/* Course Details */}
+                    {/* Course Details */}
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#1a1a1a',
-                    margin: '0 0 12px 0'
-                  }}>
-                    Course Details
-                  </h3>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '12px',
-                    backgroundColor: '#f8fafc',
-                    padding: '16px',
-                    borderRadius: '8px'
-                  }}>
-                    {selectedItem.type === 'video' && (
-                      <>
+                        fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#1a1a1a',
+                      margin: '0 0 12px 0'
+                    }}>
+                        Course Details
+                    </h3>
+                    <div style={{ 
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '12px',
+                      backgroundColor: '#ffffff',
+                        borderRadius: '8px'
+                      }}>
                         <div>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Type</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>Video Course</div>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.type === 'video' ? 'video' : selectedItem.type === 'book' ? 'book' : 'business-plan'}
                         </div>
+                    </div>
                         <div>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Instructor</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.instructor}</div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Duration</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.duration || 'Not specified'}
-                          </div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Level</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.level}</div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Language</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.language}</div>
+                            {selectedItem.instructor || selectedItem.author}
+                  </div>
                         </div>
                         <div>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Downloads</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.students || 0}</div>
-                        </div>
-                      </>
-                    )}
-                    {selectedItem.type === 'book' && (
-                      <>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.enrollment_count || 0}
+                      </div>
+                      </div>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Type</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>Book</div>
-                        </div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Category</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.category}
+                      </div>
+                </div>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Author</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.author}</div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Pages</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.page_count || selectedItem.pages || 0}</div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Format</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.format}</div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Language</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.language}</div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Author Type</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.author_type || selectedItem.authorType}</div>
-                        </div>
-                      </>
-                    )}
-                    {selectedItem.type === 'business-plan' && (
-                      <>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Type</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>Business Plan</div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Pages</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.page_count || selectedItem.pages || 0}</div>
-                        </div>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Level</span>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.level}
+                  </div>
+                </div>
                         <div>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.industry_sector || selectedItem.category}</div>
+                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                            {selectedItem.category}
                         </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Business Type</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.business_type}</div>
                         </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Stage</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.stage}</div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Format</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>{selectedItem.format}</div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#1a1a1a',
-                    margin: '0 0 8px 0'
-                  }}>
-                    Course Description
-                  </h3>
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#64748b',
-                    lineHeight: '1.6',
-                    margin: 0
-                  }}>
-                    {selectedItem.description}
-                  </p>
-                </div>
-
-                {/* Curriculum for Videos */}
-                {selectedItem.type === 'video' && selectedItem.curriculum && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 12px 0'
-                    }}>
-                      Course Curriculum
-                    </h3>
-                    <div style={{ 
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '8px',
-                      padding: '16px'
-                    }}>
-                      {selectedItem.curriculum.map((item, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          marginBottom: index === selectedItem.curriculum.length - 1 ? '0' : '8px',
-                          fontSize: '14px',
-                          color: '#374151'
-                        }}>
-                          <span style={{
-                            color: '#16a34a',
-                            fontWeight: '600',
-                            marginRight: '8px',
-                            minWidth: '20px'
-                          }}>
-                            {index + 1}.
-                          </span>
-                          <span>{item}</span>
-                        </div>
-                      ))}
+                        {selectedItem.language && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Language</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.language}
                     </div>
                   </div>
                 )}
-
-                {/* What You'll Learn for Videos */}
-                {selectedItem.type === 'video' && selectedItem.whatYouLearn && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 12px 0'
-                    }}>
-                      What You'll Learn
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {selectedItem.whatYouLearn.map((item, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          fontSize: '14px',
-                          color: '#374151'
-                        }}>
-                          <span style={{
-                            color: '#16a34a',
-                            marginRight: '8px',
-                            marginTop: '2px'
-                          }}>✓</span>
-                          <span>{item}</span>
+                        {selectedItem.format && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Format</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.format}
                         </div>
-                      ))}
+                  </div>
+                )}
+                        {selectedItem.duration_hours && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Duration</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.duration_hours}h {selectedItem.duration_minutes ? `${selectedItem.duration_minutes}m` : ''}
                     </div>
                   </div>
                 )}
-
-                {/* Table of Contents for Books */}
-                {selectedItem.type === 'book' && selectedItem.tableOfContents && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 12px 0'
-                    }}>
-                      Table of Contents
-                    </h3>
-                    <div style={{ 
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '8px',
-                      padding: '16px'
-                    }}>
-                      {selectedItem.tableOfContents.map((chapter, index) => (
-                        <div key={index} style={{
-                          padding: '6px 0',
-                          borderBottom: index === selectedItem.tableOfContents.length - 1 ? 'none' : '1px solid #e2e8f0',
-                          fontSize: '14px',
-                          color: '#374151'
-                        }}>
-                          {chapter}
+                        {selectedItem.page_count && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Pages</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.page_count} pages
                         </div>
-                      ))}
+                          </div>
+                        )}
+                        {selectedItem.author_type && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Author Type</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.author_type}
                     </div>
                   </div>
                 )}
-
-                {/* Key Topics for Books */}
-                {selectedItem.type === 'book' && selectedItem.keyTopics && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 12px 0'
-                    }}>
-                      Key Topics Covered
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {selectedItem.keyTopics.map((topic, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          fontSize: '14px',
-                          color: '#374151'
-                        }}>
-                          <span style={{
-                            color: '#7c3aed',
-                            marginRight: '8px',
-                            marginTop: '2px'
-                          }}>•</span>
-                          <span>{topic}</span>
+                        {selectedItem.business_type && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Business Type</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.business_type}
                         </div>
-                      ))}
+                          </div>
+                        )}
+                        {selectedItem.stage && (
+                          <div>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Stage</span>
+                            <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
+                              {selectedItem.stage}
                     </div>
                   </div>
                 )}
+                      </div>
+                    </div>
 
-                {/* Plan Sections for Business Plans */}
-                {selectedItem.type === 'business-plan' && selectedItem.planSections && (
+                    {/* Course Description */}
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{
-                      fontSize: '16px',
+                        fontSize: '18px',
                       fontWeight: '600',
                       color: '#1a1a1a',
-                      margin: '0 0 12px 0'
+                        margin: '0 0 8px 0'
                     }}>
-                      Plan Sections
+                        Course Description
                     </h3>
-                    <div style={{ 
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '8px',
-                      padding: '16px'
-                    }}>
-                      {selectedItem.planSections.map((section, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          marginBottom: index === selectedItem.planSections.length - 1 ? '0' : '8px',
+                      <p style={{
                           fontSize: '14px',
-                          color: '#374151'
-                        }}>
-                          <span style={{
-                            color: '#dc2626',
-                            fontWeight: '600',
-                            marginRight: '8px',
-                            minWidth: '20px'
-                          }}>
-                            {index + 1}.
-                          </span>
-                          <span>{section}</span>
+                        color: '#64748b',
+                        lineHeight: '1.6',
+                        margin: 0
+                      }}>
+                        {selectedItem.description}
+                      </p>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Includes for Business Plans */}
-                {selectedItem.type === 'business-plan' && selectedItem.includes && (
-                  <div style={{ marginBottom: '24px' }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 12px 0'
-                    }}>
-                      What's Included
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {selectedItem.includes.map((item, index) => (
-                        <div key={index} style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          fontSize: '14px',
-                          color: '#374151'
-                        }}>
-                          <span style={{
-                            color: '#dc2626',
-                            marginRight: '8px',
-                            marginTop: '2px'
-                          }}>✓</span>
-                          <span>{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {/* Tags */}
-                {selectedItem.tags && selectedItem.tags.length > 0 && (
+                    {selectedItem.tags && selectedItem.tags.length > 0 && (
                   <div style={{ marginBottom: '24px' }}>
                     <h3 style={{
-                      fontSize: '16px',
+                          fontSize: '18px',
                       fontWeight: '600',
                       color: '#1a1a1a',
                       margin: '0 0 8px 0'
                     }}>
-                      Tags
+                          Tags
                     </h3>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                       {selectedItem.tags.map((tag, index) => (
@@ -1783,95 +1506,15 @@ const Courses = () => {
                           {tag}
                         </span>
                       ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                        </div>
                     </div>
                   </div>
                 )}
-
-                {/* Action Buttons */}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: '16px',
-                  marginTop: '24px',
-                  paddingTop: '20px',
-                  borderTop: '1px solid #e2e8f0'
-                }}>
-                  {selectedItem.type === 'video' && selectedItem.video_url && (
-                    <button
-                      onClick={() => {
-                        const fullUrl = selectedItem.video_url.startsWith('http')
-                          ? selectedItem.video_url
-                          : `http://localhost:8000${selectedItem.video_url}`;
-                        setVideoUrl(fullUrl);
-                        setVideoTitle(selectedItem.title);
-                        setShowVideoPlayer(true);
-                      }}
-                      style={{
-                        backgroundColor: '#f97316',
-                        color: 'white',
-                        border: 'none',
-                        padding: '12px 24px',
-                        borderRadius: '12px',
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = '#ea580c';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = '#f97316';
-                      }}
-                    >
-                      <Play size={18} />
-                      Watch Video
-                    </button>
-                  )}
-
-                  {(selectedItem.type === 'book' || selectedItem.type === 'business-plan') && selectedItem.download_url && (
-                    <button
-                      onClick={() => {
-                        const fullUrl = selectedItem.download_url.startsWith('http')
-                          ? selectedItem.download_url
-                          : `http://localhost:8000${selectedItem.download_url}`;
-                        window.open(fullUrl, '_blank');
-                      }}
-                      style={{
-                        backgroundColor: '#3b82f6',
-                        color: 'white',
-                        border: 'none',
-                        padding: '12px 24px',
-                        borderRadius: '12px',
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = '#2563eb';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = '#3b82f6';
-                      }}
-                    >
-                      <Download size={18} />
-                      Download {selectedItem.type === 'book' ? 'Book' : selectedItem.type === 'business-plan' ? 'Business Plan' : 'File'}
-                    </button>
-                  )}
-                </div>
-
-
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Video Player Modal */}
         {showVideoPlayer && (
@@ -1882,13 +1525,13 @@ const Courses = () => {
             right: 0,
             bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
+                          display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 2000
           }}
           onClick={() => setShowVideoPlayer(false)}>
-            <div style={{
+                    <div style={{ 
               position: 'relative',
               backgroundColor: 'black',
               borderRadius: '12px',
@@ -1913,7 +1556,7 @@ const Courses = () => {
                   width: '40px',
                   height: '40px',
                   cursor: 'pointer',
-                  display: 'flex',
+                          display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: '20px',
@@ -1933,7 +1576,7 @@ const Courses = () => {
                   color: 'white',
                   padding: '8px 12px',
                   borderRadius: '6px',
-                  fontSize: '14px',
+                          fontSize: '14px',
                   fontWeight: '500',
                   zIndex: 10,
                   maxWidth: 'calc(100% - 120px)',
@@ -1942,8 +1585,8 @@ const Courses = () => {
                   whiteSpace: 'nowrap'
                 }}>
                   {videoTitle}
-                </div>
-              )}
+              </div>
+                )}
 
               {/* Video player */}
               <video
