@@ -741,11 +741,11 @@ const AdminDashboard = ({ user, onLogout }) => {
         marginBottom: '32px'
       }}>
         {/* Courses Distribution */}
-        <div style={{
-          backgroundColor: 'white',
-          borderRadius: '16px',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
           padding: '24px'
         }}>
           <div style={{
@@ -913,25 +913,25 @@ const AdminDashboard = ({ user, onLogout }) => {
           border: '1px solid #e2e8f0',
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
           padding: '24px'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '20px'
         }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '20px'
+          <h3 style={{
+            fontSize: '18px',
+            fontWeight: '600',
+            color: '#0f172a',
+            margin: 0
           }}>
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '600',
-              color: '#0f172a',
-              margin: 0
-            }}>
               Books Industry Distribution
-            </h3>
+          </h3>
             <PieChart size={20} color="#16a34a" />
-          </div>
+        </div>
           <div style={{ height: '250px' }}>
-            <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%">
               <RechartsPieChart>
                 <Pie
                   data={chartData.booksIndustryDistribution}
@@ -1111,17 +1111,17 @@ const AdminDashboard = ({ user, onLogout }) => {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  }}
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'white',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                }}
                   formatter={(value, name) => [`${value}`, name]}
                 />
               </RechartsPieChart>
-            </ResponsiveContainer>
+          </ResponsiveContainer>
           </div>
           <div style={{
             display: 'flex',

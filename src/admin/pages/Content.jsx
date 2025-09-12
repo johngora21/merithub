@@ -245,7 +245,6 @@ const Content = () => {
     duration_hours: '',
     duration_minutes: '',
     language: 'English',
-    industry: '',
     level: 'Beginner',
     format: '',
     price: 'Free',
@@ -316,6 +315,8 @@ const Content = () => {
           // If same approval status, sort by date (latest first)
           return new Date(b.createdAt) - new Date(a.createdAt)
         })
+        
+        console.log('🔍 Final transformed content:', sortedContent)
         
         // Split back into separate arrays for display (but now properly sorted)
         const jobsArr = sortedContent.filter(item => item.type === 'job')
@@ -457,7 +458,6 @@ const Content = () => {
     duration_hours: '',
     duration_minutes: '',
       language: 'English',
-      industry: '',
       level: 'Beginner',
       format: '',
       price: 'Free',
@@ -508,7 +508,6 @@ const Content = () => {
         title: courseFormData.title,
         description: courseFormData.description,
         instructor: (courseFormData.instructor || courseFormData.author || ''),
-        industry_sector: courseFormData.industry,
         level: (courseFormData.level || 'Beginner').toLowerCase(),
         duration_hours: courseFormData.duration_hours ? parseInt(courseFormData.duration_hours, 10) : null,
         duration_minutes: courseFormData.duration_minutes ? parseInt(courseFormData.duration_minutes, 10) : null,
@@ -1094,7 +1093,6 @@ Merit Consultants Team`,
       job_type: item.job_type || '',
       experience_level: item.experience_level || '',
       experience_years: item.experience_years || '',
-      industry: item.industry || '',
       customIndustry: item.customIndustry || '',
       skills: Array.isArray(item.skills) ? item.skills.join(', ') : (item.skills || ''),
       benefits: Array.isArray(item.benefits) ? item.benefits.join(', ') : (item.benefits || ''),
@@ -1444,7 +1442,7 @@ Merit Consultants Team`,
       author: authorFromApi || '',
       author_type: apiCourse.author_type || '',
       business_type: apiCourse.business_type || '',
-      industry: apiCourse.industry_sector || '',
+      industry: apiCourse.industry_sector && apiCourse.industry_sector.trim() !== '' ? apiCourse.industry_sector : 'N/A',
       stage: apiCourse.stage || '',
       page_count: apiCourse.page_count || null,
       file_size: apiCourse.file_size || '',
@@ -1458,7 +1456,6 @@ Merit Consultants Team`,
       language: apiCourse.language || 'English',
       price: apiCourse.price || (apiCourse.is_free ? 'Free' : 'Pro') || 'Free',
       description: apiCourse.description || '',
-      industry: apiCourse.industry_sector || '',
       tags: Array.isArray(apiCourse?.learning_objectives) ? apiCourse.learning_objectives : [],
       approval_status: apiCourse.approval_status || 'approved',
       status: apiCourse.status || 'published',
@@ -3011,7 +3008,7 @@ Merit Consultants Team`,
             columns={[
               { key: 'title', label: 'Tender Title' },
               { key: 'organization', label: 'Organization' },
-              { key: 'industry_sector', label: 'Industry Sector' },
+              { key: 'industry_sector', label: 'Industry' },
               { 
                 key: 'status', 
                 label: 'Status',
@@ -3792,7 +3789,7 @@ Merit Consultants Team`,
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Building size={14} />
-ill fau                          <span>{plan.industry || '—'}</span>
+                          <span>{plan.industry || '—'}</span>
                           <Briefcase size={14} />
                           <span style={{ fontWeight: 600 }}>{plan.business_type || '—'}</span>
                         </div>
@@ -4599,101 +4596,103 @@ ill fau                          <span>{plan.industry || '—'}</span>
                       </div>
                     </>
                   )}
-                  <div>
-                    <label style={{
+                </div>
+
+                {/* Industry Field */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    color: '#374151',
+                    marginBottom: '6px',
+                    display: 'block'
+                  }}>
+                    Industry *
+                  </label>
+                  <select
+                    required
+                    value={courseFormData.industrySector}
+                    onChange={(e) => handleCourseInputChange('industrySector', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
                       fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#374151',
-                      marginBottom: '6px',
-                      display: 'block'
-                    }}>
-                      Industry *
-                    </label>
-                    <select
-                      required
-                      value={courseFormData.industry}
-                      onChange={(e) => handleCourseInputChange('industry', e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        outline: 'none',
-                        backgroundColor: 'white',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      <option value="">Select industry</option>
-                          <option value="Technology">Technology</option>
-                          <option value="Finance">Finance</option>
-                          <option value="Healthcare">Healthcare</option>
-                          <option value="Education">Education</option>
-                      <option value="Energy">Energy</option>
-                      <option value="Utilities">Utilities</option>
-                      <option value="Manufacturing">Manufacturing</option>
-                      <option value="Industrial">Industrial</option>
-                      <option value="Consumer">Consumer</option>
-                      <option value="Retail">Retail</option>
-                      <option value="Food">Food</option>
-                          <option value="Agriculture">Agriculture</option>
-                      <option value="Media">Media</option>
-                      <option value="Entertainment">Entertainment</option>
-                      <option value="Marketing">Marketing</option>
-                      <option value="Design">Design</option>
-                      <option value="Real Estate">Real Estate</option>
-                      <option value="Construction">Construction</option>
-                          <option value="Transportation">Transportation</option>
-                      <option value="Logistics">Logistics</option>
-                      <option value="Government">Government</option>
-                      <option value="Nonprofit">Nonprofit</option>
-                      <option value="Legal">Legal</option>
-                      <option value="HR">HR</option>
-                      <option value="Business">Business</option>
-                      <option value="Consulting">Consulting</option>
-                      <option value="Arts">Arts</option>
-                      <option value="Lifestyle">Lifestyle</option>
-                      <option value="Leadership">Leadership</option>
-                      <option value="Personal Development">Personal Development</option>
-                      <option value="Communication">Communication</option>
-                      <option value="Psychology">Psychology</option>
-                      <option value="Coaching">Coaching</option>
-                      <option value="Mentoring">Mentoring</option>
-                      <option value="Motivation">Motivation</option>
-                      <option value="Productivity">Productivity</option>
-                      <option value="Time Management">Time Management</option>
-                      <option value="Goal Setting">Goal Setting</option>
-                      <option value="Career Development">Career Development</option>
-                      <option value="Networking">Networking</option>
-                      <option value="Public Speaking">Public Speaking</option>
-                      <option value="Team Building">Team Building</option>
-                      <option value="Conflict Resolution">Conflict Resolution</option>
-                      <option value="Emotional Intelligence">Emotional Intelligence</option>
-                      <option value="Mindfulness">Mindfulness</option>
-                      <option value="Wellness">Wellness</option>
-                      <option value="Fitness">Fitness</option>
-                      <option value="Nutrition">Nutrition</option>
-                      <option value="Mental Health">Mental Health</option>
-                      <option value="Relationships">Relationships</option>
-                      <option value="Parenting">Parenting</option>
-                      <option value="Finance & Money">Finance & Money</option>
-                      <option value="Entrepreneurship">Entrepreneurship</option>
-                      <option value="Innovation">Innovation</option>
-                      <option value="Creativity">Creativity</option>
-                      <option value="Problem Solving">Problem Solving</option>
-                      <option value="Critical Thinking">Critical Thinking</option>
-                      <option value="Research">Research</option>
-                      <option value="Writing">Writing</option>
-                      <option value="Language Learning">Language Learning</option>
-                      <option value="Travel">Travel</option>
-                      <option value="Culture">Culture</option>
-                      <option value="History">History</option>
-                      <option value="Philosophy">Philosophy</option>
-                      <option value="Religion">Religion</option>
-                      <option value="Spirituality">Spirituality</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="">Select industry</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Education">Education</option>
+                    <option value="Energy">Energy</option>
+                    <option value="Utilities">Utilities</option>
+                    <option value="Manufacturing">Manufacturing</option>
+                    <option value="Industrial">Industrial</option>
+                    <option value="Consumer">Consumer</option>
+                    <option value="Retail">Retail</option>
+                    <option value="Food">Food</option>
+                    <option value="Agriculture">Agriculture</option>
+                    <option value="Media">Media</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Design">Design</option>
+                    <option value="Real Estate">Real Estate</option>
+                    <option value="Construction">Construction</option>
+                    <option value="Transportation">Transportation</option>
+                    <option value="Logistics">Logistics</option>
+                    <option value="Government">Government</option>
+                    <option value="Nonprofit">Nonprofit</option>
+                    <option value="Legal">Legal</option>
+                    <option value="HR">HR</option>
+                    <option value="Business">Business</option>
+                    <option value="Consulting">Consulting</option>
+                    <option value="Arts">Arts</option>
+                    <option value="Lifestyle">Lifestyle</option>
+                    <option value="Leadership">Leadership</option>
+                    <option value="Personal Development">Personal Development</option>
+                    <option value="Communication">Communication</option>
+                    <option value="Psychology">Psychology</option>
+                    <option value="Coaching">Coaching</option>
+                    <option value="Mentoring">Mentoring</option>
+                    <option value="Motivation">Motivation</option>
+                    <option value="Productivity">Productivity</option>
+                    <option value="Time Management">Time Management</option>
+                    <option value="Goal Setting">Goal Setting</option>
+                    <option value="Career Development">Career Development</option>
+                    <option value="Networking">Networking</option>
+                    <option value="Public Speaking">Public Speaking</option>
+                    <option value="Team Building">Team Building</option>
+                    <option value="Conflict Resolution">Conflict Resolution</option>
+                    <option value="Emotional Intelligence">Emotional Intelligence</option>
+                    <option value="Mindfulness">Mindfulness</option>
+                    <option value="Wellness">Wellness</option>
+                    <option value="Fitness">Fitness</option>
+                    <option value="Nutrition">Nutrition</option>
+                    <option value="Mental Health">Mental Health</option>
+                    <option value="Relationships">Relationships</option>
+                    <option value="Parenting">Parenting</option>
+                    <option value="Finance & Money">Finance & Money</option>
+                    <option value="Entrepreneurship">Entrepreneurship</option>
+                    <option value="Innovation">Innovation</option>
+                    <option value="Creativity">Creativity</option>
+                    <option value="Problem Solving">Problem Solving</option>
+                    <option value="Critical Thinking">Critical Thinking</option>
+                    <option value="Research">Research</option>
+                    <option value="Writing">Writing</option>
+                    <option value="Language Learning">Language Learning</option>
+                    <option value="Travel">Travel</option>
+                    <option value="Culture">Culture</option>
+                    <option value="History">History</option>
+                    <option value="Philosophy">Philosophy</option>
+                    <option value="Religion">Religion</option>
+                    <option value="Spirituality">Spirituality</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
 
                 {/* Level & Language (for videos and books) */}
@@ -4860,7 +4859,7 @@ ill fau                          <span>{plan.industry || '—'}</span>
                         marginBottom: '6px',
                         display: 'block'
                       }}>
-                        Industry Sector *
+                        Industry *
                       </label>
                       <select
                         required
@@ -6289,16 +6288,12 @@ ill fau                          <span>{plan.industry || '—'}</span>
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.downloads ?? selectedItem.download_count ?? selectedItem.enrollment_count ?? 0}</p>
                     </div>
                     <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry Sector</label>
+                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry</label>
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.industry || 'N/A'}</p>
                     </div>
                       <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Level</label>
                         <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.level || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Industry</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.industry || 'N/A'}</p>
                       </div>
                       {(selectedItem.type === 'video' || selectedItem.type === 'book' || selectedItem.course_type === 'video' || selectedItem.course_type === 'book') && (
                         <div>
@@ -8407,7 +8402,7 @@ ill fau                          <span>{plan.industry || '—'}</span>
                     color: '#1a1a1a',
                     margin: '0 0 12px 0'
                   }}>
-                    {categoryKey === 'industrySector' || categoryKey === 'industry' ? 'Industry Sector' :
+                    {categoryKey === 'industrySector' || categoryKey === 'industry' ? 'Industry' :
                      categoryKey === 'businessType' ? 'Business Type' :
                      categoryKey === 'authorType' ? 'Author Type' :
                      categoryKey.charAt(0).toUpperCase() + categoryKey.slice(1)}

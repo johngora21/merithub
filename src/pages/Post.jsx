@@ -171,7 +171,6 @@ const Post = ({ onClose, editItem = null }) => {
         evaluationCriteria: ensureMultiline(editItem.evaluation_criteria || editItem.criteria),
         contactPhone: editItem.contact_phone || '',
         // Opportunity-specific fields
-        duration: editItem.duration || '',
         opportunityType: editItem.opportunityType || editItem.type || editItem.opportunity_type || '',
         category: editItem.category || ''
       };
