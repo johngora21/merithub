@@ -610,6 +610,8 @@ const Courses = () => {
           onClick={(e) => {
             e.stopPropagation();
             if (video.download_url || video.video_url) {
+              // Track download
+              apiService.incrementCourseDownloads(video.id).catch(() => {})
               const downloadUrl = video.download_url || video.video_url;
               const fullUrl = downloadUrl.startsWith('http')
                 ? downloadUrl
@@ -834,6 +836,7 @@ const Courses = () => {
           onClick={(e) => {
             e.stopPropagation();
             if (book.download_url) {
+              apiService.incrementCourseDownloads(book.id).catch(() => {})
               const fullUrl = book.download_url.startsWith('http')
                 ? book.download_url
                 : `http://localhost:8000${book.download_url}`;
@@ -1069,6 +1072,7 @@ const Courses = () => {
           onClick={(e) => {
             e.stopPropagation();
             if (plan.download_url) {
+              apiService.incrementCourseDownloads(plan.id).catch(() => {})
               const fullUrl = plan.download_url.startsWith('http')
                 ? plan.download_url
                 : `http://localhost:8000${plan.download_url}`;

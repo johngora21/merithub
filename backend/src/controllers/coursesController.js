@@ -258,5 +258,28 @@ const updateCourseProgress = async (req, res) => {
 
 module.exports = { list, create, getById, update, remove, getMyCourses, enrollInCourse, updateCourseProgress };
 
+// Increment course downloads counter and optionally return updated count
+module.exports.incrementDownloads = async (req, res) => {
+  try {
+    const courseId = parseInt(req.params.id, 10);
+    if (Number.isNaN(courseId)) {
+      return res.status(400).json({ success: false, message: 'Invalid course id' });
+    }
+
+    // Increment downloads column; column name assumed to be 'downloads'
+    await Course.increment('downloads', { where: { id: courseId } });
+
+    const course = await Course.findByPk(courseId, { attributes: ['id', 'download_url', 'title', 'downloads'] });
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+
+    return res.json({ success: true, data: { course } });
+  } catch (error) {
+    console.error('Increment downloads error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to increment downloads', error: error.message });
+  }
+};
+
 
 

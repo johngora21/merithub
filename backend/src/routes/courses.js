@@ -11,6 +11,7 @@ router.get('/:id', controller.getById);
 router.get('/my-courses', authenticateToken, controller.getMyCourses);
 router.post('/enroll', authenticateToken, controller.enrollInCourse);
 router.put('/progress/:enrollment_id', authenticateToken, controller.updateCourseProgress);
+router.post('/:id/download', authenticateToken, controller.incrementDownloads);
 
 // Admin protected
 router.use(authenticateToken);

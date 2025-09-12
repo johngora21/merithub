@@ -1666,6 +1666,7 @@ const Bookmarks = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (bookmark.download_url || bookmark.video_url) {
+                            apiService.incrementCourseDownloads(bookmark.id).catch(() => {})
                             const downloadUrl = bookmark.download_url || bookmark.video_url;
                             const fullUrl = downloadUrl.startsWith('http')
                               ? downloadUrl
@@ -1889,6 +1890,7 @@ const Bookmarks = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (bookmark.download_url) {
+                            apiService.incrementCourseDownloads(bookmark.id).catch(() => {})
                             const fullUrl = bookmark.download_url.startsWith('http')
                               ? bookmark.download_url
                               : `http://localhost:8000${bookmark.download_url}`;
@@ -2123,6 +2125,7 @@ const Bookmarks = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (bookmark.download_url) {
+                            apiService.incrementCourseDownloads(bookmark.id).catch(() => {})
                             const fullUrl = bookmark.download_url.startsWith('http')
                               ? bookmark.download_url
                               : `http://localhost:8000${bookmark.download_url}`;

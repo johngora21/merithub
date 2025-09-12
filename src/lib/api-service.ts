@@ -70,6 +70,11 @@ export const apiService = {
     }
   },
 
+  // Courses helpers
+  async incrementCourseDownloads(courseId: number) {
+    return this.post(`/courses/${courseId}/download`)
+  },
+
   async post(endpoint: string, data?: any) {
     try {
       const token = localStorage.getItem('auth-token');
