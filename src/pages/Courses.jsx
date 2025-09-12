@@ -46,18 +46,38 @@ const Courses = () => {
     const handleBookmarkRemoved = (e) => {
       const removedType = e?.detail?.type
       const removedId = e?.detail?.originalId
-      if (!removedType || removedId == null) return
+      console.log('🔔 Courses received bookmarkRemoved event:', { removedType, removedId })
+      
+      if (!removedType || removedId == null) {
+        console.log('🔔 Event ignored - missing type or ID')
+        return
+      }
 
-      const key = `${removedType}_${removedId}`
+      // For course items (video, book, business-plan), use 'course' as the type in the key
+      const key = (removedType === 'video' || removedType === 'book' || removedType === 'business-plan') 
+        ? `course_${removedId}` 
+        : `${removedType}_${removedId}`
+      
+      console.log('🔔 Processing bookmark removal with key:', key)
+        
       setBookmarkedItems((prev) => {
-        if (!prev || !prev[key]) return prev
+        if (!prev || !prev[key]) {
+          console.log('🔔 Key not found in bookmarkedItems:', key)
+          return prev
+        }
         const next = { ...prev }
         delete next[key]
+        console.log('🔔 Removed key from bookmarkedItems:', key)
+        
+        // Update localStorage to match
         try {
           const stored = JSON.parse(localStorage.getItem('savedCourseItems') || '{}')
           delete stored[key]
           localStorage.setItem('savedCourseItems', JSON.stringify(stored))
-        } catch {}
+          console.log('🔔 Updated localStorage')
+        } catch (error) {
+          console.error('🔔 Error updating localStorage:', error)
+        }
         return next
       })
 
@@ -66,6 +86,7 @@ const Courses = () => {
         const next = new Set(prev)
         next.delete(String(removedId))
         next.delete(Number(removedId))
+        console.log('🔔 Updated savedItems set')
         return next
       })
     }
@@ -104,7 +125,43 @@ const Courses = () => {
 
   useEffect(() => {
     fetchCourses()
+    fetchSavedItems()
   }, [])
+
+  const fetchSavedItems = async () => {
+    try {
+      const response = await apiService.get('/saved-items')
+      if (response.success && response.data && response.data.items) {
+        const savedItemsMap = {}
+        response.data.items.forEach(item => {
+          if (item.item_type === 'course' && item.course_id) {
+            // For course items, we need to determine the course type
+            // We'll use the course data if available, otherwise default to 'video'
+            const courseType = item.course?.course_type || 'video'
+            const key = `course_${item.course_id}`
+            savedItemsMap[key] = true
+          } else if (item.item_type === 'job' && item.job_id) {
+            const key = `job_${item.job_id}`
+            savedItemsMap[key] = true
+          } else if (item.item_type === 'tender' && item.tender_id) {
+            const key = `tender_${item.tender_id}`
+            savedItemsMap[key] = true
+          } else if (item.item_type === 'opportunity' && item.opportunity_id) {
+            const key = `opportunity_${item.opportunity_id}`
+            savedItemsMap[key] = true
+          }
+        })
+        
+        console.log('🔍 Fetched saved items from API:', savedItemsMap)
+        setBookmarkedItems(savedItemsMap)
+        
+        // Update localStorage to match API data
+        localStorage.setItem('savedCourseItems', JSON.stringify(savedItemsMap))
+      }
+    } catch (error) {
+      console.error('Error fetching saved items:', error)
+    }
+  }
 
   const transformCourseData = (apiCourse) => {
     // Match the exact structure from admin Content.jsx transformCourseAdminItem
@@ -138,7 +195,7 @@ const Courses = () => {
       download_url: apiCourse.download_url || null,
       video_url: apiCourse.video_url || null,
       // Map industry from industry_sector field for display
-      industry: apiCourse.industry_sector || 'General',
+      industry: apiCourse.industry_sector && apiCourse.industry_sector.trim() !== '' ? apiCourse.industry_sector : 'General',
       downloads: apiCourse.downloads ?? apiCourse.downloads_count ?? 0
     }
 
@@ -263,12 +320,18 @@ const Courses = () => {
 
   // Bookmark functions for courses
   const isBookmarked = (type, id) => {
-    const key = `${type}_${id}`
+    // For course items (video, book, business-plan), use 'course' as the type in the key
+    const key = (type === 'video' || type === 'book' || type === 'business-plan') 
+      ? `course_${id}` 
+      : `${type}_${id}`
     return bookmarkedItems[key] || false
   }
 
   const toggleBookmark = async (type, id) => {
-    const key = `${type}_${id}`
+    // For course items (video, book, business-plan), use 'course' as the type in the key
+    const key = (type === 'video' || type === 'book' || type === 'business-plan') 
+      ? `course_${id}` 
+      : `${type}_${id}`
     const isCurrentlyBookmarked = isBookmarked(type, id)
     
     try {
@@ -1645,7 +1708,7 @@ const Courses = () => {
                       </div>
                       </div>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry Sector</span>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
                             {selectedItem.industry}
                       </div>
@@ -1656,12 +1719,6 @@ const Courses = () => {
                             {selectedItem.level}
                   </div>
                 </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.industry}
-                        </div>
-                        </div>
                         {selectedItem.language && (
                           <div>
                             <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Language</span>

@@ -19,7 +19,7 @@ const listSavedItems = async (req, res) => {
           as: 'course', 
           attributes: [
             'id', 'title', 'description', 'detailed_description', 'instructor', 'instructor_bio',
-            'category', 'subcategory', 'level', 'duration_hours', 'duration_minutes', 'price', 'currency',
+            'subcategory', 'level', 'duration_hours', 'duration_minutes', 'price', 'currency',
             'thumbnail_url', 'video_url', 'download_url', 'course_type', 'page_count', 'file_size',
             'business_type', 'industry_sector', 'stage', 'language', 'format', 'author_type',
             'downloads'
@@ -96,11 +96,17 @@ const removeItem = async (req, res) => {
 
     const { key } = req.params;
     
-    // Parse the key format: "video_123", "book_456", "business-plan_789"
+    // Parse the key format: "video_123", "book_456", "business-plan_789", "course_123"
     const [item_type, item_id] = key.split('_');
     
     if (!item_type || !item_id) {
       return res.status(400).json({ success: false, message: 'Invalid item key format' });
+    }
+
+    // Parse item_id to number and validate
+    const parsedId = parseInt(item_id);
+    if (isNaN(parsedId)) {
+      return res.status(400).json({ success: false, message: 'Invalid item ID format' });
     }
 
     let whereClause = {
@@ -110,13 +116,13 @@ const removeItem = async (req, res) => {
 
     // Set the appropriate ID field based on item type
     if (item_type === 'job') {
-      whereClause.job_id = parseInt(item_id);
+      whereClause.job_id = parsedId;
     } else if (item_type === 'tender') {
-      whereClause.tender_id = parseInt(item_id);
+      whereClause.tender_id = parsedId;
     } else if (item_type === 'opportunity') {
-      whereClause.opportunity_id = parseInt(item_id);
+      whereClause.opportunity_id = parsedId;
     } else if (item_type === 'course') {
-      whereClause.course_id = parseInt(item_id);
+      whereClause.course_id = parsedId;
     } else {
       return res.status(400).json({ success: false, message: 'Invalid item type' });
     }

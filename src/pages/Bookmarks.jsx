@@ -54,7 +54,7 @@ const formatDeadline = (deadline) => {
 const Bookmarks = () => {
   const screenSize = useResponsive()
   const { user } = useAuth()
-  const [selectedFilter, setSelectedFilter] = useState('video')
+  const [selectedFilter, setSelectedFilter] = useState('job')
   const [bookmarks, setBookmarks] = useState([])
   const [loading, setLoading] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -87,6 +87,17 @@ const Bookmarks = () => {
   }, [])
 
   const transformBookmarkData = (apiBookmark) => {
+    console.log('🔍 Transforming bookmark:', apiBookmark)
+    console.log('🔍 Bookmark has course?', !!apiBookmark.course)
+    console.log('🔍 Bookmark has job?', !!apiBookmark.job)
+    console.log('🔍 Bookmark has tender?', !!apiBookmark.tender)
+    console.log('🔍 Bookmark has opportunity?', !!apiBookmark.opportunity)
+    console.log('🔍 Item type:', apiBookmark.item_type)
+    console.log('🔍 Course ID:', apiBookmark.course_id)
+    console.log('🔍 Job ID:', apiBookmark.job_id)
+    console.log('🔍 Tender ID:', apiBookmark.tender_id)
+    console.log('🔍 Opportunity ID:', apiBookmark.opportunity_id)
+    
     const baseData = {
       id: apiBookmark.id,
       saved: apiBookmark.created_at ? new Date(apiBookmark.created_at).toLocaleDateString() : 'Recently',
@@ -346,7 +357,9 @@ const Bookmarks = () => {
     } else if (apiBookmark.course) {
       const c = apiBookmark.course
       baseData.originalId = c.id
-      const courseType = c.type || c.course_type || 'video'
+      const courseType = c.course_type || 'video'
+      console.log('🔍 Course data:', { id: c.id, course_type: c.course_type, finalType: courseType })
+      console.log('🔍 Full course object:', c)
       
       // Base course data
       const baseCourse = {
@@ -378,13 +391,13 @@ const Bookmarks = () => {
         target_audience: c.target_audience || null,
         download_url: c.download_url || null,
         video_url: c.video_url || null,
-        industry: c.industry_sector || 'General',
+        industry: c.industry_sector && c.industry_sector.trim() !== '' ? c.industry_sector : 'General',
         thumbnail_url: c.thumbnail_url || null
       }
 
       // Course type specific data
       if (courseType === 'video') {
-        return {
+        const result = {
           ...baseCourse,
           instructor: c.instructor || 'Unknown Instructor',
           thumbnail: c.thumbnail_url || 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=240&fit=crop',
@@ -393,8 +406,10 @@ const Bookmarks = () => {
           prerequisites: c.prerequisites || [],
           whatYouWillLearn: Array.isArray(c.learning_objectives) ? c.learning_objectives : []
         }
+        console.log('🔍 Video course result:', { id: result.id, type: result.type, originalId: result.originalId })
+        return result
       } else if (courseType === 'book') {
-        return {
+        const result = {
           ...baseCourse,
           author: c.instructor || c.author || 'Unknown Author',
           cover: c.thumbnail_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=240&fit=crop',
@@ -402,8 +417,10 @@ const Bookmarks = () => {
           chapters: c.chapters || [],
           keyTopics: c.key_topics || []
         }
+        console.log('🔍 Book course result:', { id: result.id, type: result.type, originalId: result.originalId })
+        return result
       } else if (courseType === 'business-plan') {
-        return {
+        const result = {
           ...baseCourse,
           instructor: c.instructor || c.author || 'Unknown Instructor',
           preview: c.thumbnail_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=240&fit=crop',
@@ -413,6 +430,8 @@ const Bookmarks = () => {
           planSections: c.plan_sections || [],
           includes: c.includes || []
         }
+        console.log('🔍 Business-plan course result:', { id: result.id, type: result.type, originalId: result.originalId })
+        return result
       }
 
       return baseCourse
@@ -436,6 +455,7 @@ const Bookmarks = () => {
       
       if (response.success && response.data && response.data.items && response.data.items.length > 0) {
         console.log('Found bookmarks in API, transforming...')
+        console.log('🔍 Raw API bookmarks:', response.data.items)
         const transformedBookmarks = response.data.items.map(transformBookmarkData)
         console.log('Transformed bookmarks:', transformedBookmarks)
         console.log('Bookmark types:', transformedBookmarks.map(b => ({ id: b.id, type: b.type })))
@@ -639,6 +659,10 @@ const Bookmarks = () => {
       localStorage.setItem('savedItems', JSON.stringify(savedItems))
       
       // Trigger a custom event to notify other pages
+      console.log('🔔 Dispatching bookmarkRemoved event:', { 
+        type: bookmark.type, 
+        originalId: bookmark.originalId 
+      })
       window.dispatchEvent(new CustomEvent('bookmarkRemoved', { 
         detail: { 
           type: bookmark.type, 
@@ -3137,7 +3161,7 @@ const Bookmarks = () => {
                           </div>
                         </div>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry Sector</span>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
                             {selectedItem.industry}
                           </div>
@@ -3146,12 +3170,6 @@ const Bookmarks = () => {
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Level</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
                             {selectedItem.level}
-                          </div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.industry}
                           </div>
                         </div>
                         {selectedItem.language && (
@@ -3332,7 +3350,7 @@ const Bookmarks = () => {
                           </div>
                         </div>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry Sector</span>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
                             {selectedItem.industry}
                           </div>
@@ -3341,12 +3359,6 @@ const Bookmarks = () => {
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Level</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
                             {selectedItem.level}
-                          </div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.industry}
                           </div>
                         </div>
                         {selectedItem.language && (
@@ -3535,7 +3547,7 @@ const Bookmarks = () => {
                           </div>
                         </div>
                         <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry Sector</span>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
                             {selectedItem.industry}
                           </div>
@@ -3544,12 +3556,6 @@ const Bookmarks = () => {
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Level</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
                             {selectedItem.level}
-                          </div>
-                        </div>
-                        <div>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Industry</span>
-                          <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.industry}
                           </div>
                         </div>
                         {selectedItem.language && (
