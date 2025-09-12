@@ -1468,6 +1468,9 @@ Merit Consultants Team`,
       thumbnail_url: apiCourse.thumbnail_url,
       video_url: apiCourse.video_url,
       download_url: apiCourse.download_url,
+      // Normalized counts
+      downloads: (typeof apiCourse.downloads === 'number' ? apiCourse.downloads : (apiCourse.downloads_count ?? apiCourse.enrollment_count ?? 0)),
+      download_count: apiCourse.downloads_count ?? apiCourse.enrollment_count ?? 0,
       materials: apiCourse.materials || [],
       requirements: apiCourse.requirements || [],
       learningOutcomes: apiCourse.learning_outcomes || [],
@@ -3377,7 +3380,7 @@ Merit Consultants Team`,
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <Download size={14} />
-                            {(video.download_count ?? video.enrollment_count ?? 0)} downloads
+                            {(video.downloads ?? video.download_count ?? video.enrollment_count ?? 0)} downloads
                           </div>
                           <span style={{
                             backgroundColor: '#f3f4f6',
@@ -3626,7 +3629,7 @@ Merit Consultants Team`,
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <Download size={14} />
-                            {(book.download_count ?? 0)} downloads
+                            {(book.downloads ?? book.download_count ?? 0)} downloads
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '6px' }}>
@@ -3877,7 +3880,7 @@ ill fau                          <span>{plan.category || '—'}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <Download size={14} />
-                            {(plan.download_count ?? plan.enrollment_count ?? 0)} downloads
+                            {(plan.downloads ?? plan.download_count ?? plan.enrollment_count ?? 0)} downloads
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '6px' }}>
@@ -6377,7 +6380,7 @@ ill fau                          <span>{plan.category || '—'}</span>
                     </div>
                     <div>
                       <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Downloads</label>
-                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.download_count ?? selectedItem.enrollment_count ?? 0}</p>
+                        <p style={{ fontSize: '14px', color: '#0f172a', margin: 0, fontWeight: '500' }}>{selectedItem.downloads ?? selectedItem.download_count ?? selectedItem.enrollment_count ?? 0}</p>
                     </div>
                     <div>
                         <label style={{ fontSize: '12px', color: '#64748b', fontWeight: '500', marginBottom: '4px', display: 'block' }}>Category</label>
