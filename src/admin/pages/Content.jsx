@@ -1429,15 +1429,6 @@ Merit Consultants Team`,
 
   // Transform course data for admin display
   const transformCourseAdminItem = (apiCourse) => {
-    console.log('🔍 Admin Course Transform - Raw API data:', {
-      id: apiCourse.id,
-      title: apiCourse.title,
-      downloads: apiCourse.downloads,
-      downloads_count: apiCourse.downloads_count,
-      enrollment_count: apiCourse.enrollment_count,
-      course_type: apiCourse.course_type
-    });
-    
     const courseType = apiCourse.course_type || 'video'
     const authorFromApi = apiCourse.author
     const instructorFromApi = apiCourse.instructor
@@ -1484,12 +1475,6 @@ Merit Consultants Team`,
       learningOutcomes: apiCourse.learning_outcomes || [],
       target_audience: apiCourse.target_audience || ''
     }
-    
-    console.log('🔍 Admin Course Transform - Final transformed data:', {
-      id: transformedData.id,
-      title: transformedData.title,
-      downloads: transformedData.downloads
-    });
     
     return transformedData
   }
@@ -3394,18 +3379,7 @@ Merit Consultants Team`,
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <Download size={14} />
-                            {(() => {
-                              const downloadCount = (video.downloads ?? video.download_count ?? video.enrollment_count ?? 0);
-                              console.log('🔍 Video Card Downloads Debug:', {
-                                id: video.id,
-                                title: video.title,
-                                downloads: video.downloads,
-                                download_count: video.download_count,
-                                enrollment_count: video.enrollment_count,
-                                finalCount: downloadCount
-                              });
-                              return downloadCount;
-                            })()} downloads
+                            {(video.downloads ?? video.download_count ?? video.enrollment_count ?? 0)} downloads
                           </div>
                           <span style={{
                             backgroundColor: '#f3f4f6',

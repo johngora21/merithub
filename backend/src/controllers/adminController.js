@@ -996,6 +996,7 @@ const getAllContent = async (req, res) => {
           file_size: item.file_size || null,
           author_type: item.author_type || null,
           target_audience: item.target_audience || null,
+          downloads: item.downloads || 0,
           isPro: item.is_free === false,
           price: item.is_free ? 'Free' : 'Pro'
         };
