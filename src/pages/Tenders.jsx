@@ -240,10 +240,8 @@ const Tenders = () => {
     const idStr = String(tenderId)
     try {
       if (savedTenders.has(idStr)) {
-        const savedId = tenderIdToSavedItemId[idStr]
-        if (savedId) {
-          await apiService.delete(`/saved-items/${savedId}`)
-        }
+        // Backend expects key format: tender_{tenderId}
+        await apiService.delete(`/saved-items/tender_${tenderId}`)
         const next = new Set(savedTenders)
         next.delete(idStr)
         setSavedTenders(next)

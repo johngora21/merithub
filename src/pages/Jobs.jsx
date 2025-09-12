@@ -4,6 +4,12 @@ import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsiv
 import { countries } from '../utils/countries'
 import { apiService, resolveAssetUrl, jobsAPI } from '../lib/api-service'
 import { useAuth } from '../contexts/AuthContext'
+import { 
+  generateCoverLetter, 
+  generateProfileSummary, 
+  generateExperienceSummary, 
+  generateEducationSummary
+} from '../utils/contentGenerators'
 
 
 import { 
@@ -225,10 +231,8 @@ const Jobs = () => {
     const idStr = String(jobId)
     try {
       if (savedJobs.has(idStr)) {
-        const savedId = jobIdToSavedItemId[idStr]
-        if (savedId) {
-          await apiService.delete(`/saved-items/${savedId}`)
-        }
+        // Backend expects key format: job_{jobId}
+        await apiService.delete(`/saved-items/job_${jobId}`)
         const next = new Set(savedJobs)
         next.delete(idStr)
         setSavedJobs(next)
@@ -291,12 +295,12 @@ const Jobs = () => {
       const applicationData = {
         application_type: 'job',
         job_id: parseInt(jobId),
-        cover_letter: generateCoverLetter(job),
+        cover_letter: generateCoverLetter(job, user),
         application_data: {
-          profile_summary: generateProfileSummary(),
+          profile_summary: generateProfileSummary(user),
           skills: user.skills || [],
-          experience_summary: generateExperienceSummary(),
-          education_summary: generateEducationSummary()
+          experience_summary: generateExperienceSummary(user),
+          education_summary: generateEducationSummary(user)
         }
       }
 
@@ -347,44 +351,6 @@ const Jobs = () => {
     }
   }
 
-  const generateCoverLetter = (job) => {
-    return `Dear Hiring Manager,
-
-I am writing to express my interest in the ${job.title} position at ${job.company}. 
-
-With my background in ${user?.industry || 'technology'} and experience as a ${user?.current_job_title || 'professional'}, I am confident that I would be a valuable addition to your team.
-
-I am particularly drawn to this opportunity because of ${job.company}'s reputation in the industry and the chance to contribute to meaningful projects.
-
-I look forward to the opportunity to discuss how my skills and experience align with your needs.
-
-Best regards,
-${user?.first_name} ${user?.last_name}`
-  }
-
-  const generateProfileSummary = () => {
-    return `${user?.first_name} ${user?.last_name} is a ${user?.current_job_title || 'professional'} with experience in ${user?.industry || 'technology'}. Based in ${user?.location || 'various locations'}, they bring expertise and dedication to their work.`
-  }
-
-  const generateExperienceSummary = () => {
-    if (!user?.experience || user.experience.length === 0) {
-      return 'Experience details available upon request.'
-    }
-    
-    return user.experience.map(exp => 
-      `${exp.title} at ${exp.company} (${exp.period}) - ${exp.description || 'Key responsibilities and achievements.'}`
-    ).join('\n\n')
-  }
-
-  const generateEducationSummary = () => {
-    if (!user?.education || user.education.length === 0) {
-      return 'Education details available upon request.'
-    }
-    
-    return user.education.map(edu => 
-      `${edu.level} in ${edu.program} from ${edu.school} (${edu.period})`
-    ).join('\n')
-  }
 
   const filterOptions = {
     jobType: ['Full-time', 'Part-time', 'Contract', 'Internship'],

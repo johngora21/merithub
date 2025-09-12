@@ -15,6 +15,22 @@ export function resolveAssetUrl(possiblePath?: string | null): string {
   return `${ASSET_BASE_URL}/${possiblePath.replace(/^\//, '')}`;
 }
 
+// Rich API error with status and endpoint metadata to enable nuanced handling upstream
+export class ApiError extends Error {
+  status?: number;
+  data?: any;
+  endpoint?: string;
+  method?: string;
+  constructor(message: string, status?: number, data?: any, endpoint?: string, method?: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+    this.endpoint = endpoint;
+    this.method = method;
+  }
+}
+
 // Generic API Service for frontend components
 export const apiService = {
   async get(endpoint: string, params?: any) {
@@ -38,8 +54,13 @@ export const apiService = {
       const response = await fetch(url, { headers });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Request failed');
+        // Treat duplicate-saved as success for saved-items
+        if (response.status === 409 && endpoint.startsWith('/saved-items')) {
+          return { success: true, message: 'Already saved' } as any;
+        }
+        let errorBody: any = {};
+        try { errorBody = await response.json(); } catch (_) {}
+        throw new ApiError(errorBody?.message || 'Request failed', response.status, errorBody, endpoint, 'POST');
       }
 
       return await response.json();
@@ -71,8 +92,13 @@ export const apiService = {
       }
 
       return await response.json();
-    } catch (error) {
-      console.error('API POST error:', error);
+    } catch (error: any) {
+      const isApiErr = error?.name === 'ApiError';
+      const isSavedItems = isApiErr && typeof error.endpoint === 'string' && error.endpoint.startsWith('/saved-items');
+      const isHandledConflict = isSavedItems && error.method === 'POST' && error.status === 409;
+      if (!isHandledConflict) {
+        console.error('API POST error:', error);
+      }
       throw error;
     }
   },
@@ -94,8 +120,13 @@ export const apiService = {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Request failed');
+        // Treat not-found as success for saved-items
+        if (response.status === 404 && endpoint.startsWith('/saved-items')) {
+          return { success: true, message: 'Already removed' } as any;
+        }
+        let errorBody: any = {};
+        try { errorBody = await response.json(); } catch (_) {}
+        throw new ApiError(errorBody?.message || 'Request failed', response.status, errorBody, endpoint, 'DELETE');
       }
 
       return await response.json();
@@ -124,8 +155,13 @@ export const apiService = {
       }
 
       return await response.json();
-    } catch (error) {
-      console.error('API DELETE error:', error);
+    } catch (error: any) {
+      const isApiErr = error?.name === 'ApiError';
+      const isSavedItems = isApiErr && typeof error.endpoint === 'string' && error.endpoint.startsWith('/saved-items');
+      const isHandledNotFound = isSavedItems && error.method === 'DELETE' && error.status === 404;
+      if (!isHandledNotFound) {
+        console.error('API DELETE error:', error);
+      }
       throw error;
     }
   },

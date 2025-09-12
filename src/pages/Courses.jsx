@@ -40,6 +40,38 @@ const Courses = () => {
       return {}
     }
   })
+
+  // Keep UI in sync when bookmarks are removed elsewhere (e.g., Bookmarks page)
+  useEffect(() => {
+    const handleBookmarkRemoved = (e) => {
+      const removedType = e?.detail?.type
+      const removedId = e?.detail?.originalId
+      if (!removedType || removedId == null) return
+
+      const key = `${removedType}_${removedId}`
+      setBookmarkedItems((prev) => {
+        if (!prev || !prev[key]) return prev
+        const next = { ...prev }
+        delete next[key]
+        try {
+          const stored = JSON.parse(localStorage.getItem('savedCourseItems') || '{}')
+          delete stored[key]
+          localStorage.setItem('savedCourseItems', JSON.stringify(stored))
+        } catch {}
+        return next
+      })
+
+      // Also clear simple saved set if used for visual state by id
+      setSavedItems((prev) => {
+        const next = new Set(prev)
+        next.delete(String(removedId))
+        next.delete(Number(removedId))
+        return next
+      })
+    }
+    window.addEventListener('bookmarkRemoved', handleBookmarkRemoved)
+    return () => window.removeEventListener('bookmarkRemoved', handleBookmarkRemoved)
+  }, [])
   const [filters, setFilters] = useState({
     videos: {
       category: [],
@@ -240,15 +272,34 @@ const Courses = () => {
     
     try {
       if (isCurrentlyBookmarked) {
-        // Remove bookmark
-        await apiService.delete(`/saved-items/${key}`)
+        // Remove bookmark in API using course key
+        try {
+          await apiService.delete(`/saved-items/course_${id}`)
+        } catch (error) {
+          const status = error?.response?.status
+          const serverMsg = String(error?.response?.data?.message || '').toLowerCase()
+          const errMsg = String(error?.message || '').toLowerCase()
+          const isNotFound = status === 404 || serverMsg.includes('not found') || errMsg.includes('not found')
+          if (!isNotFound) {
+            throw error
+          }
+        }
       } else {
-        // Add bookmark
-        await apiService.post('/saved-items', {
-          item_type: type,
-          item_id: id,
-          item_category: 'course'
-        })
+        // Add bookmark in API using item_type 'course'
+        try {
+          await apiService.post('/saved-items', {
+            item_type: 'course',
+            course_id: id
+          })
+        } catch (error) {
+          const status = error?.response?.status
+          const serverMsg = String(error?.response?.data?.message || '').toLowerCase()
+          const errMsg = String(error?.message || '').toLowerCase()
+          const isAlreadySaved = status === 409 || serverMsg.includes('already saved') || errMsg.includes('already saved')
+          if (!isAlreadySaved) {
+            throw error
+          }
+        }
       }
       
       // Update local state
@@ -263,6 +314,22 @@ const Courses = () => {
         [key]: !isCurrentlyBookmarked
       }
       localStorage.setItem('savedCourseItems', JSON.stringify(updatedSaved))
+
+      // If we removed, broadcast event so other pages (e.g., Bookmarks) stay in sync
+      if (isCurrentlyBookmarked) {
+        try {
+          window.dispatchEvent(new CustomEvent('bookmarkRemoved', { detail: { type, originalId: id } }))
+        } catch (_) {
+          // no-op
+        }
+      } else {
+        // If we added, broadcast event so Bookmarks refreshes
+        try {
+          window.dispatchEvent(new CustomEvent('bookmarkAdded', { detail: { type, originalId: id } }))
+        } catch (_) {
+          // no-op
+        }
+      }
       
     } catch (error) {
       console.error('Error toggling bookmark:', error)
@@ -1501,7 +1568,7 @@ const Courses = () => {
               </div>
 
               {/* Content - EXACT admin structure */}
-              <div style={{ padding: '0 24px 24px 24px' }}>
+              <div style={{ padding: '0 24px 24px 24px', marginTop: '16px' }}>
                 {selectedItem.type === 'course' && (
                   <div>
                 {/* Title */}

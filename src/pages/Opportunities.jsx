@@ -229,10 +229,8 @@ const Opportunities = () => {
     const idStr = String(opportunityId)
     try {
       if (savedOpportunities.has(idStr)) {
-        const savedId = opportunityIdToSavedItemId[idStr]
-        if (savedId) {
-          await apiService.delete(`/saved-items/${savedId}`)
-        }
+        // Backend expects key format: opportunity_{opportunityId}
+        await apiService.delete(`/saved-items/opportunity_${opportunityId}`)
         const next = new Set(savedOpportunities)
         next.delete(idStr)
         setSavedOpportunities(next)

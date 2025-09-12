@@ -3,6 +3,14 @@ import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsiv
 import { apiService, resolveAssetUrl } from '../lib/api-service'
 import { useAuth } from '../contexts/AuthContext'
 import { countries } from '../utils/countries'
+import { 
+  generateCoverLetter, 
+  generateProfileSummary, 
+  generateExperienceSummary, 
+  generateEducationSummary,
+  getTypeColor,
+  getTypeIcon
+} from '../utils/contentGenerators'
 
 import { 
   Bookmark, 
@@ -29,6 +37,20 @@ import {
   Download
 } from 'lucide-react'
 
+// Helper available to the whole component to format deadlines
+const formatDeadline = (deadline) => {
+  if (!deadline) return 'Not specified'
+  try {
+    const date = new Date(deadline)
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
+  } catch {
+    return deadline
+  }
+}
+
 const Bookmarks = () => {
   const screenSize = useResponsive()
   const { user } = useAuth()
@@ -52,6 +74,15 @@ const Bookmarks = () => {
     } else {
       console.log('Auth token found, fetching bookmarks...')
     fetchBookmarks()
+    }
+    // Listen for cross-page bookmark changes
+    const handleAdded = () => fetchBookmarks()
+    const handleRemoved = () => fetchBookmarks()
+    window.addEventListener('bookmarkAdded', handleAdded)
+    window.addEventListener('bookmarkRemoved', handleRemoved)
+    return () => {
+      window.removeEventListener('bookmarkAdded', handleAdded)
+      window.removeEventListener('bookmarkRemoved', handleRemoved)
     }
   }, [])
 
@@ -314,6 +345,7 @@ const Bookmarks = () => {
       }
     } else if (apiBookmark.course) {
       const c = apiBookmark.course
+      baseData.originalId = c.id
       const courseType = c.type || c.course_type || 'video'
       
       // Base course data
@@ -564,7 +596,13 @@ const Bookmarks = () => {
       }
 
       // Create the key for API call
-      const key = `${bookmark.type}_${bookmark.originalId || bookmark.id}`
+      let key
+      if (bookmark.type === 'video' || bookmark.type === 'book' || bookmark.type === 'business-plan') {
+        // For course items, use 'course' as the type
+        key = `course_${bookmark.originalId || bookmark.id}`
+      } else {
+        key = `${bookmark.type}_${bookmark.originalId || bookmark.id}`
+      }
 
       // Delete from API
       await apiService.delete(`/saved-items/${key}`)
@@ -653,12 +691,12 @@ const Bookmarks = () => {
         const applicationData = {
           application_type: 'job',
           job_id: parseInt(item.id),
-          cover_letter: generateCoverLetter(item),
+          cover_letter: generateCoverLetter(item, user),
           application_data: {
-            profile_summary: generateProfileSummary(),
+            profile_summary: generateProfileSummary(user),
             skills: user.skills || [],
-            experience_summary: generateExperienceSummary(),
-            education_summary: generateEducationSummary()
+            experience_summary: generateExperienceSummary(user),
+            education_summary: generateEducationSummary(user)
           }
         }
 
@@ -724,55 +762,6 @@ const Bookmarks = () => {
         education: !hasEducation,
         experience: !hasExperience
       }
-    }
-  }
-
-  const generateCoverLetter = (job) => {
-    return `Dear Hiring Manager,
-
-I am writing to express my interest in the ${job.title} position at ${job.company}. 
-
-With my background in ${user?.industry || 'technology'} and experience as a ${user?.current_job_title || 'professional'}, I am confident that I would be a valuable addition to your team.
-
-I am particularly drawn to this opportunity because of ${job.company}'s reputation in the industry and the chance to contribute to meaningful projects.
-
-I look forward to the opportunity to discuss how my skills and experience align with your needs.
-
-Best regards,
-${user?.first_name} ${user?.last_name}`
-  }
-
-  const generateProfileSummary = () => {
-    return `${user?.first_name} ${user?.last_name} is a ${user?.current_job_title || 'professional'} with experience in ${user?.industry || 'technology'}. Based in ${user?.location || 'various locations'}, they bring expertise and dedication to their work.`
-  }
-
-  const generateExperienceSummary = () => {
-    if (!user?.experience || user.experience.length === 0) {
-      return 'Experience details available upon request.'
-    }
-    
-    return user.experience.map(exp => 
-      `${exp.title} at ${exp.company} (${exp.period}) - ${exp.description || 'Key responsibilities and achievements.'}`
-    ).join('\n\n')
-  }
-
-  const generateEducationSummary = () => {
-    if (!user?.education || user.education.length === 0) {
-      return 'Education details available upon request.'
-    }
-    
-    return user.education.map(edu => 
-      `${edu.level} in ${edu.program} from ${edu.school} (${edu.period})`
-    ).join('\n')
-  }
-
-  const getTypeColor = (type) => {
-    switch (type) {
-      case 'job': return '#16a34a'
-      case 'opportunity': return '#3b82f6'
-      case 'tender': return '#dc2626'
-      case 'course': return '#7c3aed'
-      default: return '#64748b'
     }
   }
 
@@ -1076,27 +1065,27 @@ ${user?.first_name} ${user?.last_name}`
                             removeBookmark(bookmark.id)
                           }}
                           style={{
-                            background: '#f8f9fa',
-                            border: '1px solid #e2e8f0',
+                            background: 'rgba(255,255,255,0.9)',
+                            border: 'none',
                             padding: '8px',
                             cursor: 'pointer',
                             borderRadius: '8px',
-                            flexShrink: 0,
-                            marginLeft: '8px',
-                            transition: 'all 0.2s ease-in-out'
+                            transition: 'all 0.2s ease-in-out',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                           }}
                           onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = '#f1f5f9'
+                            e.target.style.backgroundColor = 'white'
                             e.target.style.transform = 'scale(1.05)'
                           }}
                           onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = '#f8f9fa'
+                            e.target.style.backgroundColor = 'rgba(255,255,255,0.9)'
                             e.target.style.transform = 'scale(1)'
                           }}
                         >
-                          <Trash2 
-                            size={20} 
+                          <Bookmark 
+                            size={16} 
                             color="#dc2626"
+                            fill="#dc2626"
                           />
                         </button>
                       </div>
@@ -1333,27 +1322,27 @@ ${user?.first_name} ${user?.last_name}`
                             removeBookmark(bookmark.id)
                           }}
                           style={{
-                            background: '#f8f9fa',
-                            border: '1px solid #e2e8f0',
+                            background: 'rgba(255,255,255,0.9)',
+                            border: 'none',
                             padding: '8px',
                             cursor: 'pointer',
                             borderRadius: '8px',
-                            flexShrink: 0,
-                            marginLeft: '8px',
-                            transition: 'all 0.2s ease-in-out'
+                            transition: 'all 0.2s ease-in-out',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                           }}
                           onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = '#f1f5f9'
+                            e.target.style.backgroundColor = 'white'
                             e.target.style.transform = 'scale(1.05)'
                           }}
                           onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = '#f8f9fa'
+                            e.target.style.backgroundColor = 'rgba(255,255,255,0.9)'
                             e.target.style.transform = 'scale(1)'
                           }}
                         >
-                          <Trash2 
-                            size={20} 
+                          <Bookmark 
+                            size={16} 
                             color="#dc2626"
+                            fill="#dc2626"
                           />
                         </button>
                   </div>
@@ -2257,9 +2246,10 @@ ${user?.first_name} ${user?.last_name}`
                         e.target.style.transform = 'translateY(0)'
                       }}
                     >
-                      <Trash2 
+                      <Bookmark 
                         size={16} 
                         color="#dc2626"
+                        fill="#dc2626"
                       />
                     </button>
                   </div>
@@ -2481,66 +2471,54 @@ ${user?.first_name} ${user?.last_name}`
           }}
           onClick={(e) => e.stopPropagation()}>
             
-            {/* Close button - positioned at top right of modal */}
-            <div style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              zIndex: 10
-            }}>
-              <button
-                onClick={() => setShowDetails(false)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.9)',
-                  border: 'none',
-                  padding: '8px',
-                  borderRadius: '8px',
-                  cursor: 'pointer'
-                }}
-              >
-                <X size={20} color="#64748b" />
-              </button>
-            </div>
             
-            {/* Header */}
-            <div style={{ 
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: screenSize.isMobile ? '16px 12px 0 12px' : '24px 24px 0 24px',
-              borderBottom: '1px solid #e5e7eb',
-              paddingBottom: '16px',
-              marginBottom: '16px'
-            }}>
-              <h2 style={{
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#1a1a1a',
-                margin: 0
+            
+            {/* Header (hidden for media types so image appears at the very top) */}
+            {!(selectedItem.type === 'video' || selectedItem.type === 'book' || selectedItem.type === 'business-plan') && (
+              <div style={{ 
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: screenSize.isMobile ? '16px 12px 0 12px' : '24px 24px 0 24px',
+                borderBottom: '1px solid #e5e7eb',
+                paddingBottom: '16px',
+                marginBottom: '16px'
               }}>
-                {selectedItem.title}
-              </h2>
-              <button
-                onClick={() => setShowDetails(false)}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  padding: '8px',
-                  borderRadius: '20px',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                <X size={18} color="#64748b" />
-              </button>
-            </div>
+                <h2 style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: '#1a1a1a',
+                  margin: 0
+                }}>
+                  {selectedItem.title}
+                </h2>
+                <button
+                  onClick={() => setShowDetails(false)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    padding: '8px',
+                    borderRadius: '20px',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <X size={18} color="#64748b" />
+                </button>
+              </div>
+            )}
 
             {/* Content - This will be populated based on selectedItem.type */}
-            <div style={{ padding: screenSize.isMobile ? '16px 24px 90px 24px' : '32px 40px 90px 40px', flex: 1 }}>
+            <div style={{ 
+              padding: (selectedItem.type === 'video' || selectedItem.type === 'book' || selectedItem.type === 'business-plan')
+                ? '0 0 90px 0'
+                : (screenSize.isMobile ? '16px 24px 90px 24px' : '32px 40px 90px 40px'),
+              flex: 1 
+            }}>
               {selectedItem.type === 'job' && (
                 <div>
                   {/* Company Profile Header (match admin) */}
@@ -3049,20 +3027,36 @@ ${user?.first_name} ${user?.last_name}`
               {selectedItem.type === 'video' && (
                 <div>
                   {/* Header Image */}
-                  <div style={{ position: 'relative', height: '250px', overflow: 'hidden' }}>
+                  <div style={{ position: 'relative', height: '250px', overflow: 'hidden', borderTopLeftRadius: screenSize.isMobile ? '20px' : '16px', borderTopRightRadius: screenSize.isMobile ? '20px' : '16px' }}>
                     <img 
                       src={selectedItem.thumbnail_url ? (selectedItem.thumbnail_url.startsWith('/uploads') ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${selectedItem.thumbnail_url}` : selectedItem.thumbnail_url) : (selectedItem.thumbnail || selectedItem.cover || selectedItem.preview)} 
                       alt={selectedItem.title}
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover'
+                        objectFit: 'cover',
+                        display: 'block'
                       }}
                     />
-            </div>
+                    <button
+                      onClick={() => setShowDetails(false)}
+                      style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        background: 'rgba(0,0,0,0.5)',
+                        border: 'none',
+                        padding: '8px',
+                        borderRadius: '999px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <X size={18} color="#ffffff" />
+                    </button>
+                  </div>
 
                   {/* Content - EXACT admin structure */}
-                  <div style={{ padding: '0 24px 24px 24px' }}>
+                  <div style={{ padding: '0 24px 24px 24px', marginTop: '16px' }}>
                     {/* Title */}
                     <h2 style={{
                       fontSize: '24px',
@@ -3229,20 +3223,36 @@ ${user?.first_name} ${user?.last_name}`
               {selectedItem.type === 'book' && (
                 <div>
                   {/* Header Image */}
-                  <div style={{ position: 'relative', height: '250px', overflow: 'hidden' }}>
+                  <div style={{ position: 'relative', height: '250px', overflow: 'hidden', borderTopLeftRadius: screenSize.isMobile ? '20px' : '16px', borderTopRightRadius: screenSize.isMobile ? '20px' : '16px' }}>
                     <img 
                       src={selectedItem.thumbnail_url ? (selectedItem.thumbnail_url.startsWith('/uploads') ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${selectedItem.thumbnail_url}` : selectedItem.thumbnail_url) : (selectedItem.thumbnail || selectedItem.cover || selectedItem.preview)} 
                       alt={selectedItem.title}
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover'
+                        objectFit: 'cover',
+                        display: 'block'
                       }}
                     />
+                    <button
+                      onClick={() => setShowDetails(false)}
+                      style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        background: 'rgba(0,0,0,0.5)',
+                        border: 'none',
+                        padding: '8px',
+                        borderRadius: '999px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <X size={18} color="#ffffff" />
+                    </button>
                   </div>
 
                   {/* Content - EXACT admin structure */}
-                  <div style={{ padding: '0 24px 24px 24px' }}>
+                  <div style={{ padding: '0 24px 24px 24px', marginTop: '16px' }}>
                     {/* Title */}
                     <h2 style={{
                       fontSize: '24px',
@@ -3416,20 +3426,36 @@ ${user?.first_name} ${user?.last_name}`
               {selectedItem.type === 'business-plan' && (
                 <div>
                   {/* Header Image */}
-                  <div style={{ position: 'relative', height: '250px', overflow: 'hidden' }}>
+                  <div style={{ position: 'relative', height: '250px', overflow: 'hidden', borderTopLeftRadius: screenSize.isMobile ? '20px' : '16px', borderTopRightRadius: screenSize.isMobile ? '20px' : '16px' }}>
                     <img 
                       src={selectedItem.thumbnail_url ? (selectedItem.thumbnail_url.startsWith('/uploads') ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${selectedItem.thumbnail_url}` : selectedItem.thumbnail_url) : (selectedItem.thumbnail || selectedItem.cover || selectedItem.preview)} 
                       alt={selectedItem.title}
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover'
+                        objectFit: 'cover',
+                        display: 'block'
                       }}
                     />
+                    <button
+                      onClick={() => setShowDetails(false)}
+                      style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        background: 'rgba(0,0,0,0.5)',
+                        border: 'none',
+                        padding: '8px',
+                        borderRadius: '999px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <X size={18} color="#ffffff" />
+                    </button>
                   </div>
 
                   {/* Content - EXACT admin structure */}
-                  <div style={{ padding: '0 24px 24px 24px' }}>
+                  <div style={{ padding: '0 24px 24px 24px', marginTop: '16px' }}>
                     {/* Title */}
                     <h2 style={{
                       fontSize: '24px',
