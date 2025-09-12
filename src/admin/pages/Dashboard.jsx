@@ -61,7 +61,15 @@ const AdminDashboard = ({ user, onLogout }) => {
     dailyStats: [],
     jobsStatusDistribution: [],
     tendersStatusDistribution: [],
-    opportunitiesStatusDistribution: []
+    opportunitiesStatusDistribution: [],
+    // New pie chart data
+    coursesDistribution: [],
+    videosIndustryDistribution: [],
+    booksIndustryDistribution: [],
+    businessPlansIndustryDistribution: [],
+    jobsIndustryDistribution: [],
+    tendersIndustryDistribution: [],
+    opportunitiesIndustryDistribution: []
   })
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -90,7 +98,15 @@ const AdminDashboard = ({ user, onLogout }) => {
           tendersStatusDistribution: data.tendersStatusDistribution || [],
           opportunitiesStatusDistribution: data.opportunitiesStatusDistribution || [],
           applicationsStatusDistribution: data.applicationsStatusDistribution || [],
-          recentActivity: data.recentActivity || []
+          recentActivity: data.recentActivity || [],
+          // New pie chart data
+          coursesDistribution: data.coursesDistribution || [],
+          videosIndustryDistribution: data.videosIndustryDistribution || [],
+          booksIndustryDistribution: data.booksIndustryDistribution || [],
+          businessPlansIndustryDistribution: data.businessPlansIndustryDistribution || [],
+          jobsIndustryDistribution: data.jobsIndustryDistribution || [],
+          tendersIndustryDistribution: data.tendersIndustryDistribution || [],
+          opportunitiesIndustryDistribution: data.opportunitiesIndustryDistribution || []
         })
         const s = data.stats || {}
         console.log('Stats data:', s)
@@ -717,62 +733,580 @@ const AdminDashboard = ({ user, onLogout }) => {
         </div>
       </div>
 
-      {/* Weekly Activity Chart */}
+      {/* Pie Charts Grid */}
       <div style={{
-        backgroundColor: 'white',
-        borderRadius: '16px',
-        border: '1px solid #e2e8f0',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-        padding: '24px',
+        display: 'grid',
+        gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(2, 1fr)',
+        gap: '24px',
         marginBottom: '32px'
       }}>
+        {/* Courses Distribution */}
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '20px'
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
         }}>
-          <h3 style={{
-            fontSize: '18px',
-            fontWeight: '600',
-            color: '#0f172a',
-            margin: 0
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
           }}>
-            Weekly Activity
-          </h3>
-          <BarChart3 size={20} color="#8b5cf6" />
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Courses Distribution
+            </h3>
+            <PieChart size={20} color="#ea580c" />
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={chartData.coursesDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.coursesDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}`, name]}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '16px'
+          }}>
+            {chartData.coursesDistribution.map((item) => (
+              <div key={item.name} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color
+                  }}></div>
+                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                </div>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div style={{ height: '300px' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <RechartsBarChart data={chartData.dailyStats}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis
-                dataKey="day"
-                stroke="#64748b"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                stroke="#64748b"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'white',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                }}
-              />
-              <Legend />
-              <Bar dataKey="jobs" fill="#3b82f6" radius={[2, 2, 0, 0]} name="Jobs" />
-              <Bar dataKey="tenders" fill="#16a34a" radius={[2, 2, 0, 0]} name="Tenders" />
-              <Bar dataKey="opportunities" fill="#8b5cf6" radius={[2, 2, 0, 0]} name="Opportunities" />
-            </RechartsBarChart>
-          </ResponsiveContainer>
+
+        {/* Videos Industry Distribution */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Videos Industry Distribution
+            </h3>
+            <PieChart size={20} color="#3b82f6" />
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={chartData.videosIndustryDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.videosIndustryDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}`, name]}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '16px'
+          }}>
+            {chartData.videosIndustryDistribution.map((item) => (
+              <div key={item.name} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color
+                  }}></div>
+                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                </div>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Second Row of Pie Charts */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(2, 1fr)',
+        gap: '24px',
+        marginBottom: '32px'
+      }}>
+        {/* Books Industry Distribution */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Books Industry Distribution
+            </h3>
+            <PieChart size={20} color="#16a34a" />
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={chartData.booksIndustryDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.booksIndustryDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}`, name]}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '16px'
+          }}>
+            {chartData.booksIndustryDistribution.map((item) => (
+              <div key={item.name} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color
+                  }}></div>
+                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                </div>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Business Plans Industry Distribution */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Business Plans Industry Distribution
+            </h3>
+            <PieChart size={20} color="#8b5cf6" />
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={chartData.businessPlansIndustryDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.businessPlansIndustryDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}`, name]}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '16px'
+          }}>
+            {chartData.businessPlansIndustryDistribution.map((item) => (
+              <div key={item.name} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color
+                  }}></div>
+                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                </div>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Third Row of Pie Charts */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(3, 1fr)',
+        gap: '24px',
+        marginBottom: '32px'
+      }}>
+        {/* Jobs Industry Distribution */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Jobs Industry Distribution
+            </h3>
+            <PieChart size={20} color="#3b82f6" />
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={chartData.jobsIndustryDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.jobsIndustryDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}`, name]}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '16px'
+          }}>
+            {chartData.jobsIndustryDistribution.map((item) => (
+              <div key={item.name} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color
+                  }}></div>
+                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                </div>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tenders Industry Distribution */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Tenders Industry Distribution
+            </h3>
+            <PieChart size={20} color="#16a34a" />
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={chartData.tendersIndustryDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.tendersIndustryDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}`, name]}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '16px'
+          }}>
+            {chartData.tendersIndustryDistribution.map((item) => (
+              <div key={item.name} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color
+                  }}></div>
+                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                </div>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Opportunities Industry Distribution */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Opportunities Industry Distribution
+            </h3>
+            <PieChart size={20} color="#8b5cf6" />
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={chartData.opportunitiesIndustryDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.opportunitiesIndustryDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}`, name]}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '16px'
+          }}>
+            {chartData.opportunitiesIndustryDistribution.map((item) => (
+              <div key={item.name} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color
+                  }}></div>
+                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                </div>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

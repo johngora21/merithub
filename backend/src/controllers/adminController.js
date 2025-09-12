@@ -225,6 +225,126 @@ const getDashboardStats = async (req, res) => {
       { name: 'Business Plans', value: Math.floor(totalCourses * 0.3), color: '#0891b2' }
     ];
 
+    // Get courses distribution by type
+    const coursesByType = await Course.findAll({
+      attributes: [
+        'course_type',
+        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+      ],
+      group: ['course_type'],
+      raw: true
+    });
+
+    const coursesDistribution = coursesByType.map(item => ({
+      name: item.course_type === 'video' ? 'Videos' : 
+            item.course_type === 'book' ? 'Books' : 
+            item.course_type === 'business_plan' ? 'Business Plans' : 
+            item.course_type || 'Other',
+      value: parseInt(item.count),
+      color: item.course_type === 'video' ? '#3b82f6' : 
+             item.course_type === 'book' ? '#16a34a' : 
+             item.course_type === 'business_plan' ? '#8b5cf6' : '#64748b'
+    }));
+
+    // Get industry distribution for videos
+    const videosByIndustry = await Course.findAll({
+      attributes: [
+        'industry_sector',
+        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+      ],
+      where: { course_type: 'video' },
+      group: ['industry_sector'],
+      raw: true
+    });
+
+    const videosIndustryDistribution = videosByIndustry.map(item => ({
+      name: item.industry_sector || 'Other',
+      value: parseInt(item.count),
+      color: `hsl(${Math.random() * 360}, 70%, 50%)`
+    }));
+
+    // Get industry distribution for books
+    const booksByIndustry = await Course.findAll({
+      attributes: [
+        'industry_sector',
+        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+      ],
+      where: { course_type: 'book' },
+      group: ['industry_sector'],
+      raw: true
+    });
+
+    const booksIndustryDistribution = booksByIndustry.map(item => ({
+      name: item.industry_sector || 'Other',
+      value: parseInt(item.count),
+      color: `hsl(${Math.random() * 360}, 70%, 50%)`
+    }));
+
+    // Get industry distribution for business plans
+    const businessPlansByIndustry = await Course.findAll({
+      attributes: [
+        'industry_sector',
+        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+      ],
+      where: { course_type: 'business_plan' },
+      group: ['industry_sector'],
+      raw: true
+    });
+
+    const businessPlansIndustryDistribution = businessPlansByIndustry.map(item => ({
+      name: item.industry_sector || 'Other',
+      value: parseInt(item.count),
+      color: `hsl(${Math.random() * 360}, 70%, 50%)`
+    }));
+
+    // Get industry distribution for jobs
+    const jobsByIndustry = await Job.findAll({
+      attributes: [
+        'industry',
+        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+      ],
+      group: ['industry'],
+      raw: true
+    });
+
+    const jobsIndustryDistribution = jobsByIndustry.map(item => ({
+      name: item.industry || 'Other',
+      value: parseInt(item.count),
+      color: `hsl(${Math.random() * 360}, 70%, 50%)`
+    }));
+
+    // Get industry distribution for tenders
+    const tendersByIndustry = await Tender.findAll({
+      attributes: [
+        'sector',
+        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+      ],
+      group: ['sector'],
+      raw: true
+    });
+
+    const tendersIndustryDistribution = tendersByIndustry.map(item => ({
+      name: item.sector || 'Other',
+      value: parseInt(item.count),
+      color: `hsl(${Math.random() * 360}, 70%, 50%)`
+    }));
+
+    // Get industry distribution for opportunities
+    const opportunitiesByIndustry = await Opportunity.findAll({
+      attributes: [
+        'category',
+        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+      ],
+      group: ['category'],
+      raw: true
+    });
+
+    const opportunitiesIndustryDistribution = opportunitiesByIndustry.map(item => ({
+      name: item.category || 'Other',
+      value: parseInt(item.count),
+      color: `hsl(${Math.random() * 360}, 70%, 50%)`
+    }));
+
     // User activity data
     const userActivity = [
       { status: 'Active Users', count: activeUsers, color: '#16a34a' },
@@ -412,7 +532,15 @@ const getDashboardStats = async (req, res) => {
       tendersStatusDistribution,
       opportunitiesStatusDistribution,
       applicationsStatusDistribution,
-      recentActivity: topRecentActivity
+      recentActivity: topRecentActivity,
+      // New pie chart data
+      coursesDistribution,
+      videosIndustryDistribution,
+      booksIndustryDistribution,
+      businessPlansIndustryDistribution,
+      jobsIndustryDistribution,
+      tendersIndustryDistribution,
+      opportunitiesIndustryDistribution
     };
 
     res.json(dashboardData);
