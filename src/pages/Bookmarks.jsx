@@ -358,6 +358,7 @@ const Bookmarks = () => {
         isPro: c.is_free === false,
         rating: c.rating || 4.5,
         students: c.enrollment_count || c.students_count || 0,
+        downloads: (typeof c.downloads === 'number' ? c.downloads : (c.downloads_count ?? c.enrollment_count ?? 0)),
         postedTime: c.created_at ? new Date(c.created_at).toLocaleDateString() : 'Recently',
         language: c.language || 'English',
         format: c.format || null,
@@ -408,7 +409,7 @@ const Bookmarks = () => {
           preview: c.thumbnail_url || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=240&fit=crop',
           pages: c.page_count || 0,
           sections: c.sections_count || 0,
-          downloads: c.downloads_count || 0,
+          downloads: (typeof c.downloads === 'number' ? c.downloads : (c.downloads_count || 0)),
           planSections: c.plan_sections || [],
           includes: c.includes || []
         }
@@ -1666,12 +1667,15 @@ const Bookmarks = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (bookmark.download_url || bookmark.video_url) {
-                            apiService.incrementCourseDownloads(bookmark.id).catch(() => {})
+                            apiService.incrementCourseDownloads(bookmark.originalId || bookmark.id).catch(() => {})
                             const downloadUrl = bookmark.download_url || bookmark.video_url;
                             const fullUrl = downloadUrl.startsWith('http')
                               ? downloadUrl
                               : `http://localhost:8000${downloadUrl}`;
                             window.open(fullUrl, '_blank');
+                            // Optimistically bump downloads in UI and then refetch to sync
+                            setBookmarks(prev => prev.map(b => ((b.originalId || b.id) === (bookmark.originalId || bookmark.id) ? { ...b, downloads: (b.downloads || 0) + 1 } : b)))
+                            fetchBookmarks()
                           } else {
                             alert('Download file not available');
                           }
@@ -1890,11 +1894,13 @@ const Bookmarks = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (bookmark.download_url) {
-                            apiService.incrementCourseDownloads(bookmark.id).catch(() => {})
+                            apiService.incrementCourseDownloads(bookmark.originalId || bookmark.id).catch(() => {})
                             const fullUrl = bookmark.download_url.startsWith('http')
                               ? bookmark.download_url
                               : `http://localhost:8000${bookmark.download_url}`;
                             window.open(fullUrl, '_blank');
+                            setBookmarks(prev => prev.map(b => ((b.originalId || b.id) === (bookmark.originalId || bookmark.id) ? { ...b, downloads: (b.downloads || 0) + 1 } : b)))
+                            fetchBookmarks()
                           } else {
                             alert('Download file not available');
                           }
@@ -2125,11 +2131,13 @@ const Bookmarks = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (bookmark.download_url) {
-                            apiService.incrementCourseDownloads(bookmark.id).catch(() => {})
+                            apiService.incrementCourseDownloads(bookmark.originalId || bookmark.id).catch(() => {})
                             const fullUrl = bookmark.download_url.startsWith('http')
                               ? bookmark.download_url
                               : `http://localhost:8000${bookmark.download_url}`;
                             window.open(fullUrl, '_blank');
+                            setBookmarks(prev => prev.map(b => ((b.originalId || b.id) === (bookmark.originalId || bookmark.id) ? { ...b, downloads: (b.downloads || 0) + 1 } : b)))
+                            fetchBookmarks()
                           } else {
                             alert('Download file not available');
                           }
@@ -3125,7 +3133,7 @@ const Bookmarks = () => {
                         <div>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Downloads</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.enrollment_count || 0}
+                            {selectedItem.downloads ?? selectedItem.download_count ?? selectedItem.enrollment_count ?? 0}
                           </div>
                         </div>
                         <div>
@@ -3320,7 +3328,7 @@ const Bookmarks = () => {
                         <div>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Downloads</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.enrollment_count || 0}
+                            {selectedItem.downloads ?? selectedItem.download_count ?? selectedItem.enrollment_count ?? 0}
                           </div>
                         </div>
                         <div>
@@ -3523,7 +3531,7 @@ const Bookmarks = () => {
                         <div>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Downloads</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.enrollment_count || 0}
+                            {selectedItem.downloads ?? selectedItem.download_count ?? selectedItem.enrollment_count ?? 0}
                           </div>
                         </div>
                         <div>

@@ -175,7 +175,7 @@ const Courses = () => {
         level: apiCourse.level ? apiCourse.level.charAt(0).toUpperCase() + apiCourse.level.slice(1) : 'Beginner',
         pages: apiCourse.page_count || 0,
         sections: apiCourse.sections_count || 0,
-        downloads: apiCourse.downloads_count || 0,
+        downloads: (apiCourse.downloads ?? apiCourse.downloads_count ?? apiCourse.enrollment_count ?? 0),
         planSections: apiCourse.plan_sections || [],
         includes: apiCourse.includes || []
       }
@@ -1641,7 +1641,7 @@ const Courses = () => {
                         <div>
                           <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '500' }}>Downloads</span>
                           <div style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '600' }}>
-                            {selectedItem.enrollment_count || 0}
+                            {selectedItem.downloads ?? selectedItem.download_count ?? selectedItem.enrollment_count ?? 0}
                       </div>
                       </div>
                         <div>

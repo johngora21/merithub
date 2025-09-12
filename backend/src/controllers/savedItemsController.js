@@ -14,7 +14,17 @@ const listSavedItems = async (req, res) => {
         { model: Job, as: 'job' },
         { model: Tender, as: 'tender' },
         { model: Opportunity, as: 'opportunity' },
-        { model: Course, as: 'course' }
+        { 
+          model: Course, 
+          as: 'course', 
+          attributes: [
+            'id', 'title', 'description', 'detailed_description', 'instructor', 'instructor_bio',
+            'category', 'subcategory', 'level', 'duration_hours', 'duration_minutes', 'price', 'currency',
+            'thumbnail_url', 'video_url', 'download_url', 'course_type', 'page_count', 'file_size',
+            'business_type', 'industry_sector', 'stage', 'language', 'format', 'author_type',
+            'downloads'
+          ]
+        }
       ],
       order: [['created_at', 'DESC']]
     });
