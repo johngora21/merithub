@@ -3432,39 +3432,6 @@ Merit Consultants Team`,
                             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
                           }} />
                         </div>
-                        {/* Watch button aligned to right */}
-                        <button style={{
-                          marginLeft: 'auto',
-                          backgroundColor: '#f97316',
-                          color: 'white',
-                          border: 'none',
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (video.video_url) {
-                            // Construct the full URL for the video
-                            const fullUrl = video.video_url.startsWith('http') 
-                              ? video.video_url 
-                              : `http://localhost:8000${video.video_url}`;
-                            setVideoUrl(fullUrl);
-                            setVideoTitle(video.title);
-                            setShowVideoPlayer(true);
-                          } else {
-                            alert('Video file not available');
-                          }
-                        }}>
-                          <Play size={16} />
-                          Watch
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -3675,36 +3642,6 @@ Merit Consultants Team`,
                             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
                           }} />
                         </div>
-                        <button style={{
-                          backgroundColor: '#3b82f6',
-                          color: 'white',
-                          border: 'none',
-                          padding: '6px 10px',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '500',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          marginLeft: 'auto',
-                          gap: '6px'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (book.download_url) {
-                            // Construct the full URL for the file
-                            const fullUrl = book.download_url.startsWith('http') 
-                              ? book.download_url 
-                              : `http://localhost:8000${book.download_url}`;
-                            window.open(fullUrl, '_blank');
-                          } else {
-                            alert('Download file not available');
-                          }
-                        }}>
-                          <Download size={16} />
-                          Download
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -3927,36 +3864,6 @@ ill fau                          <span>{plan.category || '—'}</span>
                             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
                           }} />
                         </div>
-                        <button style={{
-                          backgroundColor: '#3b82f6',
-                          color: 'white',
-                          border: 'none',
-                          padding: '6px 10px',
-                          borderRadius: '8px',
-                          fontSize: '13px',
-                          fontWeight: '500',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          marginLeft: 'auto',
-                          gap: '6px'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (plan.download_url) {
-                            // Construct the full URL for the file
-                            const fullUrl = plan.download_url.startsWith('http') 
-                              ? plan.download_url 
-                              : `http://localhost:8000${plan.download_url}`;
-                            window.open(fullUrl, '_blank');
-                          } else {
-                            alert('Download file not available');
-                          }
-                        }}>
-                          <Download size={16} />
-                          Download
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -6514,85 +6421,6 @@ ill fau                          <span>{plan.category || '—'}</span>
                     </div>
                   )}
 
-                  {/* Action Buttons */}
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    gap: '16px',
-                    marginTop: '24px',
-                    paddingTop: '20px',
-                    borderTop: '1px solid #e2e8f0'
-                  }}>
-                    {(selectedItem.course_type === 'video' || selectedItem.type === 'video') && selectedItem.video_url && (
-                      <button
-                        onClick={() => {
-                          const fullUrl = selectedItem.video_url.startsWith('http') 
-                            ? selectedItem.video_url 
-                            : `http://localhost:8000${selectedItem.video_url}`;
-                          setVideoUrl(fullUrl);
-                          setVideoTitle(selectedItem.title);
-                          setShowVideoPlayer(true);
-                        }}
-                        style={{
-                          backgroundColor: '#f97316',
-                          color: 'white',
-                          border: 'none',
-                          padding: '12px 24px',
-                          borderRadius: '12px',
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = '#ea580c';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = '#f97316';
-                        }}
-                      >
-                        <Play size={18} />
-                        Watch Video
-                      </button>
-                    )}
-                    
-                    {(selectedItem.course_type === 'book' || selectedItem.course_type === 'business-plan' || selectedItem.type === 'book' || selectedItem.type === 'business-plan') && selectedItem.download_url && (
-                      <button
-                        onClick={() => {
-                          const fullUrl = selectedItem.download_url.startsWith('http') 
-                            ? selectedItem.download_url 
-                            : `http://localhost:8000${selectedItem.download_url}`;
-                          window.open(fullUrl, '_blank');
-                        }}
-                        style={{
-                          backgroundColor: '#3b82f6',
-                          color: 'white',
-                          border: 'none',
-                          padding: '12px 24px',
-                          borderRadius: '12px',
-                          fontSize: '16px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = '#2563eb';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = '#3b82f6';
-                        }}
-                      >
-                        <Download size={18} />
-                        Download {selectedItem.course_type === 'book' ? 'Book' : selectedItem.course_type === 'business-plan' ? 'Business Plan' : 'File'}
-                      </button>
-                    )}
-                  </div>
 
                 </div>
               )}
