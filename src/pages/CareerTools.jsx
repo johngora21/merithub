@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { FileText, Download, Upload, Edit3, Eye, Plus, Save, X } from 'lucide-react'
 import { useResponsive, getGridColumns, getGridGap } from '../hooks/useResponsive'
 import { apiService, resolveAssetUrl } from '../lib/api-service'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 const CareerTools = () => {
   const screenSize = useResponsive()
@@ -14,6 +16,7 @@ const CareerTools = () => {
   const [editingTemplate, setEditingTemplate] = useState(null)
   const [templateData, setTemplateData] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [previewDocument, setPreviewDocument] = useState(null)
 
   const tabs = [
     { id: 'cv-builder', name: 'CV Builder' },
@@ -1628,22 +1631,171 @@ const CareerTools = () => {
     
     setSaving(true)
     try {
-      // Here you would save the template data to the backend
-      // For now, we'll just update the local state
       console.log('Saving template data:', templateData)
       
-      // You could implement saving to user's documents or a separate templates table
-      // await apiService.post('/user/templates', { templateId: editingTemplate.id, data: templateData })
+      // Create a new document entry
+      const newDocument = {
+        id: Date.now(), // Simple ID generation
+        name: `${templateData.name || 'My'} ${editingTemplate.type === 'CV' ? 'CV' : 'Resume'}`,
+        type: editingTemplate.type,
+        category: editingTemplate.category,
+        templateId: editingTemplate.id,
+        templateData: templateData,
+        created: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        updated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        status: 'Complete'
+      }
       
-      alert('Template saved successfully!')
+      console.log('Saving document with template ID:', editingTemplate.id)
+      console.log('Document structure:', newDocument)
+      
+      // Add to local myDocuments state
+      setMyDocuments(prev => [newDocument, ...prev])
+      
+      // Save to backend (you can implement this API endpoint)
+      try {
+        await apiService.post('/user/documents', {
+          name: newDocument.name,
+          type: newDocument.type,
+          category: newDocument.category,
+          template_id: editingTemplate.id,
+          template_data: templateData,
+          status: 'complete'
+        })
+        console.log('Document saved to backend successfully')
+      } catch (backendError) {
+        console.warn('Backend save failed, but document saved locally:', backendError)
+        // Continue even if backend save fails
+      }
+      
+      alert('Document saved successfully! You can find it in "My Documents" tab.')
       setEditingTemplate(null)
       setTemplateData(null)
+      setActiveTab('my-documents') // Switch to My Documents tab
     } catch (error) {
       console.error('Error saving template:', error)
       alert('Error saving template. Please try again.')
     } finally {
       setSaving(false)
     }
+  }
+
+  // Download document as PDF (simple approach using existing component)
+  const downloadDocument = async (doc) => {
+    try {
+      // Find the original template that was used to create this document
+      const originalTemplate = professionalTemplates.find(template => template.id === doc.templateId)
+      
+      if (!originalTemplate) {
+        console.error('Original template not found for document:', doc)
+        alert('Original template not found. Cannot download this document.')
+        return
+      }
+      
+      // Create a temporary template object for rendering using the original template structure
+      const templateForDownload = {
+        ...originalTemplate,
+        content: doc.templateData
+      }
+      
+      // Create a temporary container to render the CV/Resume
+      const tempContainer = document.createElement('div')
+      tempContainer.style.position = 'absolute'
+      tempContainer.style.left = '-9999px'
+      tempContainer.style.top = '0'
+      tempContainer.style.width = '210mm'
+      tempContainer.style.backgroundColor = 'white'
+      tempContainer.style.padding = '0'
+      tempContainer.style.margin = '0'
+      
+      // Add to DOM temporarily
+      document.body.appendChild(tempContainer)
+      
+      // Create a React element using MiniResumePreview
+      const { createRoot } = await import('react-dom/client')
+      const root = createRoot(tempContainer)
+      
+      // Render the exact MiniResumePreview component
+      root.render(React.createElement(MiniResumePreview, { 
+        template: templateForDownload, 
+        fullHeight: true 
+      }))
+      
+      // Wait for rendering to complete
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Convert to canvas
+      const canvas = await html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      })
+      
+      // Clean up
+      root.unmount()
+      document.body.removeChild(tempContainer)
+      
+      // Create PDF
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      
+      const imgWidth = 210
+      const pageHeight = 297
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+      let heightLeft = imgHeight
+      
+      let position = 0
+      
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+      
+      // Add additional pages if needed
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight
+        pdf.addPage()
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+      }
+      
+      // Download the PDF
+      pdf.save(`${doc.name.replace(/\s+/g, '_')}.pdf`)
+      
+      console.log('PDF downloaded successfully')
+    } catch (error) {
+      console.error('Error downloading PDF:', error)
+      alert('Error downloading PDF. Please try again.')
+    }
+  }
+
+  // Preview saved document
+  const previewSavedDocument = (doc) => {
+    console.log('Previewing document:', doc)
+    console.log('Looking for template ID:', doc.templateId)
+    
+    // Find the original template that was used to create this document
+    const originalTemplate = professionalTemplates.find(template => template.id === doc.templateId)
+    
+    console.log('Found original template:', originalTemplate)
+    
+    if (!originalTemplate) {
+      console.error('Original template not found for document:', doc)
+      alert('Original template not found. Cannot preview this document.')
+      return
+    }
+    
+    // Create a template object for preview using the original template structure
+    const templateForPreview = {
+      ...originalTemplate,
+      content: doc.templateData,
+      name: doc.name,
+      category: doc.category,
+      type: doc.type
+    }
+    
+    console.log('Template for preview:', templateForPreview)
+    setPreviewDocument(templateForPreview)
   }
 
   const fetchCareerData = async () => {
@@ -2430,6 +2582,49 @@ const CareerTools = () => {
 
         {/* My Documents Tab */}
         {activeTab === 'my-documents' && (
+          <div>
+            {myDocuments.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '60px 20px',
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                border: '1px solid #f0f0f0'
+              }}>
+                <FileText size={48} color="#d1d5db" style={{ marginBottom: '16px' }} />
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: '#374151',
+                  margin: '0 0 8px 0'
+                }}>
+                  No Documents Yet
+                </h3>
+                <p style={{
+                  fontSize: '14px',
+                  color: '#6b7280',
+                  margin: '0 0 20px 0'
+                }}>
+                  Create and save your first CV or resume to see it here
+                </p>
+                <button
+                  onClick={() => setActiveTab('templates')}
+                  style={{
+                    backgroundColor: '#16a34a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 24px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Browse Templates
+                </button>
+              </div>
+            ) : (
           <div style={{ 
             display: 'grid',
             gridTemplateColumns: `repeat(${getGridColumns(screenSize)}, 1fr)`,
@@ -2492,30 +2687,58 @@ const CareerTools = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '4px' }}>
-                  <button style={{
+                  <button 
+                    onClick={() => previewSavedDocument(doc)}
+                    style={{
                     backgroundColor: 'white',
                     color: '#64748b',
                     border: '1px solid #e2e8f0',
                     borderRadius: '4px',
                     padding: '6px 8px',
-                    cursor: 'pointer'
-                  }}>
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#f8fafc'
+                      e.target.style.borderColor = '#16a34a'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = 'white'
+                      e.target.style.borderColor = '#e2e8f0'
+                    }}
+                    title="Preview Document"
+                  >
                     <Eye size={12} />
                   </button>
-                  <button style={{
+                  <button 
+                    onClick={() => downloadDocument(doc)}
+                    style={{
                     backgroundColor: 'white',
                     color: '#64748b',
                     border: '1px solid #e2e8f0',
                     borderRadius: '4px',
                     padding: '6px 8px',
-                    cursor: 'pointer'
-                  }}>
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#f8fafc'
+                      e.target.style.borderColor = '#16a34a'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = 'white'
+                      e.target.style.borderColor = '#e2e8f0'
+                    }}
+                    title="Download Document"
+                  >
                     <Download size={12} />
                   </button>
                 </div>
               </div>
             ))}
           </div>
+        )}
+      </div>
         )}
       </div>
       {/* Preview Modal */}
@@ -2536,6 +2759,70 @@ const CareerTools = () => {
               <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'white' }}>
                 <MiniResumePreview template={previewTemplate} fullHeight={true} />
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Saved Document Preview Modal */}
+      {previewDocument && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '20px' }}>
+          <div style={{ backgroundColor: 'white', width: screenSize.isMobile ? '92%' : '90%', maxWidth: '1000px', maxHeight: '95vh', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: 600, color: '#0f172a' }}>{previewDocument.name}</div>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>{previewDocument.category} • {previewDocument.type}</div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => downloadDocument({ 
+                    name: previewDocument.name, 
+                    templateData: previewDocument.content,
+                    templateId: previewDocument.id
+                  })}
+                  style={{
+                    backgroundColor: '#16a34a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Download size={14} />
+                  Download
+                </button>
+                <button
+                  onClick={() => setPreviewDocument(null)}
+                  style={{
+                    backgroundColor: '#f1f5f9',
+                    color: '#64748b',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '8px 12px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <X size={14} />
+                  Close
+                </button>
+              </div>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+              <MiniResumePreview 
+                template={previewDocument} 
+                fullHeight={true}
+              />
             </div>
           </div>
         </div>
