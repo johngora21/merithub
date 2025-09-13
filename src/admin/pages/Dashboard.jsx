@@ -72,10 +72,18 @@ const AdminDashboard = ({ user, onLogout }) => {
     opportunitiesIndustryDistribution: [],
     // User distribution data
     ageDistribution: [],
+    ageDistributionIndividual: [],
     genderDistribution: [],
     educationDistribution: [],
     countryDistribution: [],
-    nationalityDistribution: []
+    nationalityDistribution: [],
+    // Top downloaded content
+    topVideos: [],
+    topBooks: [],
+    topBusinessPlans: [],
+    topJobs: [],
+    topTenders: [],
+    topOpportunities: []
   })
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -115,10 +123,18 @@ const AdminDashboard = ({ user, onLogout }) => {
           opportunitiesIndustryDistribution: data.opportunitiesIndustryDistribution || [],
           // User distribution data
           ageDistribution: data.ageDistribution || [],
+          ageDistributionIndividual: data.ageDistributionIndividual || [],
           genderDistribution: data.genderDistribution || [],
           educationDistribution: data.educationDistribution || [],
           countryDistribution: data.countryDistribution || [],
-          nationalityDistribution: data.nationalityDistribution || []
+          nationalityDistribution: data.nationalityDistribution || [],
+          // Top downloaded content
+          topVideos: data.topVideos || [],
+          topBooks: data.topBooks || [],
+          topBusinessPlans: data.topBusinessPlans || [],
+          topJobs: data.topJobs || [],
+          topTenders: data.topTenders || [],
+          topOpportunities: data.topOpportunities || []
         })
         const s = data.stats || {}
         console.log('Stats data:', s)
@@ -1325,7 +1341,7 @@ const AdminDashboard = ({ user, onLogout }) => {
       {/* User Distribution Charts */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(2, 1fr)',
+        gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(3, 1fr)',
         gap: '24px',
         marginBottom: '32px'
       }}>
@@ -1405,6 +1421,84 @@ const AdminDashboard = ({ user, onLogout }) => {
                 <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Age Distribution Individual - Bar Chart */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Age Distribution (Individual)
+            </h3>
+            <div style={{
+              fontSize: '12px',
+              color: '#64748b',
+              backgroundColor: '#f1f5f9',
+              padding: '4px 8px',
+              borderRadius: '6px'
+            }}>
+              Bar Chart
+            </div>
+          </div>
+          <div style={{ height: '300px', overflowY: 'auto' }}>
+            {chartData.ageDistributionIndividual.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {chartData.ageDistributionIndividual.map((item, index) => (
+                  <div key={item.age} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    backgroundColor: '#f8fafc',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#0f172a'
+                    }}>
+                      Age {item.age}
+                    </div>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#6366f1',
+                      backgroundColor: '#eef2ff',
+                      padding: '4px 8px',
+                      borderRadius: '4px'
+                    }}>
+                      {item.count} users
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                color: '#64748b',
+                fontSize: '14px',
+                padding: '20px'
+              }}>
+                No age data available
+              </div>
+            )}
           </div>
         </div>
 
@@ -1729,6 +1823,536 @@ const AdminDashboard = ({ user, onLogout }) => {
                 <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Top Downloaded Content Charts */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(2, 1fr)',
+        gap: '24px',
+        marginBottom: '32px'
+      }}>
+        {/* Top Videos */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Top 10 Videos
+            </h3>
+            <div style={{
+              fontSize: '12px',
+              color: '#64748b',
+              backgroundColor: '#f1f5f9',
+              padding: '4px 8px',
+              borderRadius: '6px'
+            }}>
+              By Downloads
+            </div>
+          </div>
+          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {chartData.topVideos.length > 0 ? (
+              chartData.topVideos.map((video, index) => (
+                <div key={video.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 0',
+                  borderBottom: index < chartData.topVideos.length - 1 ? '1px solid #f1f5f9' : 'none'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#0f172a',
+                      marginBottom: '4px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {video.title}
+                    </div>
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#64748b'
+                    }}>
+                      {video.downloads || 0} downloads • {video.enrollment_count || 0} enrollments
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#6366f1',
+                    backgroundColor: '#eef2ff',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    marginLeft: '12px'
+                  }}>
+                    #{index + 1}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                color: '#64748b',
+                fontSize: '14px',
+                padding: '20px'
+              }}>
+                No videos data available
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top Books */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Top 10 Books
+            </h3>
+            <div style={{
+              fontSize: '12px',
+              color: '#64748b',
+              backgroundColor: '#f1f5f9',
+              padding: '4px 8px',
+              borderRadius: '6px'
+            }}>
+              By Downloads
+            </div>
+          </div>
+          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {chartData.topBooks.length > 0 ? (
+              chartData.topBooks.map((book, index) => (
+                <div key={book.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 0',
+                  borderBottom: index < chartData.topBooks.length - 1 ? '1px solid #f1f5f9' : 'none'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#0f172a',
+                      marginBottom: '4px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {book.title}
+                    </div>
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#64748b'
+                    }}>
+                      {book.downloads || 0} downloads • {book.enrollment_count || 0} enrollments
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#059669',
+                    backgroundColor: '#ecfdf5',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    marginLeft: '12px'
+                  }}>
+                    #{index + 1}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                color: '#64748b',
+                fontSize: '14px',
+                padding: '20px'
+              }}>
+                No books data available
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top Business Plans */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Top 10 Business Plans
+            </h3>
+            <div style={{
+              fontSize: '12px',
+              color: '#64748b',
+              backgroundColor: '#f1f5f9',
+              padding: '4px 8px',
+              borderRadius: '6px'
+            }}>
+              By Downloads
+            </div>
+          </div>
+          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {chartData.topBusinessPlans.length > 0 ? (
+              chartData.topBusinessPlans.map((plan, index) => (
+                <div key={plan.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 0',
+                  borderBottom: index < chartData.topBusinessPlans.length - 1 ? '1px solid #f1f5f9' : 'none'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#0f172a',
+                      marginBottom: '4px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {plan.title}
+                    </div>
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#64748b'
+                    }}>
+                      {plan.downloads || 0} downloads • {plan.enrollment_count || 0} enrollments
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#dc2626',
+                    backgroundColor: '#fef2f2',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    marginLeft: '12px'
+                  }}>
+                    #{index + 1}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                color: '#64748b',
+                fontSize: '14px',
+                padding: '20px'
+              }}>
+                No business plans data available
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top Jobs */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Top 10 Jobs
+            </h3>
+            <div style={{
+              fontSize: '12px',
+              color: '#64748b',
+              backgroundColor: '#f1f5f9',
+              padding: '4px 8px',
+              borderRadius: '6px'
+            }}>
+              By Views
+            </div>
+          </div>
+          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {chartData.topJobs.length > 0 ? (
+              chartData.topJobs.map((job, index) => (
+                <div key={job.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 0',
+                  borderBottom: index < chartData.topJobs.length - 1 ? '1px solid #f1f5f9' : 'none'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#0f172a',
+                      marginBottom: '4px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {job.title}
+                    </div>
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#64748b'
+                    }}>
+                      {job.company} • {job.views_count || 0} views • {job.applications_count || 0} applications
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#7c3aed',
+                    backgroundColor: '#f3f4f6',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    marginLeft: '12px'
+                  }}>
+                    #{index + 1}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                color: '#64748b',
+                fontSize: '14px',
+                padding: '20px'
+              }}>
+                No jobs data available
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top Tenders */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Top 10 Tenders
+            </h3>
+            <div style={{
+              fontSize: '12px',
+              color: '#64748b',
+              backgroundColor: '#f1f5f9',
+              padding: '4px 8px',
+              borderRadius: '6px'
+            }}>
+              By Views
+            </div>
+          </div>
+          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {chartData.topTenders.length > 0 ? (
+              chartData.topTenders.map((tender, index) => (
+                <div key={tender.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 0',
+                  borderBottom: index < chartData.topTenders.length - 1 ? '1px solid #f1f5f9' : 'none'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#0f172a',
+                      marginBottom: '4px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {tender.title}
+                    </div>
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#64748b'
+                    }}>
+                      {tender.organization} • {tender.views_count || 0} views • {tender.submissions_count || 0} submissions
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#ea580c',
+                    backgroundColor: '#fff7ed',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    marginLeft: '12px'
+                  }}>
+                    #{index + 1}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                color: '#64748b',
+                fontSize: '14px',
+                padding: '20px'
+              }}>
+                No tenders data available
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Top Opportunities */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Top 10 Opportunities
+            </h3>
+            <div style={{
+              fontSize: '12px',
+              color: '#64748b',
+              backgroundColor: '#f1f5f9',
+              padding: '4px 8px',
+              borderRadius: '6px'
+            }}>
+              By Views
+            </div>
+          </div>
+          <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {chartData.topOpportunities.length > 0 ? (
+              chartData.topOpportunities.map((opportunity, index) => (
+                <div key={opportunity.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 0',
+                  borderBottom: index < chartData.topOpportunities.length - 1 ? '1px solid #f1f5f9' : 'none'
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      color: '#0f172a',
+                      marginBottom: '4px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {opportunity.title}
+                    </div>
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#64748b'
+                    }}>
+                      {opportunity.organization} • {opportunity.views_count || 0} views • {opportunity.applications_count || 0} applications
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    color: '#0891b2',
+                    backgroundColor: '#ecfeff',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    marginLeft: '12px'
+                  }}>
+                    #{index + 1}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                color: '#64748b',
+                fontSize: '14px',
+                padding: '20px'
+              }}>
+                No opportunities data available
+              </div>
+            )}
           </div>
         </div>
       </div>

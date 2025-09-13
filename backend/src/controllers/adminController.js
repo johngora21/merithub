@@ -369,12 +369,27 @@ const getDashboardStats = async (req, res) => {
       '65+': 0
     };
 
+    // Store individual ages for bar chart
+    const individualAges = {};
+
     usersByAge.forEach(user => {
       if (user.date_of_birth) {
         const birthDate = new Date(user.date_of_birth);
-        const age = new Date().getFullYear() - birthDate.getFullYear();
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        // Adjust age if birthday hasn't occurred this year
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        
         const count = parseInt(user.count);
         
+        // Store individual age
+        individualAges[age] = (individualAges[age] || 0) + count;
+        
+        // Add to age groups
         if (age >= 18 && age <= 25) ageGroups['18-25'] += count;
         else if (age >= 26 && age <= 35) ageGroups['26-35'] += count;
         else if (age >= 36 && age <= 45) ageGroups['36-45'] += count;
@@ -383,6 +398,14 @@ const getDashboardStats = async (req, res) => {
         else if (age > 65) ageGroups['65+'] += count;
       }
     });
+
+    // Convert individual ages to array and sort by age
+    const ageDistributionIndividual = Object.keys(individualAges)
+      .map(age => ({
+        age: parseInt(age),
+        count: individualAges[age]
+      }))
+      .sort((a, b) => a.age - b.age);
 
     const ageDistribution = Object.entries(ageGroups).map(([ageGroup, count]) => ({
       name: ageGroup,
@@ -629,6 +652,52 @@ const getDashboardStats = async (req, res) => {
     const jobSeekers = totalUsers; // All users are job seekers
     const employers = totalJobs; // Each job post = 1 employer
 
+    // Get top 10 most downloaded content for each type
+    const topVideos = await Course.findAll({
+      attributes: ['id', 'title', 'downloads', 'enrollment_count', 'created_at'],
+      where: { course_type: 'video' },
+      order: [['downloads', 'DESC']],
+      limit: 10,
+      raw: true
+    });
+
+    const topBooks = await Course.findAll({
+      attributes: ['id', 'title', 'downloads', 'enrollment_count', 'created_at'],
+      where: { course_type: 'book' },
+      order: [['downloads', 'DESC']],
+      limit: 10,
+      raw: true
+    });
+
+    const topBusinessPlans = await Course.findAll({
+      attributes: ['id', 'title', 'downloads', 'enrollment_count', 'created_at'],
+      where: { course_type: 'business-plan' },
+      order: [['downloads', 'DESC']],
+      limit: 10,
+      raw: true
+    });
+
+    const topJobs = await Job.findAll({
+      attributes: ['id', 'title', 'company', 'views_count', 'applications_count', 'created_at'],
+      order: [['views_count', 'DESC']],
+      limit: 10,
+      raw: true
+    });
+
+    const topTenders = await Tender.findAll({
+      attributes: ['id', 'title', 'organization', 'views_count', 'submissions_count', 'created_at'],
+      order: [['views_count', 'DESC']],
+      limit: 10,
+      raw: true
+    });
+
+    const topOpportunities = await Opportunity.findAll({
+      attributes: ['id', 'title', 'organization', 'views_count', 'applications_count', 'created_at'],
+      order: [['views_count', 'DESC']],
+      limit: 10,
+      raw: true
+    });
+
     const dashboardData = {
       stats: {
         totalUsers,
@@ -649,29 +718,37 @@ const getDashboardStats = async (req, res) => {
         jobSeekers,
         employers
       },
-      monthlySubscriptions,
-      contentDistribution,
-      userActivity,
-      dailyStats,
-      jobsStatusDistribution,
-      tendersStatusDistribution,
-      opportunitiesStatusDistribution,
-      applicationsStatusDistribution,
+      monthlySubscriptions: monthlySubscriptions,
+      contentDistribution: contentDistribution,
+      userActivity: userActivity,
+      dailyStats: dailyStats,
+      jobsStatusDistribution: jobsStatusDistribution,
+      tendersStatusDistribution: tendersStatusDistribution,
+      opportunitiesStatusDistribution: opportunitiesStatusDistribution,
+      applicationsStatusDistribution: applicationsStatusDistribution,
       recentActivity: topRecentActivity,
       // New pie chart data
-      coursesDistribution,
-      videosIndustryDistribution,
-      booksIndustryDistribution,
-      businessPlansIndustryDistribution,
-      jobsIndustryDistribution,
-      tendersIndustryDistribution,
-      opportunitiesIndustryDistribution,
-      // User distribution data
-      ageDistribution,
-      genderDistribution,
-      educationDistribution,
-      countryDistribution,
-      nationalityDistribution
+      coursesDistribution: coursesDistribution,
+      videosIndustryDistribution: videosIndustryDistribution,
+      booksIndustryDistribution: booksIndustryDistribution,
+      businessPlansIndustryDistribution: businessPlansIndustryDistribution,
+      jobsIndustryDistribution: jobsIndustryDistribution,
+      tendersIndustryDistribution: tendersIndustryDistribution,
+      opportunitiesIndustryDistribution: opportunitiesIndustryDistribution,
+    // User distribution data
+    ageDistribution: ageDistribution,
+    ageDistributionIndividual: ageDistributionIndividual,
+    genderDistribution: genderDistribution,
+    educationDistribution: educationDistribution,
+    countryDistribution: countryDistribution,
+    nationalityDistribution: nationalityDistribution,
+    // Top downloaded content
+    topVideos: topVideos,
+    topBooks: topBooks,
+    topBusinessPlans: topBusinessPlans,
+    topJobs: topJobs,
+    topTenders: topTenders,
+    topOpportunities: topOpportunities
     };
 
     res.json(dashboardData);
