@@ -286,7 +286,7 @@ const getDashboardStats = async (req, res) => {
         'industry_sector',
         [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
       ],
-      where: { course_type: 'business_plan' },
+      where: { course_type: 'business-plan' },
       group: ['industry_sector'],
       raw: true
     });
@@ -332,15 +332,140 @@ const getDashboardStats = async (req, res) => {
     // Get industry distribution for opportunities
     const opportunitiesByIndustry = await Opportunity.findAll({
       attributes: [
-        'industry_sector',
+        'type',
         [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
       ],
-      group: ['industry_sector'],
+      group: ['type'],
       raw: true
     });
 
     const opportunitiesIndustryDistribution = opportunitiesByIndustry.map(item => ({
-      name: item.industry_sector || 'Other',
+      name: item.type || 'Other',
+      value: parseInt(item.count),
+      color: `hsl(${Math.random() * 360}, 70%, 50%)`
+    }));
+
+    // Get user distribution by age groups
+    const usersByAge = await User.findAll({
+      attributes: [
+        'date_of_birth',
+        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+      ],
+      where: {
+        date_of_birth: {
+          [require('sequelize').Op.ne]: null
+        }
+      },
+      group: ['date_of_birth'],
+      raw: true
+    });
+
+    const ageGroups = {
+      '18-25': 0,
+      '26-35': 0,
+      '36-45': 0,
+      '46-55': 0,
+      '56-65': 0,
+      '65+': 0
+    };
+
+    usersByAge.forEach(user => {
+      if (user.date_of_birth) {
+        const birthDate = new Date(user.date_of_birth);
+        const age = new Date().getFullYear() - birthDate.getFullYear();
+        const count = parseInt(user.count);
+        
+        if (age >= 18 && age <= 25) ageGroups['18-25'] += count;
+        else if (age >= 26 && age <= 35) ageGroups['26-35'] += count;
+        else if (age >= 36 && age <= 45) ageGroups['36-45'] += count;
+        else if (age >= 46 && age <= 55) ageGroups['46-55'] += count;
+        else if (age >= 56 && age <= 65) ageGroups['56-65'] += count;
+        else if (age > 65) ageGroups['65+'] += count;
+      }
+    });
+
+    const ageDistribution = Object.entries(ageGroups).map(([ageGroup, count]) => ({
+      name: ageGroup,
+      value: count,
+      color: `hsl(${Math.random() * 360}, 70%, 50%)`
+    }));
+
+    // Get user distribution by gender
+    const usersByGender = await User.findAll({
+      attributes: [
+        'gender',
+        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+      ],
+      group: ['gender'],
+      raw: true
+    });
+
+    const genderDistribution = usersByGender.map(item => ({
+      name: item.gender || 'Not Specified',
+      value: parseInt(item.count),
+      color: item.gender === 'Male' ? '#3b82f6' : 
+             item.gender === 'Female' ? '#ec4899' : 
+             item.gender === 'Other' ? '#8b5cf6' : '#64748b'
+    }));
+
+    // Get user distribution by highest education
+    // Get education distribution - extract highest education level
+    const users = await User.findAll({
+      attributes: ['education'],
+      raw: true
+    });
+
+    const educationLevels = {};
+    users.forEach(user => {
+      if (user.education && Array.isArray(user.education) && user.education.length > 0) {
+        // Get the highest education level
+        const highestLevel = user.education.reduce((highest, current) => {
+          const levelOrder = { 'Ordinary Level': 1, 'High School': 2, 'Bachelor Degree': 3, 'Master Degree': 4, 'PhD': 5 };
+          const currentOrder = levelOrder[current.level] || 0;
+          const highestOrder = levelOrder[highest.level] || 0;
+          return currentOrder > highestOrder ? current : highest;
+        });
+        const level = highestLevel.level || 'Not specified';
+        educationLevels[level] = (educationLevels[level] || 0) + 1;
+      } else {
+        educationLevels['Not specified'] = (educationLevels['Not specified'] || 0) + 1;
+      }
+    });
+
+    const educationDistribution = Object.entries(educationLevels).map(([level, count]) => ({
+      name: level,
+      value: count,
+      color: `hsl(${Math.random() * 360}, 70%, 50%)`
+    }));
+
+    // Get user distribution by country of residence
+    const usersByCountry = await User.findAll({
+      attributes: [
+        'country_of_residence',
+        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+      ],
+      group: ['country_of_residence'],
+      raw: true
+    });
+
+    const countryDistribution = usersByCountry.map(item => ({
+      name: item.country_of_residence || 'Not Specified',
+      value: parseInt(item.count),
+      color: `hsl(${Math.random() * 360}, 70%, 50%)`
+    }));
+
+    // Get user distribution by nationality
+    const usersByNationality = await User.findAll({
+      attributes: [
+        'nationality',
+        [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'count']
+      ],
+      group: ['nationality'],
+      raw: true
+    });
+
+    const nationalityDistribution = usersByNationality.map(item => ({
+      name: item.nationality || 'Not Specified',
       value: parseInt(item.count),
       color: `hsl(${Math.random() * 360}, 70%, 50%)`
     }));
@@ -540,7 +665,13 @@ const getDashboardStats = async (req, res) => {
       businessPlansIndustryDistribution,
       jobsIndustryDistribution,
       tendersIndustryDistribution,
-      opportunitiesIndustryDistribution
+      opportunitiesIndustryDistribution,
+      // User distribution data
+      ageDistribution,
+      genderDistribution,
+      educationDistribution,
+      countryDistribution,
+      nationalityDistribution
     };
 
     res.json(dashboardData);

@@ -69,7 +69,13 @@ const AdminDashboard = ({ user, onLogout }) => {
     businessPlansIndustryDistribution: [],
     jobsIndustryDistribution: [],
     tendersIndustryDistribution: [],
-    opportunitiesIndustryDistribution: []
+    opportunitiesIndustryDistribution: [],
+    // User distribution data
+    ageDistribution: [],
+    genderDistribution: [],
+    educationDistribution: [],
+    countryDistribution: [],
+    nationalityDistribution: []
   })
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -106,7 +112,13 @@ const AdminDashboard = ({ user, onLogout }) => {
           businessPlansIndustryDistribution: data.businessPlansIndustryDistribution || [],
           jobsIndustryDistribution: data.jobsIndustryDistribution || [],
           tendersIndustryDistribution: data.tendersIndustryDistribution || [],
-          opportunitiesIndustryDistribution: data.opportunitiesIndustryDistribution || []
+          opportunitiesIndustryDistribution: data.opportunitiesIndustryDistribution || [],
+          // User distribution data
+          ageDistribution: data.ageDistribution || [],
+          genderDistribution: data.genderDistribution || [],
+          educationDistribution: data.educationDistribution || [],
+          countryDistribution: data.countryDistribution || [],
+          nationalityDistribution: data.nationalityDistribution || []
         })
         const s = data.stats || {}
         console.log('Stats data:', s)
@@ -1288,6 +1300,417 @@ const AdminDashboard = ({ user, onLogout }) => {
             marginTop: '16px'
           }}>
             {chartData.opportunitiesIndustryDistribution.map((item) => (
+              <div key={item.name} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color
+                  }}></div>
+                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                </div>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* User Distribution Charts */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(2, 1fr)',
+        gap: '24px',
+        marginBottom: '32px'
+      }}>
+        {/* Age Distribution */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Age Distribution
+            </h3>
+            <Users size={20} color="#3b82f6" />
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={chartData.ageDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.ageDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}`, name]}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '16px'
+          }}>
+            {chartData.ageDistribution.map((item) => (
+              <div key={item.name} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color
+                  }}></div>
+                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                </div>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Gender Distribution */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Gender Distribution
+            </h3>
+            <Users size={20} color="#ec4899" />
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={chartData.genderDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.genderDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}`, name]}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '16px'
+          }}>
+            {chartData.genderDistribution.map((item) => (
+              <div key={item.name} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color
+                  }}></div>
+                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                </div>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Education and Location Distribution */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: screenSize.isMobile ? '1fr' : 'repeat(3, 1fr)',
+        gap: '24px',
+        marginBottom: '32px'
+      }}>
+        {/* Education Distribution */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Education Distribution
+            </h3>
+            <GraduationCap size={20} color="#16a34a" />
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={chartData.educationDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.educationDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}`, name]}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '16px'
+          }}>
+            {chartData.educationDistribution.map((item) => (
+              <div key={item.name} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color
+                  }}></div>
+                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                </div>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Country Distribution */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Country Distribution
+            </h3>
+            <Users size={20} color="#8b5cf6" />
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={chartData.countryDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.countryDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}`, name]}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '16px'
+          }}>
+            {chartData.countryDistribution.map((item) => (
+              <div key={item.name} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '14px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    backgroundColor: item.color
+                  }}></div>
+                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                </div>
+                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Nationality Distribution */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          padding: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px'
+          }}>
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#0f172a',
+              margin: 0
+            }}>
+              Nationality Distribution
+            </h3>
+            <Users size={20} color="#f59e0b" />
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsPieChart>
+                <Pie
+                  data={chartData.nationalityDistribution}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {chartData.nationalityDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value, name) => [`${value}`, name]}
+                />
+              </RechartsPieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+            marginTop: '16px'
+          }}>
+            {chartData.nationalityDistribution.map((item) => (
               <div key={item.name} style={{
                 display: 'flex',
                 alignItems: 'center',
