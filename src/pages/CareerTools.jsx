@@ -22,12 +22,44 @@ const CareerTools = () => {
   const tabs = [
     { id: 'cv-builder', name: 'CV Builder' },
     { id: 'templates', name: 'Templates' },
+    { id: 'cover-letter', name: 'Cover Letter' },
+    { id: 'portfolio', name: 'Portfolio' },
     { id: 'my-documents', name: 'My Documents' }
   ]
 
   const [cvTemplates, setCvTemplates] = useState([])
   const [myDocuments, setMyDocuments] = useState([])
   const [loading, setLoading] = useState(false)
+  
+  // Cover Letter Builder States
+  const [coverLetterData, setCoverLetterData] = useState({
+    jobTitle: '',
+    companyName: '',
+    jobDescription: '',
+    content: '',
+    recipientName: '',
+    recipientTitle: '',
+    yourName: '',
+    yourTitle: '',
+    yourEmail: '',
+    yourPhone: '',
+    yourAddress: ''
+  })
+  
+  // Portfolio Builder States
+  const [portfolioData, setPortfolioData] = useState({
+    title: '',
+    description: '',
+    projects: [],
+    skills: [],
+    experience: [],
+    education: [],
+    contact: {}
+  })
+  
+  // PDF Upload States
+  const [uploadedCV, setUploadedCV] = useState(null)
+  const [extractedData, setExtractedData] = useState(null)
 
   // Built-in professional templates catalog
   const MiniResumePreview = ({ template, dense = false, fullHeight = false }) => {
@@ -1312,6 +1344,247 @@ const CareerTools = () => {
     fetchUserProfile()
   }, [])
 
+  // Handle PDF upload and extraction
+  const handlePDFUpload = async (file) => {
+    try {
+      setLoading(true)
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      // Call Python service for real PDF extraction
+      const response = await fetch('http://localhost:8002/extract-pdf', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Python service error: ${response.status}`)
+      }
+      
+      const extractedData = await response.json()
+      
+      if (extractedData.error) {
+        throw new Error(extractedData.error)
+      }
+      
+      if (!extractedData.success) {
+        throw new Error('Failed to extract data from PDF')
+      }
+      
+      console.log('Extracted data from Python service:', extractedData)
+      
+      // Validate extracted data - check if we actually got meaningful data
+      const extractedInfo = extractedData.data || {}
+      const hasValidData = (extractedInfo.name && extractedInfo.name.length > 2) || 
+                          (extractedInfo.skills && extractedInfo.skills.length > 0) ||
+                          (extractedInfo.experience && extractedInfo.experience.length > 0) ||
+                          (extractedInfo.education && extractedInfo.education.length > 0)
+      
+      if (!hasValidData) {
+        throw new Error('Could not extract meaningful data from the PDF. Please try a different PDF file.')
+      }
+      
+      // Process the extracted data - use ONLY PDF data, no profile fallback
+      const processedData = {
+        name: extractedInfo.name || 'Unknown',
+        email: extractedInfo.contact?.email || '',
+        phone: extractedInfo.contact?.phone || '',
+        title: extractedInfo.title || '',
+        skills: extractedInfo.skills || [],
+        experience: extractedInfo.experience || [],
+        education: extractedInfo.education || [],
+        linkedin: '',
+        github: '',
+        rawText: extractedInfo.raw_text || ''
+      }
+      
+      setExtractedData(processedData)
+      setUploadedCV(file)
+      
+      // Auto-populate cover letter and portfolio data
+      setCoverLetterData(prev => ({
+        ...prev,
+        yourName: processedData.name,
+        yourTitle: processedData.title,
+        yourEmail: processedData.email,
+        yourPhone: processedData.phone
+      }))
+      
+      setPortfolioData(prev => ({
+        ...prev,
+        title: `${processedData.name}'s Portfolio`,
+        description: `Professional portfolio showcasing ${processedData.title} expertise`,
+        projects: processedData.experience || [],
+        skills: processedData.skills || [],
+        experience: processedData.experience || [],
+        education: processedData.education || [],
+        contact: {
+          name: processedData.name,
+          email: processedData.email,
+          phone: processedData.phone,
+          linkedin: processedData.linkedin,
+          github: processedData.github
+        }
+      }))
+      
+      alert(`CV uploaded and data extracted successfully!\n\nFound:\n- Name: ${processedData.name}\n- Title: ${processedData.title}\n- Skills: ${processedData.skills.length} skills\n- Experience: ${processedData.experience.length} positions\n- Education: ${processedData.education.length} entries`)
+    } catch (error) {
+      console.error('PDF upload failed:', error)
+      
+      // Don't fallback to profile data - only use actual PDF data
+      setExtractedData(null)
+      setUploadedCV(null)
+      
+      alert(`PDF upload failed: ${error.message}\n\nPlease try uploading a different PDF file.`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Generate AI-powered cover letter using profile data
+  const generateCoverLetter = async () => {
+    const { jobTitle, companyName, jobDescription } = coverLetterData
+    
+    // Check if user has complete profile data
+    if (!userProfile || (!userProfile.first_name && !userProfile.last_name)) {
+      alert('Please complete your profile first to generate a cover letter. Go to Profile page and fill in your details.')
+      return
+    }
+    
+    try {
+      setLoading(true)
+      
+      // Prepare profile data for AI service
+      const profileData = {
+        name: userProfile.first_name && userProfile.last_name 
+          ? `${userProfile.first_name} ${userProfile.last_name}`.trim()
+          : 'Candidate',
+        email: userProfile.email || '',
+        phone: userProfile.phone || '',
+        summary: userProfile.summary || userProfile.bio || '',
+        experience: userProfile.experience || [],
+        education: userProfile.education || [],
+        skills: userProfile.skills || [],
+        projects: userProfile.projects || [],
+        awards: userProfile.awards || [],
+        certifications: userProfile.certifications || []
+      }
+      
+      // Call AI service to generate cover letter
+      const response = await fetch('http://localhost:8002/generate-cover-letter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          extracted_data: profileData,
+          job_title: jobTitle,
+          company_name: companyName,
+          job_description: jobDescription
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error(`AI service error: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        setCoverLetterData(prev => ({ ...prev, content: result.cover_letter }))
+        alert('AI-generated cover letter created successfully from your profile!')
+      } else {
+        throw new Error(result.error || 'Failed to generate cover letter')
+      }
+      
+    } catch (error) {
+      console.error('AI cover letter generation failed:', error)
+      alert(`AI cover letter generation failed: ${error.message}\n\nPlease make sure the AI service is running and try again.`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Generate portfolio HTML
+  const generatePortfolioHTML = (portfolio) => {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${portfolio.title || 'Portfolio'}</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { color: #2c3e50; margin-bottom: 10px; }
+        .header p { color: #7f8c8d; font-size: 18px; }
+        .section { margin-bottom: 30px; }
+        .section h2 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .skills { display: flex; flex-wrap: wrap; gap: 8px; }
+        .skill { background: #ecf0f1; padding: 5px 12px; border-radius: 20px; font-size: 14px; }
+        .experience-item, .education-item { margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; }
+        .experience-item h3, .education-item h3 { margin: 0 0 5px 0; color: #2c3e50; }
+        .experience-item .company, .education-item .school { color: #7f8c8d; font-weight: 500; }
+        .experience-item .duration, .education-item .year { color: #95a5a6; font-size: 14px; }
+        .contact { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        .contact h2 { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>${portfolio.title || 'Portfolio'}</h1>
+        <p>${portfolio.description || 'Professional Portfolio'}</p>
+    </div>
+
+    ${portfolio.contact && Object.keys(portfolio.contact).length > 0 ? `
+    <div class="contact">
+        <h2>Contact Information</h2>
+        ${portfolio.contact.name ? `<p><strong>Name:</strong> ${portfolio.contact.name}</p>` : ''}
+        ${portfolio.contact.email ? `<p><strong>Email:</strong> ${portfolio.contact.email}</p>` : ''}
+        ${portfolio.contact.phone ? `<p><strong>Phone:</strong> ${portfolio.contact.phone}</p>` : ''}
+        ${portfolio.contact.location ? `<p><strong>Location:</strong> ${portfolio.contact.location}</p>` : ''}
+    </div>
+    ` : ''}
+
+    ${portfolio.skills && portfolio.skills.length > 0 ? `
+    <div class="section">
+        <h2>Skills</h2>
+        <div class="skills">
+            ${portfolio.skills.map(skill => `<span class="skill">${skill}</span>`).join('')}
+        </div>
+    </div>
+    ` : ''}
+
+    ${portfolio.experience && portfolio.experience.length > 0 ? `
+    <div class="section">
+        <h2>Experience</h2>
+        ${portfolio.experience.map(exp => `
+        <div class="experience-item">
+            <h3>${exp.title || exp.position || 'Position'}</h3>
+            <div class="company">${exp.company || 'Company'}</div>
+            ${exp.duration ? `<div class="duration">${exp.duration}</div>` : ''}
+            ${exp.description ? `<p>${exp.description}</p>` : ''}
+        </div>
+        `).join('')}
+    </div>
+    ` : ''}
+
+    ${portfolio.education && portfolio.education.length > 0 ? `
+    <div class="section">
+        <h2>Education</h2>
+        ${portfolio.education.map(edu => `
+        <div class="education-item">
+            <h3>${edu.degree || edu.title || 'Degree'}</h3>
+            <div class="school">${edu.school || edu.institution || 'Institution'}</div>
+            ${edu.year ? `<div class="year">${edu.year}</div>` : ''}
+        </div>
+        `).join('')}
+    </div>
+    ` : ''}
+</body>
+</html>`
+  }
+
   // Fetch user profile data
   const fetchUserProfile = async () => {
     try {
@@ -1325,6 +1598,28 @@ const CareerTools = () => {
       if (profile) {
         setUserProfile(profile)
         console.log('User profile set successfully')
+        
+        // Auto-populate cover letter and portfolio data from profile
+        setCoverLetterData(prev => ({
+          ...prev,
+          yourName: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+          yourTitle: profile.current_job_title || '',
+          yourEmail: profile.email || '',
+          yourPhone: profile.phone || '',
+          yourAddress: profile.location || ''
+        }))
+        
+        setPortfolioData(prev => ({
+          ...prev,
+          title: `${profile.first_name || 'Your'} ${profile.last_name || 'Name'}'s Portfolio`,
+          description: `Professional portfolio showcasing ${profile.current_job_title || 'expertise'}`,
+          contact: {
+            name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+            email: profile.email || '',
+            phone: profile.phone || '',
+            location: profile.location || ''
+          }
+        }))
       } else {
         console.log('No profile data found in response')
       }
@@ -1859,29 +2154,31 @@ const CareerTools = () => {
                     <button
                       onClick={() => startEditingTemplate(selectedTemplate)}
                       style={{
-                        backgroundColor: '#16a34a',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '8px 12px',
+                  backgroundColor: '#16a34a',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '8px 12px',
                         fontSize: '12px',
-                        fontWeight: '500',
-                        cursor: 'pointer'
+                  fontWeight: '500',
+                  cursor: 'pointer'
                       }}
                     >
                       Start editing
-                    </button>
+                </button>
                   </div>
                 </div>
               )}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button style={{
+                <button 
+                  onClick={() => setActiveTab('templates')}
+                  style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  backgroundColor: '#16a34a',
-                  color: 'white',
-                  border: 'none',
+                    backgroundColor: '#16a34a',
+                    color: 'white',
+                    border: 'none',
                   borderRadius: '6px',
                   padding: '8px 12px',
                   fontSize: '14px',
@@ -1891,90 +2188,18 @@ const CareerTools = () => {
                   <Plus size={16} />
                   Create New
                 </button>
-                <button style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  backgroundColor: 'white',
-                  color: '#64748b',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '6px',
-                  padding: '8px 12px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer'
-                }}>
-                  <Upload size={16} />
-                  Upload CV
-                </button>
               </div>
             </div>
 
-            {/* Tools Grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${getGridColumns(screenSize)}, 1fr)`,
-              gap: getGridGap(screenSize)
-            }}>
-            {[
-              { title: 'CV Tips', desc: 'Writing guidance', icon: FileText },
-              { title: 'Cover Letters', desc: 'Letter templates', icon: Edit3 },
-              { title: 'Portfolio', desc: 'Showcase work', icon: Eye }
-            ].map((tool) => {
-              const Icon = tool.icon
-              return (
-                <div key={tool.title} style={{
-                  backgroundColor: 'white',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                  border: '1px solid #f0f0f0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease-in-out'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.borderColor = '#16a34a'
-                  e.target.style.transform = 'translateY(-1px)'
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.borderColor = '#f0f0f0'
-                  e.target.style.transform = 'translateY(0)'
-                }}
-                >
-                  <Icon size={20} color="#16a34a" />
-                  <div>
-                    <h4 style={{
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#1a1a1a',
-                      margin: '0 0 2px 0'
-                    }}>
-                      {tool.title}
-                    </h4>
-                    <p style={{
-                      fontSize: '12px',
-                      color: '#64748b',
-                      margin: 0
-                    }}>
-                      {tool.desc}
-                    </p>
-                  </div>
-                </div>
-              )
-            })}
-            </div>
 
             {/* Template Editor Interface */}
             {editingTemplate && templateData && (
-          <div style={{ 
-                backgroundColor: 'white',
-                borderRadius: '12px',
+            <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
                 padding: '24px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                border: '1px solid #f0f0f0',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  border: '1px solid #f0f0f0',
                 marginTop: '20px'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -1994,8 +2219,8 @@ const CareerTools = () => {
                         fontSize: '14px', 
                         fontWeight: 500, 
                         cursor: saving ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
                         gap: '8px'
                       }}
                     >
@@ -2012,7 +2237,7 @@ const CareerTools = () => {
                         padding: '10px 16px', 
                         fontSize: '14px', 
                         fontWeight: 500, 
-                        cursor: 'pointer',
+                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                         gap: '8px'
@@ -2101,7 +2326,7 @@ const CareerTools = () => {
                             No Image
                 </div>
                         )}
-                        <div style={{ flex: 1 }}>
+                <div style={{ flex: 1 }}>
                           <input
                             type="file"
                             accept="image/*"
@@ -2117,7 +2342,7 @@ const CareerTools = () => {
                     color: 'white',
                               padding: '8px 16px',
                               borderRadius: '6px',
-                              fontSize: '14px',
+                      fontSize: '14px',
                               fontWeight: 500,
                               cursor: 'pointer',
                               border: 'none'
@@ -2164,9 +2389,9 @@ const CareerTools = () => {
                               Remove
                             </button>
                           )}
-                        </div>
-                      </div>
-                    </div>
+                  </div>
+                </div>
+            </div>
 
                     <div style={{ marginBottom: '16px' }}>
                       <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#374151', marginBottom: '6px' }}>Profile Summary</label>
@@ -2414,6 +2639,382 @@ const CareerTools = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Cover Letter Builder Tab */}
+        {activeTab === 'cover-letter' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: getGridGap(screenSize) }}>
+            {/* Profile Data Notice */}
+          <div style={{ 
+              backgroundColor: '#eff6ff',
+              borderRadius: '12px',
+              padding: '20px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: '1px solid #bfdbfe'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ 
+                  backgroundColor: '#3b82f6', 
+                  borderRadius: '50%', 
+                  width: '24px', 
+                  height: '24px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <svg style={{ width: '14px', height: '14px', color: 'white' }} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1e40af', margin: '0 0 8px 0' }}>
+                    Using Your Profile Data
+                  </h3>
+                  <p style={{ fontSize: '14px', color: '#1e40af', margin: '0 0 8px 0' }}>
+                    Cover letters will be generated using your complete profile information. Make sure your profile is up-to-date with your latest experience, education, and skills.
+                  </p>
+                  {(!userProfile?.first_name && !userProfile?.last_name) && (
+                    <p style={{ fontSize: '14px', color: '#dc2626', fontWeight: '500', margin: '0' }}>
+                      ⚠️ Please complete your profile first to generate cover letters.
+                    </p>
+                  )}
+                  {(userProfile?.first_name || userProfile?.last_name) && (
+                    <p style={{ fontSize: '14px', color: '#16a34a', fontWeight: '500', margin: '0' }}>
+                      ✓ Profile data ready: {userProfile.first_name && userProfile.last_name 
+                        ? `${userProfile.first_name} ${userProfile.last_name}`.trim()
+                        : userProfile.first_name || userProfile.last_name || 'Profile Complete'}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Cover Letter Form */}
+            <div style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+              padding: '20px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: '1px solid #f0f0f0'
+            }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>
+                Cover Letter Details
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+                    Job Title
+                  </label>
+                  <input
+                    type="text"
+                    value={coverLetterData.jobTitle}
+                    onChange={(e) => setCoverLetterData(prev => ({ ...prev, jobTitle: e.target.value }))}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
+                    placeholder="e.g., Software Engineer"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+                    Company Name
+                  </label>
+                  <input
+                    type="text"
+                    value={coverLetterData.companyName}
+                    onChange={(e) => setCoverLetterData(prev => ({ ...prev, companyName: e.target.value }))}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
+                    placeholder="e.g., Google"
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+                  Job Description (Optional)
+                </label>
+                <textarea
+                  value={coverLetterData.jobDescription}
+                  onChange={(e) => setCoverLetterData(prev => ({ ...prev, jobDescription: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', resize: 'vertical', minHeight: '80px' }}
+                  placeholder="Paste the job description here to customize your cover letter..."
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: screenSize.isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+                    Your Name
+                  </label>
+                  <input
+                    type="text"
+                    value={coverLetterData.yourName}
+                    onChange={(e) => setCoverLetterData(prev => ({ ...prev, yourName: e.target.value }))}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
+                    placeholder="Your full name"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+                    Your Title
+                  </label>
+                  <input
+                    type="text"
+                    value={coverLetterData.yourTitle}
+                    onChange={(e) => setCoverLetterData(prev => ({ ...prev, yourTitle: e.target.value }))}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
+                    placeholder="e.g., Software Engineer"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+                <button
+                  onClick={generateCoverLetter}
+                  style={{
+                    backgroundColor: '#16a34a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '10px 16px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <FileText size={16} />
+                  Generate from Profile
+                </button>
+                <button
+                  onClick={() => setCoverLetterData(prev => ({ ...prev, content: '' }))}
+                  style={{
+                    backgroundColor: '#f3f4f6',
+                    color: '#374151',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    padding: '10px 16px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Clear
+                  </button>
+              </div>
+
+              {coverLetterData.content && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+                    Generated Cover Letter
+                  </label>
+                  <textarea
+                    value={coverLetterData.content}
+                    onChange={(e) => setCoverLetterData(prev => ({ ...prev, content: e.target.value }))}
+                    style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', resize: 'vertical', minHeight: '300px', fontFamily: 'monospace' }}
+                  />
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(coverLetterData.content)
+                        alert('Cover letter copied to clipboard!')
+                      }}
+                      style={{
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 12px',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Copy to Clipboard
+                    </button>
+                    <button
+                      onClick={() => {
+                        const blob = new Blob([coverLetterData.content], { type: 'text/plain' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = `cover-letter-${coverLetterData.companyName || 'company'}.txt`
+                        a.click()
+                      }}
+                      style={{
+                        backgroundColor: '#16a34a',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 12px',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Download as TXT
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Portfolio Builder Tab */}
+        {activeTab === 'portfolio' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: getGridGap(screenSize) }}>
+            {/* Portfolio Form */}
+                <div style={{
+                    backgroundColor: 'white',
+              borderRadius: '12px',
+              padding: '20px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: '1px solid #f0f0f0'
+            }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1a1a1a', margin: '0 0 16px 0' }}>
+                Portfolio Builder
+                  </h3>
+              
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+                  Portfolio Title
+                </label>
+                <input
+                  type="text"
+                  value={portfolioData.title}
+                  onChange={(e) => setPortfolioData(prev => ({ ...prev, title: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
+                  placeholder="e.g., John Doe's Portfolio"
+                />
+                </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
+                  Portfolio Description
+                </label>
+                <textarea
+                  value={portfolioData.description}
+                  onChange={(e) => setPortfolioData(prev => ({ ...prev, description: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', resize: 'vertical', minHeight: '80px' }}
+                  placeholder="Brief description of your portfolio..."
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+                <button
+                  onClick={() => {
+                    // Generate portfolio from profile data
+                    const generatedPortfolio = {
+                      title: portfolioData.title || `${userProfile?.first_name || 'Your'} ${userProfile?.last_name || 'Name'}'s Portfolio`,
+                      description: portfolioData.description || `Professional portfolio showcasing ${userProfile?.current_job_title || 'expertise'}`,
+                      projects: userProfile?.experience || [],
+                      skills: userProfile?.skills || [],
+                      experience: userProfile?.experience || [],
+                      education: userProfile?.education || [],
+                      contact: {
+                        name: `${userProfile?.first_name || ''} ${userProfile?.last_name || ''}`.trim(),
+                        email: userProfile?.email || '',
+                        phone: userProfile?.phone || '',
+                        location: userProfile?.location || ''
+                      }
+                    }
+                    setPortfolioData(generatedPortfolio)
+                    alert('Portfolio generated from your profile!')
+                  }}
+                  style={{
+                    backgroundColor: '#16a34a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '10px 16px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <FileText size={16} />
+                  Generate from Profile
+                </button>
+                <button
+                  onClick={() => {
+                    const portfolioHTML = generatePortfolioHTML(portfolioData)
+                    const blob = new Blob([portfolioHTML], { type: 'text/html' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = 'portfolio.html'
+                    a.click()
+                  }}
+                  style={{
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '10px 16px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Download HTML
+                  </button>
+              </div>
+
+              {/* Portfolio Preview */}
+              {portfolioData.title && (
+                <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '20px', backgroundColor: '#f9fafb' }}>
+                  <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 8px 0' }}>
+                    {portfolioData.title}
+                  </h4>
+                  <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 16px 0' }}>
+                    {portfolioData.description}
+                  </p>
+                  
+                  {portfolioData.contact && Object.keys(portfolioData.contact).length > 0 && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <h5 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', margin: '0 0 8px 0' }}>Contact</h5>
+                      <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                        {portfolioData.contact.name && <div>Name: {portfolioData.contact.name}</div>}
+                        {portfolioData.contact.email && <div>Email: {portfolioData.contact.email}</div>}
+                        {portfolioData.contact.phone && <div>Phone: {portfolioData.contact.phone}</div>}
+                        {portfolioData.contact.location && <div>Location: {portfolioData.contact.location}</div>}
+                      </div>
+                    </div>
+                  )}
+
+                  {portfolioData.skills && portfolioData.skills.length > 0 && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <h5 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', margin: '0 0 8px 0' }}>Skills</h5>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {portfolioData.skills.map((skill, index) => (
+                          <span key={index} style={{ backgroundColor: '#e5e7eb', color: '#374151', padding: '2px 8px', borderRadius: '4px', fontSize: '12px' }}>
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {portfolioData.experience && portfolioData.experience.length > 0 && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <h5 style={{ fontSize: '14px', fontWeight: '600', color: '#374151', margin: '0 0 8px 0' }}>Experience</h5>
+                      {portfolioData.experience.map((exp, index) => (
+                        <div key={index} style={{ marginBottom: '8px', fontSize: '12px' }}>
+                          <div style={{ fontWeight: '500', color: '#111827' }}>{exp.title || exp.position}</div>
+                          <div style={{ color: '#6b7280' }}>{exp.company} {exp.duration && `• ${exp.duration}`}</div>
+                          {exp.description && <div style={{ color: '#6b7280', marginTop: '2px' }}>{exp.description}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -2726,4 +3327,4 @@ const CareerTools = () => {
   )
 }
 
-export default CareerTools
+export default CareerToolspush
