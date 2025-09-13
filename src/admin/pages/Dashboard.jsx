@@ -2176,7 +2176,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                       fontSize: '12px',
                       color: '#64748b'
                     }}>
-                      {job.company} • {job.views_count || 0} views • {job.applications_count || 0} applications
+                      {job.company} • {job.applications_count || 0} applicants
                     </div>
                   </div>
                   <div style={{
@@ -2263,7 +2263,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                       fontSize: '12px',
                       color: '#64748b'
                     }}>
-                      {tender.organization} • {tender.views_count || 0} views • {tender.submissions_count || 0} submissions
+                      {tender.organization} • {tender.apply_clicks || 0} apply clicks
                     </div>
                   </div>
                   <div style={{
@@ -2350,7 +2350,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                       fontSize: '12px',
                       color: '#64748b'
                     }}>
-                      {opportunity.organization} • {opportunity.views_count || 0} views • {opportunity.applications_count || 0} applications
+                      {opportunity.organization} • {opportunity.apply_clicks || 0} apply clicks
                     </div>
                   </div>
                   <div style={{

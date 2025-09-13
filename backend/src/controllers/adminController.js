@@ -3,6 +3,42 @@ const { Op } = require('sequelize');
 const AdminLog = require('../models/AdminLog');
 const { validationResult } = require('express-validator');
 
+// Track apply button clicks for tenders and opportunities
+const trackApplyClick = async (req, res) => {
+  try {
+    const { type, id } = req.params;
+    
+    if (!['tender', 'opportunity'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid type. Must be tender or opportunity' });
+    }
+    
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+    
+    const Model = type === 'tender' ? Tender : Opportunity;
+    const item = await Model.findByPk(id);
+    
+    if (!item) {
+      return res.status(404).json({ error: `${type} not found` });
+    }
+    
+    // Increment the apply clicks count
+    const currentClicks = item.apply_clicks || 0;
+    await item.update({ apply_clicks: currentClicks + 1 });
+    
+    res.json({ 
+      success: true, 
+      apply_clicks: currentClicks + 1,
+      message: `${type} apply click tracked successfully` 
+    });
+    
+  } catch (error) {
+    console.error('Error tracking apply click:', error);
+    res.status(500).json({ error: 'Failed to track apply click' });
+  }
+};
+
 const fs = require('fs');
 const path = require('path');
 
@@ -689,15 +725,15 @@ const getDashboardStats = async (req, res) => {
     });
 
     const topTenders = await Tender.findAll({
-      attributes: ['id', 'title', 'organization', 'views_count', 'submissions_count', 'created_at'],
-      order: [['views_count', 'DESC']],
+      attributes: ['id', 'title', 'organization', 'apply_clicks', 'created_at'],
+      order: [['apply_clicks', 'DESC']],
       limit: 10,
       raw: true
     });
 
     const topOpportunities = await Opportunity.findAll({
-      attributes: ['id', 'title', 'organization', 'views_count', 'applications_count', 'created_at'],
-      order: [['views_count', 'DESC']],
+      attributes: ['id', 'title', 'organization', 'apply_clicks', 'created_at'],
+      order: [['apply_clicks', 'DESC']],
       limit: 10,
       raw: true
     });
@@ -2869,7 +2905,8 @@ module.exports = {
   getApplicationsOverview,
   getApplicantsForItem,
   updateApplicantStatus,
-  downloadDocument
+  downloadDocument,
+  trackApplyClick
 };
 
 // Download by direct file path (query param ?path=/uploads/...)

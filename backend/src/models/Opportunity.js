@@ -109,6 +109,10 @@ const Opportunity = sequelize.define('Opportunity', {
     type: DataTypes.INTEGER,
     defaultValue: 0
   },
+  apply_clicks: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
   applications_count: {
     type: DataTypes.INTEGER,
     defaultValue: 0

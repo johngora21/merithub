@@ -22,7 +22,8 @@ const {
   getApplicantsForItem,
   updateApplicantStatus,
   downloadDocument,
-  downloadByPath
+  downloadByPath,
+  trackApplyClick
 } = require('../controllers/adminController');
 const { body } = require('express-validator');
 
@@ -79,6 +80,9 @@ router.get('/finance', getFinanceData);
 
 // Reports
 router.get('/reports', getReportsData);
+
+// Track apply button clicks
+router.post('/track-apply/:type/:id', trackApplyClick);
 
 // Document download (handled above before auth)
 

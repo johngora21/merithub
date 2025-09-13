@@ -273,7 +273,7 @@ const Opportunities = () => {
     }
   }, [searchParams, opportunities])
 
-  const handleApply = (opportunityId) => {
+  const handleApply = async (opportunityId) => {
     console.log('Apply clicked for opportunity:', opportunityId)
     const opportunity = opportunities.find(opp => opp.id === opportunityId)
     
@@ -281,6 +281,14 @@ const Opportunities = () => {
     if (opportunity && opportunity.isDeadlineExpired) {
       alert('This opportunity application is closed. The deadline has passed.')
       return
+    }
+    
+    // Track the apply click
+    try {
+      await apiService.post(`/admin/track-apply/opportunity/${opportunityId}`)
+    } catch (error) {
+      console.error('Failed to track apply click:', error)
+      // Don't block the user if tracking fails
     }
     
     // For opportunities, we'll use external links

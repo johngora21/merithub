@@ -115,6 +115,10 @@ const Tender = sequelize.define('Tender', {
     type: DataTypes.INTEGER,
     defaultValue: 0
   },
+  apply_clicks: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
   submissions_count: {
     type: DataTypes.INTEGER,
     defaultValue: 0

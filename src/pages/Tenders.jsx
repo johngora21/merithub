@@ -274,7 +274,7 @@ const Tenders = () => {
     }
   }
 
-  const handleApply = (tenderId) => {
+  const handleApply = async (tenderId) => {
     console.log('Apply clicked for tender:', tenderId)
     const tender = tenders.find(t => t.id === tenderId)
     
@@ -282,6 +282,14 @@ const Tenders = () => {
     if (tender && tender.isDeadlineExpired) {
       alert('This tender application is closed. The deadline has passed.')
       return
+    }
+    
+    // Track the apply click
+    try {
+      await apiService.post(`/admin/track-apply/tender/${tenderId}`)
+    } catch (error) {
+      console.error('Failed to track apply click:', error)
+      // Don't block the user if tracking fails
     }
     
     if (tender && tender.externalUrl) {
