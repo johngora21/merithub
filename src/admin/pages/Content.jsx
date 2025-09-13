@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+number import React, { useState, useEffect } from 'react'
 import { resolveAssetUrl } from '../../lib/api-service'
 import {
   Briefcase,

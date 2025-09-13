@@ -1462,14 +1462,20 @@ const AdminDashboard = ({ user, onLogout }) => {
               padding: '4px 8px',
               borderRadius: '6px'
             }}>
-              Bar Chart (15+ years)
+              Top 5 Ages (15+ years)
             </div>
           </div>
           <div style={{ height: '300px', overflowY: 'auto' }}>
             {chartData.ageDistributionIndividual.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {chartData.ageDistributionIndividual.map((item, index) => {
-                  const maxCount = Math.max(...chartData.ageDistributionIndividual.map(d => d.count));
+                {chartData.ageDistributionIndividual
+                  .sort((a, b) => b.count - a.count)
+                  .slice(0, 5)
+                  .map((item, index) => {
+                  const top5Data = chartData.ageDistributionIndividual
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 5);
+                  const maxCount = Math.max(...top5Data.map(d => d.count));
                   const percentage = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
                   
                   return (
@@ -1909,7 +1915,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                       fontSize: '12px',
                       color: '#64748b'
                     }}>
-                      {video.downloads || 0} downloads • {video.enrollment_count || 0} enrollments
+                      {video.downloads || 0} downloads
                     </div>
                   </div>
                   <div style={{
@@ -1996,7 +2002,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                       fontSize: '12px',
                       color: '#64748b'
                     }}>
-                      {book.downloads || 0} downloads • {book.enrollment_count || 0} enrollments
+                      {book.downloads || 0} downloads
                     </div>
                   </div>
                   <div style={{
@@ -2083,7 +2089,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                       fontSize: '12px',
                       color: '#64748b'
                     }}>
-                      {plan.downloads || 0} downloads • {plan.enrollment_count || 0} enrollments
+                      {plan.downloads || 0} downloads
                     </div>
                   </div>
                   <div style={{
@@ -2706,107 +2712,6 @@ const AdminDashboard = ({ user, onLogout }) => {
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '16px',
-        border: '1px solid #e2e8f0',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-        padding: '24px'
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '20px'
-        }}>
-          <h3 style={{
-            fontSize: '18px',
-            fontWeight: '600',
-            color: '#0f172a',
-            margin: 0
-          }}>
-            Recent Activity
-          </h3>
-          <button style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '8px 12px',
-            backgroundColor: 'transparent',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '12px',
-            fontWeight: '500',
-            color: '#64748b',
-            transition: 'all 0.2s ease'
-          }}>
-            <RefreshCw size={12} />
-            Refresh
-          </button>
-        </div>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {(chartData.recentActivity || []).map((activity, index) => {
-            // Get appropriate icon based on activity type
-            const getActivityIcon = (type) => {
-              switch (type) {
-                case 'job': return Briefcase;
-                case 'user_registration': return Users;
-                case 'tender': return Gavel;
-                case 'opportunity': return GraduationCap;
-                case 'application': return FileText;
-                default: return Activity;
-              }
-            };
-            
-            const ActivityIcon = getActivityIcon(activity.type);
-            
-            return (
-              <div key={index} style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px',
-              backgroundColor: '#fafafa',
-              borderRadius: '10px',
-              transition: 'all 0.2s ease'
-            }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                backgroundColor: 'white',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid #e2e8f0'
-              }}>
-                <ActivityIcon size={16} color="#16a34a" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: '#0f172a',
-                  margin: '0 0 2px 0'
-                }}>
-                  {activity.message}
-                </p>
-                <p style={{
-                  fontSize: '12px',
-                  color: '#64748b',
-                  margin: 0
-                }}>
-                  {activity.timeAgo}
-                </p>
-              </div>
-            </div>
-            )
-          })}
-        </div>
-      </div>
     </div>
   )
 

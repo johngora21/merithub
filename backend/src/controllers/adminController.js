@@ -658,7 +658,7 @@ const getDashboardStats = async (req, res) => {
 
     // Get top 10 most downloaded content for each type
     const topVideos = await Course.findAll({
-      attributes: ['id', 'title', 'downloads', 'enrollment_count', 'created_at'],
+      attributes: ['id', 'title', 'downloads', 'created_at'],
       where: { course_type: 'video' },
       order: [['downloads', 'DESC']],
       limit: 10,
@@ -666,7 +666,7 @@ const getDashboardStats = async (req, res) => {
     });
 
     const topBooks = await Course.findAll({
-      attributes: ['id', 'title', 'downloads', 'enrollment_count', 'created_at'],
+      attributes: ['id', 'title', 'downloads', 'created_at'],
       where: { course_type: 'book' },
       order: [['downloads', 'DESC']],
       limit: 10,
@@ -674,7 +674,7 @@ const getDashboardStats = async (req, res) => {
     });
 
     const topBusinessPlans = await Course.findAll({
-      attributes: ['id', 'title', 'downloads', 'enrollment_count', 'created_at'],
+      attributes: ['id', 'title', 'downloads', 'created_at'],
       where: { course_type: 'business-plan' },
       order: [['downloads', 'DESC']],
       limit: 10,
@@ -1320,7 +1320,7 @@ const getAllContent = async (req, res) => {
           duration_minutes: item.duration_minutes || null,
           level: item.level || 'Beginner',
           rating: item.rating || 4.5,
-          students: item.enrollment_count || item.studentsCount || Math.floor(Math.random() * 1000),
+          students: item.studentsCount || Math.floor(Math.random() * 1000),
           thumbnail_url: item.thumbnail_url || item.thumbnail || null,
           video_url: item.video_url || null,
           download_url: item.download_url || null,
