@@ -361,6 +361,7 @@ const getDashboardStats = async (req, res) => {
     });
 
     const ageGroups = {
+      '15-17': 0,
       '18-25': 0,
       '26-35': 0,
       '36-45': 0,
@@ -386,11 +387,14 @@ const getDashboardStats = async (req, res) => {
         
         const count = parseInt(user.count);
         
-        // Store individual age
-        individualAges[age] = (individualAges[age] || 0) + count;
+        // Store individual age (only 15+ years)
+        if (age >= 15) {
+          individualAges[age] = (individualAges[age] || 0) + count;
+        }
         
         // Add to age groups
-        if (age >= 18 && age <= 25) ageGroups['18-25'] += count;
+        if (age >= 15 && age <= 17) ageGroups['15-17'] += count;
+        else if (age >= 18 && age <= 25) ageGroups['18-25'] += count;
         else if (age >= 26 && age <= 35) ageGroups['26-35'] += count;
         else if (age >= 36 && age <= 45) ageGroups['36-45'] += count;
         else if (age >= 46 && age <= 55) ageGroups['46-55'] += count;

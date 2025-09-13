@@ -1391,7 +1391,11 @@ const AdminDashboard = ({ user, onLogout }) => {
                     borderRadius: '8px',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                   }}
-                  formatter={(value, name) => [`${value}`, name]}
+                  formatter={(value, name) => {
+                    const total = chartData.ageDistribution.reduce((sum, item) => sum + item.value, 0);
+                    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                    return [`${percentage}%`, name];
+                  }}
                 />
               </RechartsPieChart>
             </ResponsiveContainer>
@@ -1402,25 +1406,30 @@ const AdminDashboard = ({ user, onLogout }) => {
             gap: '8px',
             marginTop: '16px'
           }}>
-            {chartData.ageDistribution.map((item) => (
-              <div key={item.name} style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontSize: '14px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    backgroundColor: item.color
-                  }}></div>
-                  <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+            {chartData.ageDistribution.map((item) => {
+              const total = chartData.ageDistribution.reduce((sum, ageItem) => sum + ageItem.value, 0);
+              const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : 0;
+              
+              return (
+                <div key={item.name} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '14px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      backgroundColor: item.color
+                    }}></div>
+                    <span style={{ color: '#64748b', fontWeight: '500' }}>{item.name}</span>
+                  </div>
+                  <span style={{ color: '#0f172a', fontWeight: '600' }}>{percentage}%</span>
                 </div>
-                <span style={{ color: '#0f172a', fontWeight: '600' }}>{item.value}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -1453,41 +1462,49 @@ const AdminDashboard = ({ user, onLogout }) => {
               padding: '4px 8px',
               borderRadius: '6px'
             }}>
-              Bar Chart
+              Bar Chart (15+ years)
             </div>
           </div>
           <div style={{ height: '300px', overflowY: 'auto' }}>
             {chartData.ageDistributionIndividual.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {chartData.ageDistributionIndividual.map((item, index) => (
-                  <div key={item.age} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 12px',
-                    backgroundColor: '#f8fafc',
-                    borderRadius: '8px',
-                    border: '1px solid #e2e8f0'
-                  }}>
-                    <div style={{
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      color: '#0f172a'
-                    }}>
-                      Age {item.age}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {chartData.ageDistributionIndividual.map((item, index) => {
+                  const maxCount = Math.max(...chartData.ageDistributionIndividual.map(d => d.count));
+                  const percentage = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
+                  
+                  return (
+                    <div key={item.age} style={{ marginBottom: '8px' }}>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '4px'
+                      }}>
+                        <span style={{ fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+                          Age {item.age}
+                        </span>
+                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>
+                          {item.count} users
+                        </span>
+                      </div>
+                      <div style={{
+                        width: '100%',
+                        height: '20px',
+                        background: '#f3f4f6',
+                        borderRadius: '10px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          width: `${percentage}%`,
+                          height: '100%',
+                          background: 'linear-gradient(90deg, #3b82f6, #1d4ed8)',
+                          borderRadius: '10px',
+                          transition: 'width 0.3s ease'
+                        }} />
+                      </div>
                     </div>
-                    <div style={{
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      color: '#6366f1',
-                      backgroundColor: '#eef2ff',
-                      padding: '4px 8px',
-                      borderRadius: '4px'
-                    }}>
-                      {item.count} users
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div style={{
